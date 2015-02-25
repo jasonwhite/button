@@ -1,0 +1,11 @@
+{
+	"name": "brilliant-build",
+	"description": "A scalable and accurate build system.",
+	"copyright": "Copyright © 2015, Jason White",
+	"authors": ["Jason White"],
+	"dependencies": {
+        "io" : {
+            "path": "source/io"
+        }
+	}
+}

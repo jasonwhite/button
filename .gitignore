@@ -1,0 +1,6 @@
+.dub
+docs.json
+*.o
+*.swp
+/brilliant-build
+dub.selections.json
