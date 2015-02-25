@@ -92,14 +92,24 @@ Rules parseRules(string fileName)
     return parseRules(File(fileName, FileFlags.readExisting));
 }
 
-int main(string[] args)
+/**
+ * Bipartite task graph.
+ *
+ * Resource nodes have edges to tasks. Task nodes have edges to resources.
+ */
+struct TaskGraph
 {
-    import std.json : JSONException;
+    string[string] resources;
+    string[string] tasks;
 
-    try
+    /**
+     * Adds a range of rules to the graph.
+     */
+    void addRules()(auto ref Rules rules)
     {
-        foreach (const ref rule; stdin.parseRules())
+        foreach (rule; rules)
         {
+            // TODO
             println("Inputs:      ", rule.inputs);
             println("Outputs:     ", rule.outputs);
             println("Task:        ", rule.task);
@@ -107,13 +117,26 @@ int main(string[] args)
             println();
         }
     }
+}
+
+/**
+ * Creates the bipartite task graph from the given range of rules.
+ */
+
+int main(string[] args)
+{
+    import std.json : JSONException;
+
+    try
+    {
+        TaskGraph graph;
+        graph.addRules(stdin.parseRules());
+    }
     catch (JSONException e)
     {
         stderr.println("Error parsing rules from JSON (", e.msg, ")");
         return 1;
     }
-
-    // TODO: Create graph from rules.
 
     return 0;
 }
