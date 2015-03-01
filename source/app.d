@@ -14,11 +14,18 @@ int main(string[] args)
 {
     import std.json : JSONException;
 
+    string command = "build";
+
+    if (args.length > 1)
+        command = args[1];
+
     try
     {
         TaskGraph graph;
         graph.addRules(stdin.parseRules());
-        graph.display(stdout);
+
+        if (command == "visualize")
+            graph.display(stdout);
     }
     catch (JSONException e)
     {
