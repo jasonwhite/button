@@ -50,7 +50,7 @@ A build description consists of a set of *rules*. A rule consists of a list of
 
 A task is some program with side effects. In the above example, it is the
 compilation of a set of C files and the linkage of the resulting object files
-using `gcc`.
+using `gcc`. Tasks in the above graph are the grey boxes.
 
 ### Inputs and Outputs
 
@@ -59,4 +59,4 @@ must perform a read on each of the input files and it must perform a write on
 each of the output files. If it doesn't, it is treated as an error. By listing
 inputs and outputs, you are placing certain guarantees on the build. Specifying
 inputs and outputs also allows the build system to construct an initial ordering
-of the tasks.
+of the tasks. Inputs and outputs in the above graph are the blue ellipses.
