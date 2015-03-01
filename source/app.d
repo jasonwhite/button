@@ -1,11 +1,14 @@
+/**
+ * Copyright: Copyright Jason White, 2015
+ * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Authors:   Jason White
+ *
+ * Description:
+ * Parses rules.
+ */
 import io;
 import bb.rule;
 import bb.taskgraph;
-
-
-/**
- * Creates the bipartite task graph from the given range of rules.
- */
 
 int main(string[] args)
 {
@@ -15,6 +18,7 @@ int main(string[] args)
     {
         TaskGraph graph;
         graph.addRules(stdin.parseRules());
+        graph.display(stdout);
     }
     catch (JSONException e)
     {

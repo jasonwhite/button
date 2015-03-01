@@ -55,6 +55,7 @@ struct Rules
 
         auto jsonRule = rules.front;
 
+        // TODO: Normalize input and output paths?
         auto inputs = jsonRule["inputs"].array().map!(x => x.str()).array();
         auto outputs = jsonRule["outputs"].array().map!(x => x.str()).array();
         auto task = jsonRule["task"].str();

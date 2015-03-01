@@ -7,6 +7,11 @@ module bb.taskgraph;
 
 import bb.rule;
 
+import io.stream.types : isSink;
+
+alias Resource = string;
+alias Task = string;
+
 /**
  * Bipartite task graph.
  *
@@ -14,8 +19,11 @@ import bb.rule;
  */
 struct TaskGraph
 {
-    string[string] resources;
-    string[string] tasks;
+    // Resource -> Task[]
+    Task[][Resource] resources;
+
+    // Task -> Resource[]
+    Resource[][Task] tasks;
 
     /**
      * Adds a range of rules to the graph.
@@ -31,13 +39,65 @@ struct TaskGraph
      */
     void addRule()(auto ref Rule rule)
     {
-        import io.text;
+        // Add inputs to graph
+        foreach (input; rule.inputs)
+        {
+            if (auto tasks = input in resources)
+                (*tasks) ~= rule.task;
+            else
+                resources[input] = [rule.task];
+        }
 
-        // TODO
-        println("Inputs:      ", rule.inputs);
-        println("Outputs:     ", rule.outputs);
-        println("Task:        ", rule.task);
-        println("Description: ", rule.description);
-        println();
+        // Add task and its outputs to graph
+        if (auto resources = rule.task in tasks)
+            (*resources) ~= rule.outputs; // Merge it
+        else
+            tasks[rule.task] = rule.outputs;
+
+        // Add outputs to graph
+        foreach (output; rule.outputs)
+        {
+            if (output !in resources)
+                resources[output] = [];
+        }
+    }
+
+    /**
+     * Generate a graph for GraphViz
+     */
+    void display(Stream)(Stream stream)
+        if (isSink!Stream)
+    {
+        import io;
+        stream.println("digraph G {");
+        scope (success) stream.println("}");
+
+        // Style the tasks
+        stream.println("    // Tasks\n"
+                       "    subgraph {\n"
+                       "        node [shape=box, fillcolor=gray91, style=filled];"
+                );
+        foreach (task; tasks.byKey)
+            stream.printfln(`        "%s";`, task);
+        stream.println("    }");
+
+        // Style the Resources
+        stream.println("    // Resources\n"
+                       "    subgraph {\n"
+                       "        node [shape=ellipse, fillcolor=lightskyblue2, style=filled];"
+                );
+        foreach (resource; resources.byKey)
+            stream.printfln(`        "%s";`, resource);
+        stream.println("    }");
+
+        // Draw the edges from inputs to tasks
+        foreach (resource, tasks; resources)
+            foreach (task; tasks)
+                stream.printfln(`    "%s" -> "%s";`, resource, task);
+
+        // Draw the edges from tasks to outputs
+        foreach (task, resources; tasks)
+            foreach (resource; resources)
+                stream.printfln(`    "%s" -> "%s";`, task, resource);
     }
 }
