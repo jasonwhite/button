@@ -43,12 +43,6 @@ struct TaskGraph
 
     enum InvalidNodeIndex = NodeIndex.max;
 
-    // Resource -> Task[]
-    Task[][ResourceId] resources;
-
-    // Task -> Resource[]
-    Resource[][TaskId] tasks;
-
     /**
      * Get the value of a task node by id.
      *
