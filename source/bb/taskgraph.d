@@ -9,8 +9,7 @@ import bb.rule;
 
 import io.stream.types : isSink;
 
-alias Resource = string;
-alias Task = string;
+import bb.resource, bb.task;
 
 /**
  * Bipartite task graph.
@@ -19,11 +18,132 @@ alias Task = string;
  */
 struct TaskGraph
 {
+    private
+    {
+        // Stores the index for the given node identifier.
+        NodeIndex[ResourceId] resourceIndices;
+        NodeIndex[TaskId] taskIndices;
+
+        // TODO: Make the following appenders?
+
+        // Stores the values of the nodes
+        Resource[] resourceValues;
+        Task[] taskValues;
+
+        // TODO: Make list of edges a set.
+
+        // Resource -> Task[] edges
+        NodeIndex[][] resourceEdges;
+
+        // Task -> Resource[] edges
+        NodeIndex[][] taskEdges;
+    }
+
+    alias NodeIndex = size_t;
+
+    enum InvalidNodeIndex = NodeIndex.max;
+
     // Resource -> Task[]
-    Task[][Resource] resources;
+    Task[][ResourceId] resources;
 
     // Task -> Resource[]
-    Resource[][Task] tasks;
+    Resource[][TaskId] tasks;
+
+    /**
+     * Get the value of a task node by id.
+     *
+     * TODO: Return a reference instead.
+     *
+     * Returns a pointer to the node's value or null if it does not exist.
+     */
+    Task* getTask(TaskId id)
+    {
+        if (auto index = id in taskIndices)
+            return getTask(*index);
+        else
+            return null;
+    }
+
+    // Ditto
+    Task* getTask(NodeIndex index)
+    {
+        if (index < taskValues.length)
+            return &taskValues[index];
+        else
+            return null;
+    }
+
+    /**
+     * Gets the value of a resource node by id.
+     */
+    Resource* getResource(ResourceId id)
+    {
+        if (auto index = id in resourceIndices)
+            return getResource(*index);
+        else
+            return null;
+    }
+
+    /// Ditto
+    Resource* getResource(NodeIndex index)
+    {
+        if (index < resourceValues.length)
+            return &resourceValues[index];
+        else
+            return null;
+    }
+
+    /**
+     * Finds a node in the list and returns it's index. If the node is not in
+     * the list, $(D InvalidNodeIndex) is returned.
+     */
+    NodeIndex findNode(TaskId id)
+    {
+        if (auto index = id in taskIndices)
+            return *index;
+        else
+            return InvalidNodeIndex;
+    }
+
+    /// Ditto
+    NodeIndex findResource(ResourceId id)
+    {
+        if (auto index = id in resourceIndices)
+            return *index;
+        else
+            return InvalidNodeIndex;
+    }
+
+    /**
+     * Adds a node to the list.
+     *
+     * Returns: The index of that node.
+     */
+    NodeIndex addNode(Task task)
+    {
+        if (auto index = task.command in taskIndices)
+            return *index;
+
+        NodeIndex i = taskValues.length;
+        taskValues ~= task;
+        taskIndices[task.command] = i;
+        ++taskEdges.length;
+        return i;
+    }
+
+    /// Ditto
+    NodeIndex addNode(Resource resource)
+    {
+        if (auto index = resource.path in resourceIndices)
+            return *index;
+
+        NodeIndex i = resourceValues.length;
+        resourceValues ~= resource;
+        resourceIndices[resource.path] = i;
+        resourceEdges ~= [];
+        ++resourceEdges.length;
+        return i;
+    }
 
     /**
      * Adds a range of rules to the graph.
@@ -36,29 +156,26 @@ struct TaskGraph
 
     /**
      * Adds a single rule to the graph.
+     *
+     * TODO: Throw an error if a resource has >1 parent.
      */
     void addRule()(auto ref Rule rule)
     {
-        // Add inputs to graph
+        // Add task to the graph
+        auto taskIndex = addNode(rule.task);
+
+        // Add edges to task
         foreach (input; rule.inputs)
         {
-            if (auto tasks = input in resources)
-                (*tasks) ~= rule.task;
-            else
-                resources[input] = [rule.task];
+            // TODO: Check for duplicate edges
+            resourceEdges[addNode(input)] ~= taskIndex;
         }
 
-        // Add task and its outputs to graph
-        if (auto resources = rule.task in tasks)
-            (*resources) ~= rule.outputs; // Merge it
-        else
-            tasks[rule.task] = rule.outputs;
-
-        // Add outputs to graph
+        // Add edges from task
         foreach (output; rule.outputs)
         {
-            if (output !in resources)
-                resources[output] = [];
+            // TODO: Check for duplicate edges
+            taskEdges[taskIndex] ~= addNode(output);
         }
     }
 
@@ -77,7 +194,7 @@ struct TaskGraph
                        "    subgraph {\n"
                        "        node [shape=box, fillcolor=gray91, style=filled];"
                 );
-        foreach (task; tasks.byKey)
+        foreach (task; taskValues)
             stream.printfln(`        "%s";`, task);
         stream.println("    }");
 
@@ -86,18 +203,26 @@ struct TaskGraph
                        "    subgraph {\n"
                        "        node [shape=ellipse, fillcolor=lightskyblue2, style=filled];"
                 );
-        foreach (resource; resources.byKey)
+        foreach (resource; resourceValues)
             stream.printfln(`        "%s";`, resource);
         stream.println("    }");
 
         // Draw the edges from inputs to tasks
-        foreach (resource, tasks; resources)
-            foreach (task; tasks)
-                stream.printfln(`    "%s" -> "%s";`, resource, task);
+        foreach (i, edges; resourceEdges)
+            foreach (j; edges)
+                stream.printfln(`    "%s" -> "%s";`, *getResource(i), *getTask(j));
 
         // Draw the edges from tasks to outputs
-        foreach (task, resources; tasks)
-            foreach (resource; resources)
-                stream.printfln(`    "%s" -> "%s";`, task, resource);
+        foreach (i, edges; taskEdges)
+            foreach (j; edges)
+                stream.printfln(`    "%s" -> "%s";`, *getTask(i), *getResource(j));
+    }
+
+    /**
+     * Returns a range that iterates over the tasks in the graph. Tasks are
+     * returned in groups that can be executed in parallel.
+     */
+    void traverse(alias fn)(const Resource[] changed)
+    {
     }
 }

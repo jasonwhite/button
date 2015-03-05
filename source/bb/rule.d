@@ -10,11 +10,13 @@ module bb.rule;
 
 import io.stream.types : isSource;
 
+import bb.resource, bb.task;
+
 struct Rule
 {
-    string[] inputs;
-    string[] outputs;
-    string task;
+    Resource[] inputs;
+    Resource[] outputs;
+    Task task;
     string description;
 }
 
@@ -56,9 +58,9 @@ struct Rules
         auto jsonRule = rules.front;
 
         // TODO: Normalize input and output paths?
-        auto inputs = jsonRule["inputs"].array().map!(x => x.str()).array();
-        auto outputs = jsonRule["outputs"].array().map!(x => x.str()).array();
-        auto task = jsonRule["task"].str();
+        auto inputs = jsonRule["inputs"].array().map!(x => Resource(x.str())).array();
+        auto outputs = jsonRule["outputs"].array().map!(x => Resource(x.str())).array();
+        auto task = Task(jsonRule["task"].array().map!(x => x.str()).array().idup);
 
         // Optional description
         string description = null;
