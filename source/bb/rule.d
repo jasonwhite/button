@@ -12,6 +12,17 @@ import io.stream.types : isSource;
 
 import bb.resource, bb.task;
 
+/**
+ * Exception for errors occurring
+ */
+class RuleException : Exception
+{
+    this(string msg)
+    {
+        super(msg);
+    }
+}
+
 struct Rule
 {
     Resource[] inputs;

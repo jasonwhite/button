@@ -12,6 +12,16 @@ import io.stream.types : isSink;
 import bb.resource, bb.task;
 
 /**
+ */
+class TaskGraphException : Exception
+{
+    this(string msg)
+    {
+        super(msg);
+    }
+}
+
+/**
  * Bipartite task graph.
  *
  * Resource nodes have edges to tasks. Task nodes have edges to resources.
@@ -21,8 +31,8 @@ struct TaskGraph
     private
     {
         // Stores the index for the given node identifier.
-        NodeIndex[ResourceId] resourceIndices;
-        NodeIndex[TaskId] taskIndices;
+        Index!Resource[Resource.Name] resourceIndices;
+        Index!Task[Task.Name] taskIndices;
 
         // TODO: Make the following appenders?
 
@@ -30,82 +40,82 @@ struct TaskGraph
         Resource[] resourceValues;
         Task[] taskValues;
 
-        // TODO: Make list of edges a set.
+        // TODO: Make list of edges a set to avoid duplicate edges.
 
         // Resource -> Task[] edges
-        NodeIndex[][] resourceEdges;
+        Index!Task[][] resourceEdges;
 
         // Task -> Resource[] edges
-        NodeIndex[][] taskEdges;
+        Index!Resource[][] taskEdges;
     }
 
-    alias NodeIndex = size_t;
+    // Index into a node. We use this to avoid mixing the usage of a resource
+    // index with a task index.
+    struct Index(Node)
+    {
+        size_t index;
+        alias index this;
 
-    enum InvalidNodeIndex = NodeIndex.max;
+        enum Invalid = size_t.max;
+    }
+
+    enum InvalidNodeIndex = size_t.max;
 
     /**
-     * Get the value of a task node by id.
-     *
-     * TODO: Return a reference instead.
-     *
-     * Returns a pointer to the node's value or null if it does not exist.
+     * Gets a node's index by its name.
      */
-    Task* getTask(TaskId id)
+    Index!Node getIndex(Node)(Node.Name name)
+        if (is(Node == Task))
     {
-        if (auto index = id in taskIndices)
-            return getTask(*index);
-        else
-            return null;
-    }
-
-    // Ditto
-    Task* getTask(NodeIndex index)
-    {
-        if (index < taskValues.length)
-            return &taskValues[index];
-        else
-            return null;
-    }
-
-    /**
-     * Gets the value of a resource node by id.
-     */
-    Resource* getResource(ResourceId id)
-    {
-        if (auto index = id in resourceIndices)
-            return getResource(*index);
-        else
-            return null;
+        return taskIndices[name];
     }
 
     /// Ditto
-    Resource* getResource(NodeIndex index)
+    Index!Node getIndex(Node)(Node.Name name)
+        if (is(Node == Resource))
     {
-        if (index < resourceValues.length)
-            return &resourceValues[index];
-        else
-            return null;
+        return resourceIndices[name];
+    }
+
+    /**
+     * Gets the value of a task node.
+     */
+    ref Node getValue(Node)(const Node.Name name)
+    {
+        return getValue(getIndex(name));
+    }
+
+    /// Ditto
+    ref Task getValue(Index!Task index)
+    {
+        return taskValues[index];
+    }
+
+    /// Ditto
+    ref Resource getValue(Index!Resource index)
+    {
+        return resourceValues[index];
     }
 
     /**
      * Finds a node in the list and returns it's index. If the node is not in
      * the list, $(D InvalidNodeIndex) is returned.
      */
-    NodeIndex findNode(TaskId id)
+    Index!Task findNode(const Task.Name id)
     {
         if (auto index = id in taskIndices)
             return *index;
         else
-            return InvalidNodeIndex;
+            return Index!Task(InvalidNodeIndex);
     }
 
     /// Ditto
-    NodeIndex findResource(ResourceId id)
+    Index!Resource findNode(const Resource.Name id)
     {
         if (auto index = id in resourceIndices)
             return *index;
         else
-            return InvalidNodeIndex;
+            return Index!Resource(InvalidNodeIndex);
     }
 
     /**
@@ -113,30 +123,76 @@ struct TaskGraph
      *
      * Returns: The index of that node.
      */
-    NodeIndex addNode(Task task)
+    Index!Resource addNode(Resource resource)
+    {
+        if (auto index = resource.path in resourceIndices)
+            return *index;
+
+        auto i = Index!Resource(resourceValues.length);
+        resourceValues ~= resource;
+        resourceIndices[resource.path] = i;
+        resourceEdges ~= [];
+        ++resourceEdges.length;
+        return i;
+    }
+
+    /// Ditto
+    Index!Task addNode(Task task)
     {
         if (auto index = task.command in taskIndices)
             return *index;
 
-        NodeIndex i = taskValues.length;
+        auto i = Index!Task(taskValues.length);
         taskValues ~= task;
         taskIndices[task.command] = i;
         ++taskEdges.length;
         return i;
     }
 
-    /// Ditto
-    NodeIndex addNode(Resource resource)
+    /**
+     * Adds an edge.
+     */
+    void addEdge(const Index!Resource from, const Index!Task to)
     {
-        if (auto index = resource.path in resourceIndices)
-            return *index;
+        // TODO: Use a set to avoid duplicates
+        resourceEdges[from] ~= to;
+    }
 
-        NodeIndex i = resourceValues.length;
-        resourceValues ~= resource;
-        resourceIndices[resource.path] = i;
-        resourceEdges ~= [];
-        ++resourceEdges.length;
-        return i;
+    /// Ditto
+    void addEdge(const Index!Task from, const Index!Resource to)
+    {
+        // TODO: Use a set to avoid duplicates
+        taskEdges[from] ~= to;
+
+        // Increment the number of incoming edges to the resource
+        if (++getValue(to).incoming > 1)
+            throw new TaskGraphException("Resource '"~ getValue(to).path ~ "' is an output of multiple tasks.");
+    }
+
+    /**
+     * Gets the outgoing edges from the given node.
+     *
+     * Throws an exception if the node does not exist.
+     */
+    const(Index!Task[][]) getEdges(Node : Resource)()
+    {
+        return resourceEdges;
+    }
+
+    const(Index!Resource[][]) getEdges(Node : Task)()
+    {
+        return taskEdges;
+    }
+
+    const(Index!Task[]) getEdges(const Index!Resource index)
+    {
+        return resourceEdges[index];
+    }
+
+    /// Ditto
+    const(Index!Resource[]) getEdges(const Index!Task index)
+    {
+        return taskEdges[index];
     }
 
     /**
@@ -151,35 +207,35 @@ struct TaskGraph
     /**
      * Adds a single rule to the graph.
      *
-     * TODO: Throw an error if a resource has >1 parent.
+     * TODO: Move this into a separate class/struct?
      */
     void addRule()(auto ref Rule rule)
     {
+        // TODO: Throw a more informative exception.
+        if (findNode(rule.task.command) != InvalidNodeIndex)
+            throw new Exception("Duplicate task.");
+
         // Add task to the graph
         auto taskIndex = addNode(rule.task);
 
         // Add edges to task
         foreach (input; rule.inputs)
-        {
-            // TODO: Check for duplicate edges
-            resourceEdges[addNode(input)] ~= taskIndex;
-        }
+            addEdge(addNode(input), taskIndex);
 
         // Add edges from task
         foreach (output; rule.outputs)
-        {
-            // TODO: Check for duplicate edges
-            taskEdges[taskIndex] ~= addNode(output);
-        }
+            addEdge(taskIndex, addNode(output));
     }
 
     /**
      * Generate a graph for GraphViz
+     *
+     * TODO: Move this into a separate class/struct?
      */
     void display(Stream)(Stream stream)
         if (isSink!Stream)
     {
-        import io;
+        import io.text;
         stream.println("digraph G {");
         scope (success) stream.println("}");
 
@@ -202,21 +258,26 @@ struct TaskGraph
         stream.println("    }");
 
         // Draw the edges from inputs to tasks
-        foreach (i, edges; resourceEdges)
+        foreach (i, edges; getEdges!Resource())
             foreach (j; edges)
-                stream.printfln(`    "%s" -> "%s";`, *getResource(i), *getTask(j));
+                stream.printfln(`    "%s" -> "%s";`, getValue(Index!Resource(i)), getValue(Index!Task(j)));
 
         // Draw the edges from tasks to outputs
-        foreach (i, edges; taskEdges)
+        foreach (i, edges; getEdges!Task())
             foreach (j; edges)
-                stream.printfln(`    "%s" -> "%s";`, *getTask(i), *getResource(j));
+                stream.printfln(`    "%s" -> "%s";`, getValue(Index!Task(i)), getValue(Index!Resource(j)));
     }
 
     /**
-     * Returns a range that iterates over the tasks in the graph. Tasks are
-     * returned in groups that can be executed in parallel.
+     * Traverses the graph starting with a set of changed nodes.
+     *
+     * TODO: Move this into a separate class/struct?
      */
     void traverse(alias fn)(const Resource[] changed)
     {
+        // List of nodes queued to be processed. Nodes in a queue do not depend
+        // on each other, and thus, can be processed/visited in parallel.
+        Index!Resource[] queuedResources;
+        Index!Task[] queuedTasks;
     }
 }
