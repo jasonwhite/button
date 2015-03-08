@@ -28,6 +28,7 @@ int main(string[] args)
         if (command == "show")
         {
             // TODO: Create argument to output to a file.
+            stderr.println(" :: Generating input for GraphViz...");
             graph.show(stdout);
         }
         else if (command == "update")
