@@ -67,7 +67,7 @@ If we run it again immediately without changing any files, nothing will happen:
 $ brilliant-build update < basic.json
 ```
 
-Now suppose we make a change to the file `foo.c' and run the build again:
+Now suppose we make a change to the file `foo.c` and run the build again:
 
 ```bash
 $ brilliant-build update < basic.json
