@@ -14,12 +14,12 @@ Here is a simple example:
 {
     "rules": [
         {
-            "inputs": ["foo.c"],
+            "inputs": ["foo.c", "baz.h"],
             "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
             "outputs": ["foo.o"]
         },
         {
-            "inputs": ["bar.c"],
+            "inputs": ["bar.c", "baz.h"],
             "task": ["gcc", "-c", "bar.c", "-o", "bar.o"],
             "outputs": ["bar.o"]
         },
@@ -42,7 +42,7 @@ A visualization of the above build description can be generated using
 ```bash
 $ brilliant-build visualize < basic.json | dot -Tpng > basic.png
 ```
-![Simple Task Graph](/docs/examples/basic.png)
+![Simple Task Graph](/docs/examples/basic/build.png)
 
 [GraphViz]: http://www.graphviz.org/
 
