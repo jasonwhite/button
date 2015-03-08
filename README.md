@@ -43,7 +43,7 @@ A visualization of the above build description can be generated using
 [GraphViz][]:
 
 ```bash
-$ brilliant-build visualize < basic.json | dot -Tpng > basic.png
+$ brilliant-build show < basic.json | dot -Tpng > basic.png
 ```
 ![Simple Task Graph](/docs/examples/basic/build.png)
 
@@ -68,7 +68,7 @@ $ brilliant-build update < basic.json
 ```
 
 Now suppose we make a change to the file `foo.c` and run the build again. Only
-the necessary tasks to bring the outputs up-to-date are executed.
+the necessary tasks to bring the outputs up-to-date are executed:
 
 ```bash
 $ touch foo.c
