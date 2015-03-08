@@ -9,12 +9,13 @@
 import io;
 import bb.rule;
 import bb.taskgraph;
+import bb.resource, bb.task;
 
 int main(string[] args)
 {
     import std.json : JSONException;
 
-    string command = "build";
+    string command = "update";
 
     if (args.length > 1)
         command = args[1];
@@ -24,8 +25,21 @@ int main(string[] args)
         TaskGraph graph;
         graph.addRules(stdin.parseRules());
 
-        if (command == "visualize")
-            graph.display(stdout);
+        if (command == "show")
+        {
+            // TODO: Create argument to output to a file.
+            graph.show(stdout);
+        }
+        else if (command == "update")
+        {
+            // TODO: Monitor for changes to resources.
+            // TODO: Use database to check for changes to tasks.
+            auto changedResources = [
+                    graph.getIndex!Resource("foo.c"),
+                ];
+            auto subgraph = graph.subgraph(changedResources, []);
+            graph.update(changedResources, []);
+        }
     }
     catch (JSONException e)
     {

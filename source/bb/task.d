@@ -5,13 +5,6 @@
  */
 module bb.task;
 
-
-/**
- * Identifier for the task. This is just the command to execute.
- */
-alias TaskName = string[];
-
-
 /**
  * A representation of a task.
  */
@@ -21,6 +14,7 @@ struct Task
 
     alias Command = immutable(string)[];
     alias Name = Command;
+    alias Identifier = const(Name);
 
     /**
      * The command to execute. The first argument is the name of the executable.
@@ -28,27 +22,11 @@ struct Task
     Command command;
 
     /**
-     * Number of incoming edges.
-     */
-    size_t incoming;
-
-    /**
-     * Number of incoming edges that have been satisfied. When this number
-     * reaches the number of incoming edges, this node can be visited/processed.
-     */
-    size_t satisfied;
-
-    /**
      * How long it took to execute this task last time. We can use this to give
      * a rough estimate of how long it will take this time. If the task has
      * never been executed before, this will be a time of length 0.
      */
     TickDuration duration;
-
-    /*
-     * TODO: Add more meta data fields such as the date and time when task was
-     * created.
-     */
 
     /**
      * Construct a task from the given unique command.
@@ -74,7 +52,7 @@ struct Task
     /**
      * Returns the unique identifier for this node.
      */
-    @property const(Command) identifier() const pure nothrow
+    @property Identifier identifier() const pure nothrow
     {
         return command;
     }

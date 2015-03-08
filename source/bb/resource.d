@@ -14,6 +14,7 @@ struct Resource
 
     alias Path = string;
     alias Name = Path;
+    alias Identifier = Path;
 
     /**
      * File path to the resource. To ensure uniqueness, this should never be
@@ -25,19 +26,6 @@ struct Resource
      * Unique identifier for this resource.
      */
     alias identifier = path;
-
-    /**
-     * Number of incoming edges. For a valid build description, this should
-     * never be more than 1. That is, a resource should never be the output of
-     * more than 1 task.
-     */
-    size_t incoming;
-
-    /**
-     * Number of incoming edges that have been satisfied. When this number
-     * reaches the number of incoming edges, this node can be visited/processed.
-     */
-    size_t satisfied;
 
     /**
      * Last time it was modified, according to the database
