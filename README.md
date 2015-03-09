@@ -76,3 +76,7 @@ $ brilliant-build update < basic.json
  > gcc -c foo.c -o foo.o
  > gcc foo.o bar.o -o foobar
 ```
+
+## License
+
+[MIT License](/LICENSE.md)
