@@ -1,6 +1,6 @@
 /**
  * Copyright: Copyright Jason White, 2015
- * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * License:   MIT
  * Authors:   Jason White
  *
  * Description:
@@ -28,11 +28,17 @@ int runCommand(string[] args)
         case "help":
             return displayHelp(args[1 .. $]);
 
+        case "init":
+            return initialize(args[1 .. $]);
+
         case "update":
             return update(args[1 .. $]);
 
         case "show":
             return show(args[1 .. $]);
+
+        case "clean":
+            return clean(args[1 .. $]);
 
         default:
             displayHelp(args[1 .. $]);
@@ -43,7 +49,7 @@ int runCommand(string[] args)
 /**
  * Display version information.
  */
-int displayVersion(string[] args)
+private int displayVersion(string[] args)
 {
     stdout.println("TODO: Display version information here.");
     return 0;
@@ -52,16 +58,31 @@ int displayVersion(string[] args)
 /**
  * Display help information.
  */
-int displayHelp(string[] args)
+private int displayHelp(string[] args)
 {
     stdout.println("TODO: Display help information here.");
     return 0;
 }
 
 /**
+ * Initialize the build directory.
+ */
+private int initialize(string[] args)
+{
+    import bb.initialize;
+
+    if (args.length > 1)
+        initialize(args[1]);
+    else
+        initialize();
+
+    return 0;
+}
+
+/**
  * Updates the build.
  */
-int update(string[] args)
+private int update(string[] args)
 {
     TaskGraph graph;
 
@@ -70,12 +91,12 @@ int update(string[] args)
 
     stderr.println(" :: Updating...");
 
-    // TODO: Monitor for changes to resources.
-    // TODO: Use database to check for changes to tasks.
+    // TODO: Use database to check for changes to resources and tasks.
     auto changedResources = [
             graph.getIndex!Resource("foo.c"),
         ];
-    graph.update(changedResources, []);
+
+    graph.subgraph(changedResources, []).update();
 
     return 0;
 }
@@ -83,15 +104,29 @@ int update(string[] args)
 /**
  * Generates some input for GraphViz.
  */
-int show(string[] args)
+private int show(string[] args)
 {
     TaskGraph graph;
 
     stderr.println(" :: Reading build description from standard input...");
     graph.addRules(stdin.parseRules());
 
-    stderr.println(" :: Generating input for GraphViz ...");
+    stderr.println(" :: Generating input for GraphViz...");
     graph.show(stdout);
+
+    return 0;
+}
+
+/**
+ */
+private int clean(string[] args)
+{
+    TaskGraph graph;
+
+    stderr.println(" :: Reading build description from standard input...");
+    graph.addRules(stdin.parseRules());
+
+    stderr.println(" :: Cleaning output files...");
 
     return 0;
 }

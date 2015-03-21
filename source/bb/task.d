@@ -1,6 +1,6 @@
 /**
  * Copyright: Copyright Jason White, 2015
- * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * License:   MIT
  * Authors:   Jason White
  */
 module bb.task;
@@ -11,6 +11,7 @@ module bb.task;
 struct Task
 {
     import core.time : TickDuration;
+    import std.datetime : SysTime;
 
     alias Command = immutable(string)[];
     alias Name = Command;
@@ -22,11 +23,21 @@ struct Task
     Command command;
 
     /**
+     * When the task was created.
+     */
+    SysTime created;
+
+    /**
      * How long it took to execute this task last time. We can use this to give
      * a rough estimate of how long it will take this time. If the task has
      * never been executed before, this will be a time of length 0.
      */
-    TickDuration duration;
+    TickDuration lastDuration;
+
+    /**
+     * When the task was last executed.
+     */
+    SysTime lastExecuted;
 
     /**
      * Construct a task from the given unique command.

@@ -7,5 +7,6 @@
         "io" : {
             "path": "source/io"
         }
-	}
+	},
+    "libs-posix": ["sqlite3"]
 }

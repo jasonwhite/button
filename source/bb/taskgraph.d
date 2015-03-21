@@ -1,6 +1,6 @@
 /**
  * Copyright: Copyright Jason White, 2015
- * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * License:   MIT
  * Authors:   Jason White
  */
 module bb.taskgraph;
@@ -9,17 +9,8 @@ import bb.rule;
 
 import io.stream.types : isSink;
 
+import bb.node;
 import bb.resource, bb.task;
-
-/**
- * Index into this type of node. This is done to avoid mixing the usage
- * different node index types.
- */
-struct NodeIndex(Node)
-{
-    size_t index;
-    alias index this;
-}
 
 /**
  * Bipartite task graph.
@@ -202,7 +193,7 @@ struct TaskGraph
     }
 
     /**
-     * Generate a input suitable for GraphViz.
+     * Generate input suitable for GraphViz.
      */
     void show(Stream)(Stream stream)
         if (isSink!Stream)
@@ -335,20 +326,9 @@ struct TaskGraph
     }
 
     /**
-     * Traverses the graph running the necessary tasks, starting at the
-     * specified roots.
-     *
-     * TODO: Process queues in parallel.
-     */
-    void update(const(NodeIndex!Resource[]) resourceRoots,
-                const(NodeIndex!Task[]) taskRoots)
-    {
-        auto graph = subgraph(resourceRoots, taskRoots);
-        graph.update();
-    }
-
-    /**
      * Updates the entire graph.
+     *
+     * TODO: Pass messages to worker threads instead of using a queue.
      */
     void update()
     {
@@ -375,7 +355,7 @@ struct TaskGraph
             }
         }
 
-        // Queue the resource tasks
+        // Queue the task roots
         foreach (index, edges; taskEdges)
         {
             if (edges.incoming == 0)
@@ -416,7 +396,7 @@ struct TaskGraph
                 auto index = queuedTasks[$-1];
                 queuedTasks.length -= 1;
 
-                // Add the node to the subgraph
+                // TODO: Execute the task
                 stderr.println(" > ", *getNode(index));
 
                 // Add any children
