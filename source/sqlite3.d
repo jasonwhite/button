@@ -1,10 +1,8 @@
-/*
-  This is an updated version of $(WEB https://github.com/bayun/SQLite3-D).
- */
 /**
-  Authors: Jason White, Alexey Khmara
-
-  Description: Wraps the SQLite3 C API in D goodness.
+ * Authors: Jason White, Alexey Khmara
+ *
+ * Description: Wraps the SQLite3 C API in D goodness.
+ * This is an updated version of $(WEB https://github.com/bayun/SQLite3-D).
  */
 module sqlite3;
 
@@ -13,7 +11,7 @@ import std.string, std.exception;
 
 
 /**
-  SQLite3 database wrapper.
+ * SQLite3 database wrapper.
  */
 class SQLite3
 {
@@ -28,8 +26,8 @@ class SQLite3
     }
 
     /**
-      Takes control of an existing database handle. The database will still be
-      closed upon destruction.
+     * Takes control of an existing database handle. The database will still be
+     * closed upon destruction.
      */
     this(sqlite3* db)
     {
@@ -37,7 +35,7 @@ class SQLite3
     }
 
     /**
-      Closes the database.
+     * Closes the database.
      */
     ~this()
     {
@@ -45,7 +43,7 @@ class SQLite3
     }
 
     /**
-      Opens or creates a database.
+     * Opens or creates a database.
      */
     void open(string file)
     {
@@ -58,8 +56,8 @@ class SQLite3
     }
 
     /**
-      Takes control of an existing database handle. The database will still be
-      closed upon destruction.
+     * Takes control of an existing database handle. The database will still be
+     * closed upon destruction.
      */
     void open(sqlite3* db)
     {
@@ -68,7 +66,7 @@ class SQLite3
     }
 
     /**
-      Closes the database.
+     * Closes the database.
      */
     void close()
     {
@@ -80,16 +78,37 @@ class SQLite3
     }
 
     /**
-      Returns the internal handle to the SQLite3 database. This should only be
-      used if this class does not provide the necessary functionality.
+     * Convenience functions for beginning, committing, or rolling back a
+     * transaction.
+     */
+    void begin()
+    {
+        execute("BEGIN");
+    }
+
+    /// Ditto
+    void commit()
+    {
+        execute("COMMIT");
+    }
+
+    /// Ditto
+    void rollback()
+    {
+        execute("ROLLBACK");
+    }
+
+    /**
+     * Returns the internal handle to the SQLite3 database. This should only be
+     * used if this class does not provide the necessary functionality.
      */
     @property sqlite3* handle() { return db; }
 
     /**
-      Prepare SQL statement for multiple execution or for parameters binding.
-
-      If $(D args) are given, they are bound before return, so client can
-      immediately call step() to get rows.
+     * Prepare SQL statement for multiple execution or for parameters binding.
+     *
+     * If $(D args) are given, they are bound before return, so client can
+     * immediately call step() to get rows.
      */
     Statement prepare(T...)(string sql, const auto ref T args)
     {
@@ -99,8 +118,8 @@ class SQLite3
     }
 
     /**
-      Like $(D prepare), but ignores results and returns the number of changed
-      rows.
+     * Like $(D prepare), but ignores results and returns the number of changed
+     * rows.
      */
     uint execute(T...)(string sql, const auto ref T args)
     {
@@ -115,7 +134,7 @@ class SQLite3
     }
 
     /**
-      Returns the ID of the last row that was inserted.
+     * Returns the ID of the last row that was inserted.
      */
     @property ulong lastInsertId()
     {
@@ -123,27 +142,27 @@ class SQLite3
     }
 
     /**
-      Returns the number of rows changed by the last statement.
-    */
+     * Returns the number of rows changed by the last statement.
+     */
     @property uint changes()
     {
         return cast(uint)sqlite3_changes(db);
     }
 
     /**
-      The database is accessed using statements.
-
-      First, a statement is prepared from a SQL query. Then, values are bound to
-      the parameters in the statement using $(D bind). Finally, the statement is
-      executed using $(D step).
+     * The database is accessed using statements.
+     *
+     * First, a statement is prepared from a SQL query. Then, values are bound to
+     * the parameters in the statement using $(D bind). Finally, the statement is
+     * executed using $(D step).
      */
     class Statement
     {
         private sqlite3_stmt *_stmt;
 
         /**
-          Compiles the SQL statement. Values can then be bound to the parameters
-          of the statement using $(D bind).
+         * Compiles the SQL statement. Values can then be bound to the
+         * parameters of the statement using $(D bind).
          */
         this(string sql)
         {
@@ -160,14 +179,14 @@ class SQLite3
         }
 
         /**
-          Returns the internal SQLite3 statement handle. This should only be
-          used if this class does not provide the necessary functionality.
+         * Returns the internal SQLite3 statement handle. This should only be
+         * used if this class does not provide the necessary functionality.
          */
         @property sqlite3_stmt* handle() { return _stmt; }
 
         /**
-          Returns the number of columns in the result set. This number will be 0
-          if there is no result set (e.g., INSERT, UPDATE, CREATE TABLE).
+         * Returns the number of columns in the result set. This number will be
+         * 0 if there is no result set (e.g., INSERT, UPDATE, CREATE TABLE).
          */
         @property uint columns()
         {
@@ -175,13 +194,13 @@ class SQLite3
         }
 
         /**
-          Returns the SQL statement string.
+         * Returns the SQL statement string.
          */
         @property string sql() { return fromStringz(sqlite3_sql(_stmt)); }
 
         /**
-          Binds a value to the statement at a particular index. Indices start at
-          0.
+         * Binds a value to the statement at a particular index. Indices start
+         * at 0.
          */
         void opIndexAssign(T)(const auto ref T v, uint i)
         {
@@ -193,7 +212,7 @@ class SQLite3
             }
             else static if (is(T : long) || is(T : ulong))
             {
-                auto err = sqlite3_bind_long(_stmt, i, v);
+                auto err = sqlite3_bind_int64(_stmt, i, v);
             }
             else static if (is(T : double))
             {
@@ -220,7 +239,7 @@ class SQLite3
         }
 
         /**
-          Gets the index of the bind parameter $(D name).
+         * Gets the index of the bind parameter $(D name).
          */
         uint opIndex(string name)
         {
@@ -232,7 +251,7 @@ class SQLite3
         }
 
         /**
-          Binds a value by name.
+         * Binds a value by name.
          */
         void opIndexAssign(T)(const auto ref T v, string name)
         {
@@ -240,7 +259,7 @@ class SQLite3
         }
 
         /**
-          Bind multiple values to the statement.
+         * Bind multiple values to the statement.
          */
         void bind(T...)(const auto ref T args)
         {
@@ -249,10 +268,10 @@ class SQLite3
         }
 
         /**
-          Steps through the results of the statement. Returns true while there
-          are results or false if there are no more results.
-
-          Throws: $(D SQLite3Exception) if an error occurs.
+         * Steps through the results of the statement. Returns true while there
+         * are results or false if there are no more results.
+         *
+         * Throws: $(D SQLite3Exception) if an error occurs.
          */
         bool step()
         {
@@ -266,7 +285,7 @@ class SQLite3
         }
 
         /**
-          Gets the value from a column.
+         * Gets the value from a column.
          */
         T get(T)(uint i)
         in { assert(i < columns); }
@@ -308,7 +327,7 @@ class SQLite3
         }
 
         /**
-          Gets the values in the row..
+         * Gets the values in the row..
          */
         void getRow(T...)(ref T args)
         {
@@ -317,7 +336,7 @@ class SQLite3
         }
 
         /**
-          Returns true if the column index has a NULL value.
+         * Returns true if the column index has a NULL value.
          */
         bool isNull(uint i)
         in { assert(i < columns); }
@@ -327,10 +346,10 @@ class SQLite3
         }
 
         /**
-          Resets the execution of this statement. This must be called after $(D
-          step) returns false.
-
-          Note: Bindings are not reset too.
+         * Resets the execution of this statement. This must be called after $(D
+         * step) returns false.
+         *
+         * Note: Bindings are not reset too.
          */
         void reset()
         {
@@ -339,7 +358,7 @@ class SQLite3
         }
 
         /**
-          Sets all bindings to NULL.
+         * Sets all bindings to NULL.
          */
         void clear()
         {
@@ -358,7 +377,7 @@ private string fromStringz(const(char)* s)
 }
 
 /**
-  This is thrown if we did something wrong with SQLite3.
+ * This is thrown if something went wrong in SQLite3.
  */
 class SQLite3Exception : Exception
 {

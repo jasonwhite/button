@@ -14,8 +14,7 @@ struct Task
     import std.datetime : SysTime;
 
     alias Command = immutable(string)[];
-    alias Name = Command;
-    alias Identifier = const(Name);
+    alias Identifier = const(Command);
 
     /**
      * The command to execute. The first argument is the name of the executable.

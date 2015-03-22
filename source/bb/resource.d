@@ -13,7 +13,6 @@ struct Resource
     import std.datetime : SysTime;
 
     alias Path = string;
-    alias Name = Path;
     alias Identifier = Path;
 
     /**
@@ -30,30 +29,15 @@ struct Resource
     /**
      * Last time it was modified, according to the database
      */
-    SysTime modified;
-
-    /**
-     * A resource can be explicitly specified by the build description. That is,
-     * it was added by the user. Otherwise, if the resource was added by the
-     * build system, it is an implicit resource.
-     */
-    enum Type
-    {
-        explicit,
-        implicit,
-    }
-
-    /// Ditto
-    Type type = Type.explicit;
+    SysTime modified = SysTime.min;
 
     /**
      * Constructs a resource from the given path. The path should be normalized
      * to ensure the uniqueness of this resource object.
      */
-    this(string path, Type type = Type.explicit)
+    this(string path)
     {
         this.path = path;
-        this.type = type;
     }
 
     /**

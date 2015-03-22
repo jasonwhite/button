@@ -65,7 +65,7 @@ private int displayHelp(string[] args)
 }
 
 /**
- * Initialize the build directory.
+ * Creates an initial empty state.
  */
 private int initialize(string[] args)
 {

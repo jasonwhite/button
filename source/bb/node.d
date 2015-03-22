@@ -11,7 +11,7 @@ module bb.node;
  */
 struct NodeIndex(Node)
 {
-    size_t index;
+    ulong index;
     alias index this;
 }
 

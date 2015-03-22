@@ -5,3 +5,4 @@ docs.json
 *.swp
 /brilliant-build
 dub.selections.json
+__test__library__

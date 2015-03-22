@@ -5,7 +5,6 @@
  */
 module bb.initialize;
 
-
 /**
  * Initializes the build directory. This involves:
  *  - Creating the .bb directory
@@ -13,23 +12,26 @@ module bb.initialize;
  */
 void initialize(string baseDir = ".")
 {
-    import io.text, io.file.stdio;
     import std.path : buildPath;
-    import std.file : isDir, mkdir;
+    import std.file : exists, isDir, mkdir;
 
-    // Create .bb directory
+    // Create .bb directory if it doesn't already exist.
     immutable dir = buildPath(baseDir, ".bb");
-    if (isDir(dir))
-    {
-        // TODO: Throw an exception instead.
-        stderr.println("Error: Build directory already initialized.");
-        return;
-    }
-
-    mkdir(dir);
+    if (!exists(dir) || !isDir(dir))
+        mkdir(dir);
 
     // Create the database
     import bb.state;
-    auto state = BuildState(buildPath(dir, "state"));
+    auto state = new BuildState(buildPath(dir, "state"));
     state.initialize();
+
+    import bb.resource, bb.task;
+    import io.text, io.file.stdio;
+
+    println("foo.c = ", state.add(Resource("foo.c")));
+    println("foo.h = ", state.add(Resource("foo.h")));
+    println("bar.c = ", state.add(Resource("bar.c")));
+
+    println("gcc 1 = ", state.add(Task(["gcc", "-c", "foo.c", "-o", "foo.o"])));
+    println("gcc 2 = ", state.add(Task(["gcc", "-c", "bar.c", "-o", "bar.o"])));
 }
