@@ -30,6 +30,8 @@ module bb.change;
 
 import bb.state;
 
+import std.range : isForwardRange;
+
 /**
  * Type of a change.
  */
@@ -52,11 +54,12 @@ struct Change(T)
 /**
  * Range for iterating over changes between two sorted ranges.
  */
-struct Changes(Range)
+struct Changes(alias pred, R)
+    if (isForwardRange!R)
 {
     import std.range : ElementType;
 
-    alias T = ElementType!Range;
+    alias T = ElementType!R;
 
     private
     {
@@ -64,12 +67,12 @@ struct Changes(Range)
         Change!T current;
 
         // Next and previous states.
-        Range prev, next;
+        R prev, next;
 
         bool _empty;
     }
 
-    this(Range prev, Range next)
+    this(R prev, R next)
     {
         this.prev = prev;
         this.next = next;
@@ -80,6 +83,7 @@ struct Changes(Range)
     void popFront()
     {
         import std.range : empty, front, popFront;
+        import std.functional : binaryFun;
 
         if (prev.empty && next.empty)
         {
@@ -100,23 +104,23 @@ struct Changes(Range)
             immutable a = prev.front;
             immutable b = next.front;
 
-            if (a == b)
-            {
-                // No change
-                current = Change!T(a, ChangeType.none);
-                prev.popFront();
-                next.popFront();
-            }
-            else if (a < b)
+            if (binaryFun!pred(a, b))
             {
                 // Removed
                 current = Change!T(a, ChangeType.removed);
                 prev.popFront();
             }
-            else
+            else if (binaryFun!pred(b, a))
             {
                 // Added
                 current = Change!T(b, ChangeType.added);
+                next.popFront();
+            }
+            else
+            {
+                // No change
+                current = Change!T(a, ChangeType.none);
+                prev.popFront();
                 next.popFront();
             }
         }
@@ -137,9 +141,9 @@ struct Changes(Range)
  * Convenience function for constructing a range that finds changes between two
  * ranges.
  */
-auto changes(Range)(Range previous, Range next)
+auto changes(alias pred = "a < b", R)(R previous, R next)
 {
-    return Changes!Range(previous, next);
+    return Changes!(pred, R)(previous, next);
 }
 
 unittest
