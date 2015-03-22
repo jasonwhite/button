@@ -26,7 +26,7 @@
  *
  * All changes are discovered in O(n) where n is the number of nodes and edges.
  */
-module bb.diff;
+module bb.change;
 
 import bb.state;
 
@@ -145,8 +145,6 @@ auto changes(Range)(Range previous, Range next)
 unittest
 {
     import std.algorithm : equal;
-    import std.range : ElementType;
-    import std.stdio;
 
     immutable prev = "abcd";
     immutable next = "acdef";
