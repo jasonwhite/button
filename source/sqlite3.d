@@ -297,7 +297,7 @@ class SQLite3
             }
             else static if (is(T == long) || is(T : ulong))
             {
-                return cast(T)sqlite3_column_long(_stmt, cast(int)i);
+                return cast(T)sqlite3_column_int64(_stmt, cast(int)i);
             }
             else static if (is(T == double))
             {
@@ -365,6 +365,57 @@ class SQLite3
             int r = sqlite3_clear_bindings(_stmt);
             enforce(r == SQLITE_OK, new SQLite3Exception(db, r));
         }
+
+        /**
+         * Range that deserializes and returns row data.
+         */
+        static struct Rows(T, alias read)
+        {
+            private
+            {
+                Statement _statement;
+                bool _empty;
+                T _data;
+            }
+
+            this(Statement statement)
+            {
+                _statement = statement;
+
+                // Prime the cannons
+                popFront();
+            }
+
+            bool empty() const pure nothrow
+            {
+                return _empty;
+            }
+
+            void popFront()
+            {
+                if (!_statement.step())
+                {
+                    _empty = true;
+                    return;
+                }
+
+                _data = read(_statement);
+            }
+
+            T front() const pure nothrow
+            {
+                return _data;
+            }
+        }
+
+        /**
+         * Convenience function to return a range to iterate over rows in the
+         * statement.
+         */
+        @property auto rows(T, alias read)()
+        {
+            return Rows!(T, read)(this);
+        }
     }
 }
 
@@ -384,6 +435,7 @@ class SQLite3Exception : Exception
     // SQLite3 error code.
     // See http://www.sqlite.org/c3ref/c_abort.html
     int code;
+    string sql;
 
     this(string msg, int code, string file = __FILE__, size_t line = __LINE__)
     {
