@@ -11,6 +11,38 @@ import std.string, std.exception;
 
 
 /**
+ * This is thrown if something went wrong in SQLite3.
+ */
+class SQLite3Exception : Exception
+{
+    // SQLite3 error code.
+    // See https://www.sqlite.org/rescode.html
+    int code;
+
+    this(int code, string msg, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line);
+        this.code = code;
+    }
+
+    this(sqlite3 *db, string msg = null, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(fromStringz(sqlite3_errmsg(db)), file, line);
+        this.code = sqlite3_errcode(db);
+    }
+}
+
+T sqliteEnforce(T, string file = __FILE__, size_t line = __LINE__)
+    (T value, sqlite3 *db, lazy string msg = null)
+{
+    // TODO: Use extended result codes instead.
+    if (!value)
+        throw new SQLite3Exception(db, msg, file, line);
+    return value;
+}
+
+
+/**
  * SQLite3 database wrapper.
  */
 class SQLite3
@@ -51,7 +83,7 @@ class SQLite3
 
         auto r = sqlite3_open(&(toStringz(file))[0], &db);
         if (r != SQLITE_OK) {
-            throw new SQLite3Exception("Cannot open database " ~ file, r);
+            throw new SQLite3Exception(r, "Cannot open database " ~ file);
         }
     }
 
@@ -170,7 +202,7 @@ class SQLite3
                 db, toStringz(sql), cast(int)sql.length, &_stmt, null
                 );
 
-            enforce(r == SQLITE_OK, new SQLite3Exception(db, r));
+            sqliteEnforce(r == SQLITE_OK, db);
         }
 
         ~this()
@@ -202,40 +234,79 @@ class SQLite3
          * Binds a value to the statement at a particular index. Indices start
          * at 0.
          */
-        void opIndexAssign(T)(const auto ref T v, uint i)
+        void opIndexAssign(T : int)(T v, uint i)
         {
-            ++i; // Indices start at 1, not 0
+            sqliteEnforce(sqlite3_bind_int(_stmt, i+1, v) == SQLITE_OK, db);
+        }
 
-            static if (is(T : int) || is(T : uint))
-            {
-                auto err = sqlite3_bind_int(_stmt, i, v);
-            }
-            else static if (is(T : long) || is(T : ulong))
-            {
-                auto err = sqlite3_bind_int64(_stmt, i, v);
-            }
-            else static if (is(T : double))
-            {
-                auto err = sqlite3_bind_double(_stmt, i, v);
-            }
-            else static if (is(T : const(string)))
-            {
-                auto err = sqlite3_bind_text(_stmt, i, toStringz(v),
-                    cast(int)v.length, SQLITE_TRANSIENT);
-            }
-            else static if (is(T : const(void*)))
-            {
-                auto err = sqlite3_bind_blob(_stmt, i, v, cast(int)v.length,
-                    SQLITE_TRANSIENT);
-            }
-            else static if (is(T : typeof(null)))
-            {
-                auto err = sqlite3_bind_null(_stmt, i);
-            }
-            else
-                static assert(false, "Unsupported SQLite3 type.");
+        /// Ditto
+        void opIndexAssign(T : uint)(T v, uint i)
+        {
+            sqliteEnforce(sqlite3_bind_int(_stmt, i+1, v) == SQLITE_OK, db);
+        }
 
-            enforce(err == SQLITE_OK, new SQLite3Exception(db, err));
+        /// Ditto
+        void opIndexAssign(T : long)(T v, uint i)
+        {
+            sqliteEnforce(sqlite3_bind_int64(_stmt, i+1, v) == SQLITE_OK, db);
+        }
+
+        /// Ditto
+        void opIndexAssign(T : ulong)(T v, uint i)
+        {
+            sqliteEnforce(sqlite3_bind_int64(_stmt, i+1, v) == SQLITE_OK, db);
+        }
+
+        /// Ditto
+        void opIndexAssign(T : double)(T v, uint i)
+        {
+            sqliteEnforce(sqlite3_bind_double(_stmt, i+1, v) == SQLITE_OK, db);
+        }
+
+        /// Ditto
+        void opIndexAssign(T : const(string))(T v, uint i)
+        {
+            import std.conv : to;
+            sqliteEnforce(sqlite3_bind_text(_stmt, i+1, toStringz(v),
+                v.length.to!int, SQLITE_TRANSIENT) == SQLITE_OK, db);
+        }
+
+        /// Ditto
+        void opIndexAssign(T : const(void[]))(T v, uint i)
+        {
+            import std.conv : to;
+            sqliteEnforce(sqlite3_bind_blob(_stmt, i+1, v,
+                v.length.to!int, SQLITE_TRANSIENT) == SQLITE_OK, db);
+        }
+
+        /// Ditto
+        void opIndexAssign(T : typeof(null))(T v, uint i)
+        {
+            sqliteEnforce(sqlite3_bind_null(_stmt, i+1) == SQLITE_OK, db);
+        }
+
+        version (none)
+        {
+            // FIXME: These require bind_*64() functions which, at this time,
+            // are not in DMD.
+            void opIndexAssign(T : const(string))(T v, uint i)
+            {
+                sqliteEnforce(sqlite3_bind_text64(_stmt, i+1, toStringz(v),
+                    v.length, SQLITE_TRANSIENT, SQLITE_UTF8) == SQLITE_OK, db);
+            }
+
+            void opIndexAssign(T : const(wstring))(T v, uint i)
+            {
+                sqliteEnforce(sqlite3_bind_text64(_stmt, i+1, toStringz(v),
+                    v.length * wchar.sizeof, SQLITE_TRANSIENT, SQLITE_UTF16) == SQLITE_OK, db);
+            }
+
+            void opIndexAssign(T : const(void[]))(T v, uint i)
+            {
+                // FIXME: void* has no length property
+                sqliteEnforce(sqlite3_bind_blob64(_stmt, i+1, v,
+                    v.length, SQLITE_TRANSIENT) == SQLITE_OK, db);
+            }
         }
 
         /**
@@ -244,9 +315,7 @@ class SQLite3
         uint opIndex(string name)
         {
             int pos = sqlite3_bind_parameter_index(_stmt, toStringz(name));
-            enforce(pos <= 0,
-                new SQLite3Exception("Invalid bind parameter: " ~ name, SQLITE_ERROR)
-                );
+            sqliteEnforce(pos <= 0, db, "Invalid bind parameter '"~ name ~"'");
             return cast(uint)(pos - 1);
         }
 
@@ -281,7 +350,7 @@ class SQLite3
             else if (r == SQLITE_DONE)
                 return false;
             else
-                throw new SQLite3Exception(db, r);
+                throw new SQLite3Exception(db);
         }
 
         /**
@@ -354,8 +423,7 @@ class SQLite3
          */
         void reset()
         {
-            int r = sqlite3_reset(_stmt);
-            enforce(r == SQLITE_OK, new SQLite3Exception(db, r));
+            sqliteEnforce(sqlite3_reset(_stmt) == SQLITE_OK, db);
         }
 
         /**
@@ -363,8 +431,7 @@ class SQLite3
          */
         void clear()
         {
-            int r = sqlite3_clear_bindings(_stmt);
-            enforce(r == SQLITE_OK, new SQLite3Exception(db, r));
+            sqliteEnforce(sqlite3_clear_bindings(_stmt) == SQLITE_OK, db);
         }
 
         /**
@@ -426,27 +493,4 @@ private string fromStringz(const(char)* s)
     size_t i = 0;
     while (s[i] != '\0') ++i;
     return s[0 .. i].idup;
-}
-
-/**
- * This is thrown if something went wrong in SQLite3.
- */
-class SQLite3Exception : Exception
-{
-    // SQLite3 error code.
-    // See http://www.sqlite.org/c3ref/c_abort.html
-    int code;
-    string sql;
-
-    this(string msg, int code, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line);
-        this.code = code;
-    }
-
-    this(sqlite3 *db, int code, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(fromStringz(sqlite3_errmsg(db)), file, line);
-        this.code = code;
-    }
 }
