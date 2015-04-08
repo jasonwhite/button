@@ -285,45 +285,46 @@ class SQLite3
         }
 
         /**
-         * Gets the value from a column.
+         * Gets the value of a column.
          */
-        T get(T)(uint i)
-        in { assert(i < columns); }
-        body
+        T get(T)(uint i) if (is(T == int) || is(T == uint))
         {
-            static if (is(T == int) || is(T : uint))
-            {
-                return cast(T)sqlite3_column_int(_stmt, cast(int)i);
-            }
-            else static if (is(T == long) || is(T : ulong))
-            {
-                return cast(T)sqlite3_column_int64(_stmt, cast(int)i);
-            }
-            else static if (is(T == double))
-            {
-                return sqlite3_column_double(_stmt, cast(int)i);
-            }
-            else static if (is(T == char[]))
-            {
-                auto s = sqlite3_column_text(_stmt, cast(int)i);
-                int l = sqlite3_column_bytes(_stmt, cast(int)i);
-                return s[0 .. l].dup;
-            }
-            else static if (is(T == string))
-            {
-                // We can safely cast to string here.
-                return cast(string)get!(char[])(i);
-            }
-            else static if (is(T == void*))
-            {
-                auto v = sqlite3_column_blob(_stmt, cast(int)i);
-                int l = sqlite3_column_bytes(_stmt, cast(int)i);
-                return v[0 .. l].dup;
-            }
-            else
-                static assert(false,
-                    T.stringof ~ " is an unsupported SQLite3 type"
-                    );
+            return cast(T)sqlite3_column_int(_stmt, cast(int)i);
+        }
+
+        /// Ditto
+        T get(T)(uint i) if (is(T == long) || is(T == ulong))
+        {
+            return cast(T)sqlite3_column_int64(_stmt, cast(int)i);
+        }
+
+        /// Ditto
+        T get(T)(uint i) if (is(T == double))
+        {
+            return sqlite3_column_double(_stmt, cast(int)i);
+        }
+
+        /// Ditto
+        T get(T)(uint i) if (is(T == char[]))
+        {
+            auto s = sqlite3_column_text(_stmt, cast(int)i);
+            int l = sqlite3_column_bytes(_stmt, cast(int)i);
+            return s[0 .. l].dup;
+        }
+
+        /// Ditto
+        T get(T)(uint i) if (is(T == string))
+        {
+            // We can safely cast to string here.
+            return cast(string)get!(char[])(i);
+        }
+
+        /// Ditto
+        T get(T)(uint i) if (is(T == void*))
+        {
+            auto v = sqlite3_column_blob(_stmt, cast(int)i);
+            int l = sqlite3_column_bytes(_stmt, cast(int)i);
+            return v[0 .. l].dup;
         }
 
         /**
