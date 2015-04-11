@@ -9,8 +9,7 @@ import bb.rule;
 
 import io.stream.types : isSink;
 
-import bb.node;
-import bb.resource, bb.task;
+import bb.index, bb.node;
 
 /**
  * Bipartite task graph.
@@ -27,7 +26,7 @@ struct TaskGraph
             /**
              * Outgoing edges.
              */
-            NodeIndex!Node[] outgoing;
+            Index!Node[] outgoing;
 
             /**
              * Number of incoming edges.
@@ -36,8 +35,8 @@ struct TaskGraph
         }
 
         // Stores the index for the given node identifier.
-        NodeIndex!Resource[Resource.Identifier] resourceIndices;
-        NodeIndex!Task[Task.Identifier] taskIndices;
+        Index!Resource[Resource.Identifier] resourceIndices;
+        Index!Task[Task.Identifier] taskIndices;
 
         // Stores the data relating to nodes.
         Resource[] resources;
@@ -55,7 +54,7 @@ struct TaskGraph
     /**
      * Returns the index for the node with the given identifier.
      */
-    NodeIndex!Node getIndex(Node)(Node.Identifier id)
+    Index!Node getIndex(Node)(Node.Identifier id)
         if (isNode!Node)
     {
         static if (is(Node : Resource))
@@ -93,7 +92,7 @@ struct TaskGraph
     /**
      * Returns a list of a node's edges.
      */
-    auto getEdges(Node)(NodeIndex!Node index) const pure
+    auto getEdges(Node)(Index!Node index) const pure
         if (isNode!Node)
     {
         return getEdges!Node[index];
@@ -102,7 +101,7 @@ struct TaskGraph
     /**
      * Returns a node's data.
      */
-    inout(Node*) getNode(Node)(NodeIndex!Node index) inout
+    inout(Node*) getNode(Node)(Index!Node index) inout
     {
         return &getNodes!Node()[index];
     }
@@ -112,12 +111,12 @@ struct TaskGraph
      *
      * Returns the index to the new node, or one that already exists.
      */
-    NodeIndex!Resource addNode(Resource resource)
+    Index!Resource addNode(Resource resource)
     {
         if (auto index = resource.identifier in resourceIndices)
             return *index;
 
-        auto index = NodeIndex!Resource(resources.length);
+        auto index = Index!Resource(resources.length);
         resources ~= resource;
         resourceIndices[resource.identifier] = index;
         ++resourceEdges.length;
@@ -125,12 +124,12 @@ struct TaskGraph
     }
 
     /// Ditto
-    NodeIndex!Task addNode(Task task)
+    Index!Task addNode(Task task)
     {
         if (auto index = task.identifier in taskIndices)
             return *index;
 
-        auto index = NodeIndex!Task(tasks.length);
+        auto index = Index!Task(tasks.length);
         tasks ~= task;
         taskIndices[task.identifier] = index;
         ++taskEdges.length;
@@ -140,7 +139,7 @@ struct TaskGraph
     /**
      * Adds an edge from one node to the other.
      */
-    void addEdge(NodeIndex!Resource from, NodeIndex!Task to)
+    void addEdge(Index!Resource from, Index!Task to)
     {
         // Don't add duplicate edges
         foreach (edge; getEdges(from).outgoing)
@@ -151,7 +150,7 @@ struct TaskGraph
     }
 
     /// Ditto
-    void addEdge(NodeIndex!Task from, NodeIndex!Resource to)
+    void addEdge(Index!Task from, Index!Resource to)
     {
         // Don't add duplicate edges
         foreach (edge; getEdges(from).outgoing)
@@ -224,15 +223,15 @@ struct TaskGraph
         foreach (i, edges; getEdges!Resource)
             foreach (j; edges.outgoing)
                 stream.printfln(`    "%s" -> "%s";`,
-                        *getNode(NodeIndex!Resource(i)),
-                        *getNode(NodeIndex!Task(j)));
+                        *getNode(Index!Resource(i)),
+                        *getNode(Index!Task(j)));
 
         // Draw the edges from tasks to outputs
         foreach (i, edges; getEdges!Task)
             foreach (j; edges.outgoing)
                 stream.printfln(`    "%s" -> "%s";`,
-                        *getNode(NodeIndex!Task(i)),
-                        *getNode(NodeIndex!Resource(j)));
+                        *getNode(Index!Task(i)),
+                        *getNode(Index!Resource(j)));
     }
 
     /**
@@ -241,8 +240,8 @@ struct TaskGraph
      *
      * TODO: Process queues in parallel.
      */
-    typeof(this) subgraph(const(NodeIndex!Resource[]) resourceRoots,
-                          const(NodeIndex!Task[]) taskRoots)
+    typeof(this) subgraph(const(Index!Resource[]) resourceRoots,
+                          const(Index!Task[]) taskRoots)
     {
         // Keep track of which nodes have been visited
         auto visitedResources = new bool[resources.length];
@@ -253,8 +252,8 @@ struct TaskGraph
 
         // List of nodes queued to be processed. Nodes in the queue do not
         // depend on each other, and thus, can be processed/visited in parallel.
-        NodeIndex!Resource[] queuedResources;
-        NodeIndex!Task[] queuedTasks;
+        Index!Resource[] queuedResources;
+        Index!Task[] queuedTasks;
 
         // Queue the resource roots
         foreach (index; resourceRoots)
@@ -340,8 +339,8 @@ struct TaskGraph
 
         // List of nodes queued to be processed. Nodes in the queue do not
         // depend on each other, and thus, can be processed/visited in parallel.
-        NodeIndex!Resource[] queuedResources;
-        NodeIndex!Task[] queuedTasks;
+        Index!Resource[] queuedResources;
+        Index!Task[] queuedTasks;
 
         // Start at the nodes with no incoming edges.
 
@@ -351,7 +350,7 @@ struct TaskGraph
             if (edges.incoming == 0)
             {
                 visitedResources[index] = true;
-                queuedResources ~= NodeIndex!Resource(index);
+                queuedResources ~= Index!Resource(index);
             }
         }
 
@@ -361,7 +360,7 @@ struct TaskGraph
             if (edges.incoming == 0)
             {
                 visitedTasks[index] = true;
-                queuedTasks ~= NodeIndex!Task(index);
+                queuedTasks ~= Index!Task(index);
             }
         }
 

@@ -2,9 +2,12 @@
  * Copyright: Copyright Jason White, 2015
  * License:   MIT
  * Authors:   Jason White
+ *
+ * TODO: Rename edges to links.
  */
 module bb.edge;
 
+import bb.index;
 
 /**
  * A resource can be explicitly specified by the build description. That is, the
@@ -24,19 +27,10 @@ enum EdgeType
 struct Edge(From, To)
     if (!is(From == To))
 {
-    import bb.node.index : NodeIndex;
-
-    NodeIndex!From from;
-    NodeIndex!To to;
+    Index!From from;
+    Index!To to;
 
     EdgeType type;
 }
 
-/**
- * Index of an edge.
- */
-struct EdgeIndex(From, To)
-{
-    ulong index;
-    alias index this;
-}
+alias EdgeIndex(From, To) = Index!(Edge!(From, To));

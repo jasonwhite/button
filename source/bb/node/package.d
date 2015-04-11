@@ -5,6 +5,5 @@
  */
 module bb.node;
 
-public import bb.node.index;
 public import bb.node.resource;
 public import bb.node.task;
