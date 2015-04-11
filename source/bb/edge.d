@@ -24,10 +24,19 @@ enum EdgeType
 struct Edge(From, To)
     if (!is(From == To))
 {
-    import bb.node : NodeIndex;
+    import bb.node.index : NodeIndex;
 
     NodeIndex!From from;
     NodeIndex!To to;
 
     EdgeType type;
+}
+
+/**
+ * Index of an edge.
+ */
+struct EdgeIndex(From, To)
+{
+    ulong index;
+    alias index this;
 }
