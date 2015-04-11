@@ -28,8 +28,6 @@
  */
 module bb.change;
 
-import bb.state;
-
 import std.range : isForwardRange;
 
 /**
