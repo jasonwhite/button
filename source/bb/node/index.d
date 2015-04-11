@@ -3,7 +3,7 @@
  * License:   MIT
  * Authors:   Jason White
  */
-module bb.node;
+module bb.node.index;
 
 /**
  * Index into a node. This is done to avoid mixing the usage of different node
@@ -15,4 +15,9 @@ struct NodeIndex(Node)
     alias index this;
 }
 
-enum InvalidIndex = size_t.max;
+/**
+ * An index that is not valid.
+ *
+ * TODO: Exception should probably be used for error handling instead.
+ */
+enum InvalidIndex(Node) = NodeIndex!Node(ulong.max);

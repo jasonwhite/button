@@ -3,7 +3,7 @@
  * License:   MIT
  * Authors:   Jason White
  */
-module bb.task;
+module bb.node.task;
 
 /**
  * A representation of a task.
@@ -23,20 +23,27 @@ struct Task
 
     /**
      * When the task was created.
+     *
+     * TODO: Move this into a log instead.
      */
-    SysTime created;
+    //SysTime created;
 
     /**
      * How long it took to execute this task last time. We can use this to give
      * a rough estimate of how long it will take this time. If the task has
      * never been executed before, this will be a time of length 0.
+     *
+     * TODO: Move this into a log instead such that a complete history can be
+     * kept.
      */
-    TickDuration lastDuration;
+    //TickDuration lastDuration;
 
     /**
      * When the task was last executed.
+     *
+     * TODO: Move this into a log instead.
      */
-    SysTime lastExecuted;
+    //SysTime lastExecuted;
 
     /**
      * Construct a task from the given unique command.
@@ -65,6 +72,15 @@ struct Task
     @property Identifier identifier() const pure nothrow
     {
         return command;
+    }
+
+    /**
+     * Compares this task with another.
+     */
+    int opCmp()(auto ref Task rhs)
+    {
+        import std.algorithm : cmp;
+        return cmp(this.command, rhs.command);
     }
 }
 
