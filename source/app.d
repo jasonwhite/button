@@ -10,5 +10,5 @@ import bb.commands;
 
 int main(string[] args)
 {
-    return runCommand(args);
+    return dispatchCommand(args);
 }

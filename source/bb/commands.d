@@ -8,40 +8,39 @@
  */
 module bb.commands;
 
-import bb.resource, bb.task, bb.rule, bb.taskgraph;
+import bb.node, bb.rule, bb.taskgraph;
 import io.text, io.file.stdio;
 
 /**
  * Parses command line options.
  */
-int runCommand(string[] args)
+int dispatchCommand(string[] args)
 {
     // Default to an update
     if (args.length <= 1)
         return update(args);
 
+    auto commandArgs = args[1 .. $];
+
     switch (args[1])
     {
         case "version":
-            return displayVersion(args[1 .. $]);
+            return displayVersion(commandArgs);
 
         case "help":
-            return displayHelp(args[1 .. $]);
-
-        case "init":
-            return initialize(args[1 .. $]);
+            return displayHelp(commandArgs);
 
         case "update":
-            return update(args[1 .. $]);
+            return update(commandArgs);
 
         case "show":
-            return show(args[1 .. $]);
+            return show(commandArgs);
 
         case "clean":
-            return clean(args[1 .. $]);
+            return clean(commandArgs);
 
         default:
-            displayHelp(args[1 .. $]);
+            displayHelp(commandArgs);
             return 1;
     }
 }
@@ -65,22 +64,10 @@ private int displayHelp(string[] args)
 }
 
 /**
- * Creates an initial empty state.
- */
-private int initialize(string[] args)
-{
-    import bb.initialize;
-
-    if (args.length > 1)
-        initialize(args[1]);
-    else
-        initialize();
-
-    return 0;
-}
-
-/**
  * Updates the build.
+ *
+ * TODO: Add --dryrun option to simulate an update. This would be useful for
+ * refactoring the build description.
  */
 private int update(string[] args)
 {
@@ -103,6 +90,10 @@ private int update(string[] args)
 
 /**
  * Generates some input for GraphViz.
+ *
+ * TODO: Allow the specification of root nodes.
+ * TODO: Add --changed option to only show what has changed.
+ * TODO: Add --all option to show the whole graph (default).
  */
 private int show(string[] args)
 {
