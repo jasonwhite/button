@@ -10,7 +10,7 @@ module bb.rule;
 
 import io.stream.types : isSource;
 
-import bb.resource, bb.task;
+import bb.node;
 
 /**
  * Exception for errors occurring
