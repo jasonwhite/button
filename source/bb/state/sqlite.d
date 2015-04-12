@@ -67,7 +67,6 @@ private immutable tables = [
     taskEdgesTable,
 ];
 
-
 /**
  * Deserializes a node from an SQLite statement. This assumes that the
  * statement has every column of the node.
@@ -135,6 +134,7 @@ class BuildState : SQLite3
     {
         begin();
         scope (success) commit();
+        scope (failure) rollback();
 
         foreach (statement; tables)
             execute(statement);
@@ -200,24 +200,9 @@ class BuildState : SQLite3
     }
 
     /**
-     * Changes the state of the node at the given index. Throws an exception if
-     * the node does not exist.
-     */
-    void update(Index!Resource index, in Resource node)
-    {
-        // TODO
-    }
-
-    /// Ditto
-    void update(Index!Task index, in Task node)
-    {
-        // TODO
-    }
-
-    /**
      * Returns the node state at the given index.
      */
-    Resource get(Index!Resource index)
+    Resource opIndex(Index!Resource index)
     {
         import std.exception : enforce;
         import std.datetime : SysTime;
@@ -229,7 +214,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Task get(Index!Task index)
+    Task opIndex(Index!Task index)
     {
         import std.exception : enforce;
 
@@ -242,7 +227,7 @@ class BuildState : SQLite3
     /**
      * Returns the node state for the given node name.
      */
-    Resource get(string path)
+    Resource opIndex(string path)
     {
         import std.exception : enforce;
         import std.datetime : SysTime;
@@ -254,7 +239,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Task get(immutable string[] command)
+    Task opIndex(immutable string[] command)
     {
         import std.exception : enforce;
         import std.conv : to;
@@ -268,11 +253,6 @@ class BuildState : SQLite3
 
         return s.parse!Task();
     }
-
-    /**
-     * Syntactic sugar for getting node values.
-     */
-    alias opIndex = get;
 
     unittest
     {
@@ -296,6 +276,24 @@ class BuildState : SQLite3
         immutable id = state.add(node);
         assert(id == 1);
         assert(state[["foo", "test", "test test"]] == node);
+    }
+
+    /**
+     * Changes the state of the node at the given index. Throws an exception if
+     * the node does not exist.
+     */
+    void opIndexAssign(in Resource node, Index!Resource index)
+    {
+        execute(`UPDATE resource SET path=?,lastModified=? WHERE id=?`,
+                node.path, node.modified.stdTime, index);
+    }
+
+    /// Ditto
+    void opIndexAssign(in Task node, Index!Task index)
+    {
+        import std.conv : to;
+        execute(`UPDATE task SET command=? WHERE id=?`,
+                node.command.to!string, index);
     }
 
     /**
