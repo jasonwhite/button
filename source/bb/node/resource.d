@@ -32,6 +32,13 @@ struct Resource
     SysTime modified = SysTime.min;
 
     /**
+     * Checksum of the file.
+     *
+     * TODO: Implement this.
+     */
+    ulong checksum;
+
+    /**
      * Returns a string representation of this resource. This is just the path
      * to the resource.
      */
