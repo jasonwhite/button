@@ -7,10 +7,12 @@ module bb.graphviz;
 
 import io.stream.types : isSink;
 
+import bb.state;
+
 /**
  * Generate input suitable for GraphViz.
  */
-void graphviz(Stream, BuildState)(BuildState state, Stream stream)
+void graphviz(Stream)(BuildState state, Stream stream)
     if (isSink!Stream)
 {
     import io.text;
@@ -39,13 +41,13 @@ void graphviz(Stream, BuildState)(BuildState state, Stream stream)
     foreach (i, edges; getEdges!Resource)
         foreach (j; edges.outgoing)
             stream.printfln(`    "%s" -> "%s";`,
-                    *getNode(NodeIndex!Resource(i)),
-                    *getNode(NodeIndex!Task(j)));
+                    *getNode(Index!Resource(i)),
+                    *getNode(Index!Task(j)));
 
     // Draw the edges from tasks to outputs
     foreach (i, edges; getEdges!Task)
         foreach (j; edges.outgoing)
             stream.printfln(`    "%s" -> "%s";`,
-                    *getNode(NodeIndex!Task(i)),
-                    *getNode(NodeIndex!Resource(j)));
+                    *getNode(Index!Task(i)),
+                    *getNode(Index!Resource(j)));
 }
