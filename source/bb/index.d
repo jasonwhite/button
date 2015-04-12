@@ -5,9 +5,9 @@
  */
 module bb.index;
 
-
 /**
- * Type to help avoid mixing up indices into arrays who hold different types.
+ * Simple type to leverage the type system to differentiate between storage
+ * indices.
  */
 struct Index(T, N=ulong)
 {
@@ -15,8 +15,9 @@ struct Index(T, N=ulong)
     alias index this;
 }
 
-/**
- * An index that is not valid.
- */
-//deprecated("Use exception handling instead.")
-//enum InvalidIndex(T) = Index!T.max;
+unittest
+{
+    static assert( is(Index!(string, ulong) : ulong));
+    static assert( is(Index!(string, int)   : int));
+    static assert(!is(Index!(string, ulong) : int));
+}
