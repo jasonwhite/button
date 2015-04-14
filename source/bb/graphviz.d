@@ -24,7 +24,7 @@ void graphviz(Stream)(BuildState state, Stream stream)
                    "    subgraph {\n"
                    "        node [shape=ellipse, fillcolor=lightskyblue2, style=filled];"
             );
-    foreach (resource; getNodes!Resource())
+    foreach (resource; state.resources)
         stream.printfln(`        "%s";`, resource);
     stream.println("    }");
 
@@ -33,21 +33,15 @@ void graphviz(Stream)(BuildState state, Stream stream)
                    "    subgraph {\n"
                    "        node [shape=box, fillcolor=gray91, style=filled];"
             );
-    foreach (task; getNodes!Task())
+    foreach (task; state.tasks)
         stream.printfln(`        "%s";`, task);
     stream.println("    }");
 
     // Draw the edges from inputs to tasks
-    foreach (i, edges; getEdges!Resource)
-        foreach (j; edges.outgoing)
-            stream.printfln(`    "%s" -> "%s";`,
-                    *getNode(Index!Resource(i)),
-                    *getNode(Index!Task(j)));
+    foreach (edge; state.resourceEdges)
+        stream.printfln(`    "%s" -> "%s";`, state[edge.from], state[edge.to]);
 
     // Draw the edges from tasks to outputs
-    foreach (i, edges; getEdges!Task)
-        foreach (j; edges.outgoing)
-            stream.printfln(`    "%s" -> "%s";`,
-                    *getNode(Index!Task(i)),
-                    *getNode(Index!Resource(j)));
+    foreach (edge; state.taskEdges)
+        stream.printfln(`    "%s" -> "%s";`, state[edge.from], state[edge.to]);
 }
