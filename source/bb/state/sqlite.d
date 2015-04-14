@@ -488,13 +488,31 @@ class BuildState : SQLite3
     }
 
     /**
+     * Lists all outgoing task edges.
+     */
+    @property auto taskEdges()
+    {
+        return prepare(`SELECT "from","to","type" FROM taskEdge`)
+            .rows!(Edge!(Task, Resource), parse!(Edge!(Task, Resource)));
+    }
+
+    /**
+     * Lists all outgoing resource edges.
+     */
+    @property auto resourceEdges()
+    {
+        return prepare(`SELECT "from","to","type" FROM resourceEdge`)
+            .rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
+    }
+
+    /**
      * Lists edges
      */
     auto incomingEdges(Index!Resource index)
     {
         return prepare(
-            `SELECT "from","to","type" FROM taskEdge WHERE "to"=?`,
-            index).rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
+            `SELECT "from","to","type" FROM taskEdge WHERE "to"=?`, index)
+            .rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
     }
 
     /// Ditto
