@@ -4,9 +4,7 @@
  * Authors:   Jason White
  *
  * Description:
- * Handles the persistent state of the build. Tasks, resources, and edges are
- * never removed, only disabled. This simplifies indexing into the lists of
- * tasks, resources, and edges.
+ * Stores the persistent state of the build.
  */
 module bb.state.sqlite;
 
