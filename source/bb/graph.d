@@ -74,13 +74,13 @@ struct Graph(A, B)
 {
     private
     {
-        // Outgoing edges.
-        Set!B[A] neighborsOutA;
-        Set!A[B] neighborsOutB;
-
         // Incoming edges.
         Set!B[A] neighborsInA;
         Set!A[B] neighborsInB;
+
+        // Outgoing edges.
+        Set!B[A] neighborsOutA;
+        Set!A[B] neighborsOutB;
 
         // Uniform way of accessing nodes.
         alias neighborsOut(Node : A) = neighborsOutA;
@@ -161,7 +161,7 @@ struct Graph(A, B)
     }
 
     /**
-     * Number of incoming edges.
+     * Number of incoming edges for the given node.
      */
     size_t degreeIncoming(Node)(Node node) const pure nothrow
     {
@@ -169,7 +169,7 @@ struct Graph(A, B)
     }
 
     /**
-     * Number of outgoing edges.
+     * Number of outgoing edges for the given node.
      */
     size_t degreeOutgoing(Node)(Node node) const pure nothrow
     {
@@ -184,12 +184,11 @@ struct Graph(A, B)
      */
     typeof(this) subgraph(const(A[]) rootsA, const(B[]) rootsB) const pure
     {
+        auto g = typeof(return)();
+
         // Keep track of which nodes have been visited.
         auto visitedA = Set!A();
         auto visitedB = Set!B();
-
-        // Create an empty graph.
-        auto g = typeof(return)();
 
         // List of nodes queued to be processed. Nodes in the queue do not
         // depend on each other, and thus, can be visited in parallel.
@@ -214,11 +213,11 @@ struct Graph(A, B)
         {
             while (queuedA.length > 0)
             {
-                // Pop off an item
+                // Pop off a node
                 auto node = queuedA[$-1];
                 queuedA.length -= 1;
 
-                // Add the node to the subgraph
+                // Add the node
                 g.add(node);
 
                 // Add any children
@@ -235,11 +234,11 @@ struct Graph(A, B)
 
             while (queuedB.length > 0)
             {
-                // Pop off an item
+                // Pop off a node
                 auto node = queuedB[$-1];
                 queuedB.length -= 1;
 
-                // Add the node to the subgraph
+                // Add the node
                 g.add(node);
 
                 // Add any children
