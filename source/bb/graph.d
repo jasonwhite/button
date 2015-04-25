@@ -40,6 +40,15 @@ private struct Set(T)
     }
 
     /**
+     * Returns the number of items in the set.
+     */
+    @property
+    size_t length() const pure nothrow
+    {
+        return _items.length;
+    }
+
+    /**
      * Returns a range of items in the set. There are no guarantees placed on
      * the order of these items.
      */
@@ -65,12 +74,19 @@ struct Graph(A, B)
 {
     private
     {
-        Set!B[A] edgesA;
-        Set!A[B] edgesB;
+        // Outgoing edges.
+        Set!B[A] neighborsOutA;
+        Set!A[B] neighborsOutB;
+
+        // Incoming edges.
+        Set!B[A] neighborsInA;
+        Set!A[B] neighborsInB;
 
         // Uniform way of accessing nodes.
-        alias edge(Node : A) = edgesA;
-        alias edge(Node : B) = edgesB;
+        alias neighborsOut(Node : A) = neighborsOutA;
+        alias neighborsOut(Node : B) = neighborsOutB;
+        alias neighborsIn(Node : A) = neighborsInA;
+        alias neighborsIn(Node : B) = neighborsInB;
     }
 
     /**
@@ -78,8 +94,11 @@ struct Graph(A, B)
      */
     void add(Node)(Node node) pure
     {
-        if (node !in edge!Node)
-            edge!Node[node] = typeof(edge!Node[node])();
+        if (node !in neighborsIn!Node)
+            neighborsIn!Node[node] = typeof(neighborsIn!Node[node])();
+
+        if (node !in neighborsOut!Node)
+            neighborsOut!Node[node] = typeof(neighborsOut!Node[node])();
     }
 
     /**
@@ -88,7 +107,8 @@ struct Graph(A, B)
      */
     void remove(Node)(Node node) pure
     {
-        edge!Node.remove(node);
+        neighborsIn!Node.remove(node);
+        neighborsOut!Node.remove(node);
     }
 
     /**
@@ -96,10 +116,15 @@ struct Graph(A, B)
      */
     void add(From,To)(From from, To to) pure
     {
-        if (auto p = from in edge!From)
+        if (auto p = to in neighborsIn!To)
+            p.add(from);
+        else
+            neighborsIn!To[to] = typeof(neighborsIn!To[to])([from]);
+
+        if (auto p = from in neighborsOut!From)
             p.add(to);
         else
-            edge!From[from] = typeof(edge!From[from])([to]);
+            neighborsOut!From[from] = typeof(neighborsOut!From[from])([to]);
     }
 
     /**
@@ -107,7 +132,8 @@ struct Graph(A, B)
      */
     void remove(From, To)(From from, To to) pure
     {
-        edge!From[from].remove(to);
+        neighborsIn!To[to].remove(from);
+        neighborsOut!From[from].remove(to);
     }
 
     /**
@@ -115,7 +141,15 @@ struct Graph(A, B)
      */
     auto nodes(Node)() const pure
     {
-        return edge!Node.byKey;
+        return neighborsOut!Node.byKey;
+    }
+
+    /**
+     * Returns a range of incoming edges to the given node.
+     */
+    auto incoming(Node)(Node node) const pure
+    {
+        return neighborsIn!Node[node].items;
     }
 
     /**
@@ -123,7 +157,23 @@ struct Graph(A, B)
      */
     auto outgoing(Node)(Node node) const pure
     {
-        return edge!Node[node].items;
+        return neighborsOut!Node[node].items;
+    }
+
+    /**
+     * Number of incoming edges.
+     */
+    size_t degreeIncoming(Node)(Node node) const pure nothrow
+    {
+        return neighborsIn!Node[node].length;
+    }
+
+    /**
+     * Number of outgoing edges.
+     */
+    size_t degreeOutgoing(Node)(Node node) const pure nothrow
+    {
+        return neighborsOut!Node[node].length;
     }
 
     /**
@@ -212,14 +262,10 @@ struct Graph(A, B)
 unittest
 {
     import bb.index, bb.node;
-    import io.text;
 
     auto g = Graph!(Index!Task, Index!Resource)();
     g.add(Index!Task(42));
     g.add(Index!Resource(42));
     g.add(Index!Resource(42), Index!Task(42));
     g.add(Index!Task(42), Index!Resource(42));
-
-    foreach (node; g.outgoing(Index!Task(42)))
-        println(node);
 }
