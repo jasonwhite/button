@@ -17,7 +17,7 @@ private struct Set(T)
     /**
      * Initialize with a list of items.
      */
-    this(T[] items) pure
+    this(const(T[]) items) pure
     {
         foreach (item; items)
             add(item);
@@ -187,35 +187,22 @@ struct Graph(A, B)
         auto g = typeof(return)();
 
         // Keep track of which nodes have been visited.
-        auto visitedA = Set!A();
-        auto visitedB = Set!B();
+        auto visitedA = Set!A(rootsA);
+        auto visitedB = Set!B(rootsB);
 
-        // List of nodes queued to be processed. Nodes in the queue do not
-        // depend on each other, and thus, can be visited in parallel.
-        A[] queuedA;
-        B[] queuedB;
-
-        // Queue the roots
-        foreach (node; rootsA)
-        {
-            visitedA.add(node);
-            queuedA ~= node;
-        }
-
-        foreach (node; rootsB)
-        {
-            visitedB.add(node);
-            queuedB ~= node;
-        }
+        // List of nodes queued to be visited. Nodes in the queue do not depend
+        // on each other, and thus, can be visited in parallel.
+        A[] queueA = rootsA.dup;
+        B[] queueB = rootsB.dup;
 
         // Process both queues until they are empty.
-        while (queuedA.length > 0 || queuedB.length > 0)
+        while (queueA.length > 0 || queueB.length > 0)
         {
-            while (queuedA.length > 0)
+            while (queueA.length > 0)
             {
                 // Pop off a node
-                auto node = queuedA[$-1];
-                queuedA.length -= 1;
+                auto node = queueA[$-1];
+                queueA.length -= 1;
 
                 // Add the node
                 g.add(node);
@@ -228,15 +215,15 @@ struct Graph(A, B)
                     // Add the edge.
                     g.add(node, child);
                     visitedB.add(child);
-                    queuedB ~= child;
+                    queueB ~= child;
                 }
             }
 
-            while (queuedB.length > 0)
+            while (queueB.length > 0)
             {
                 // Pop off a node
-                auto node = queuedB[$-1];
-                queuedB.length -= 1;
+                auto node = queueB[$-1];
+                queueB.length -= 1;
 
                 // Add the node
                 g.add(node);
@@ -249,7 +236,7 @@ struct Graph(A, B)
                     // Add the edge.
                     g.add(node, child);
                     visitedA.add(child);
-                    queuedA ~= child;
+                    queueA ~= child;
                 }
             }
         }
