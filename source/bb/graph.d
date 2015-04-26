@@ -26,8 +26,7 @@ private struct Set(T)
      */
     this(const(T[]) items) pure
     {
-        foreach (item; items)
-            add(item);
+        add(items);
     }
 
     /**
@@ -36,6 +35,13 @@ private struct Set(T)
     void add(T item) pure
     {
         _items[item] = typeof(_items[item]).init;
+    }
+
+    // Ditto
+    void add(const(T[]) items) pure
+    {
+        foreach (item; items)
+            add(item);
     }
 
     /**
@@ -122,6 +128,13 @@ struct Graph(A, B)
 
         if (v !in neighborsOut!Vertex)
             neighborsOut!Vertex[v] = typeof(neighborsOut!Vertex[v])();
+    }
+
+    /// Ditto
+    void add(Vertex)(const(Vertex[]) vertices) pure
+    {
+        foreach (v; vertices)
+            add(v);
     }
 
     /**
@@ -254,21 +267,23 @@ struct Graph(A, B)
     }
 
     /**
-     * Creates a subgraph using the given roots. This is done by traversing the
-     * graph and only adding the vertices and edges that we come across.
+     * Traverses the graph calling the given visitor functions for each vertex.
+     * Each visitor function should return true to continue visiting the
+     * vertex's children.
      *
-     * TODO: Simplify and parallelize this.
+     * TODO: Parallelize this.
      */
-    typeof(this) subgraph(const(A[]) rootsA, const(B[]) rootsB) const pure
+    void traverse(const(A[]) rootsA, const(B[]) rootsB,
+         bool delegate(A) visitVertexA, bool delegate(B) visitVertexB,
+         void delegate(A,B) visitEdgeAB, void delegate(B,A) visitEdgeBA
+         ) const
     {
-        auto g = typeof(return)();
-
         // Keep track of which vertices have been visited.
         auto visitedA = Set!A(rootsA);
         auto visitedB = Set!B(rootsB);
 
-        // List of vertices queued to be visited. Nodes in the queue do not depend
-        // on each other, and thus, can be visited in parallel.
+        // List of vertices queued to be visited. Vertices in the queue do not
+        // depend on each other, and thus, can be visited in parallel.
         A[] queueA = rootsA.dup;
         B[] queueB = rootsB.dup;
 
@@ -278,19 +293,16 @@ struct Graph(A, B)
             while (queueA.length > 0)
             {
                 // Pop off a vertex
-                auto v = queueA[$-1];
-                queueA.length -= 1;
+                auto v = queueA[$-1]; queueA.length -= 1;
 
-                // Add the vertex
-                g.add(v);
+                // Visit the vertex
+                if (!visitVertexA(v)) continue;
 
-                // Add any children
-                foreach (child; g.outgoing(v))
+                // Queue its children.
+                foreach (child; outgoing(v))
                 {
                     if (child in visitedB) continue;
-
-                    // Add the edge.
-                    g.add(v, child);
+                    visitEdgeAB(v, child);
                     visitedB.add(child);
                     queueB ~= child;
                 }
@@ -299,25 +311,61 @@ struct Graph(A, B)
             while (queueB.length > 0)
             {
                 // Pop off a vertex
-                auto v = queueB[$-1];
-                queueB.length -= 1;
+                auto v = queueB[$-1]; queueB.length -= 1;
 
-                // Add the vertex
-                g.add(v);
+                // Visit the vertex
+                if (!visitVertexB(v)) continue;
 
-                // Add any children
-                foreach (child; g.outgoing(v))
+                // Queue its children.
+                foreach (child; outgoing(v))
                 {
                     if (child in visitedA) continue;
-
-                    // Add the edge.
-                    g.add(v, child);
+                    visitEdgeBA(v, child);
                     visitedA.add(child);
                     queueA ~= child;
                 }
             }
         }
+    }
+
+    /**
+     * Creates a subgraph using the given roots. This is done by traversing the
+     * graph and only adding the vertices and edges that we come across.
+     *
+     * TODO: Simplify and parallelize this.
+     */
+    typeof(this) subgraph(const(A[]) rootsA, const(B[]) rootsB) const
+    {
+        auto g = typeof(return)();
+
+        bool visitVertex(Vertex)(Vertex v)
+        {
+            g.add(v);
+            return true;
+        }
+
+        void visitEdge(From, To)(From from, To to)
+        {
+            g.add(from, to);
+        }
+
+        traverse(rootsA, rootsB,
+            &visitVertex!A, &visitVertex!B,
+            &visitEdge!(A,B), &visitEdge!(B,A)
+            );
 
         return g;
     }
+}
+
+unittest
+{
+    auto g = Graph!(X,Y)();
+    g.add(X(1));
+    g.add(Y(1));
+    g.add(X(1), Y(1));
+
+    auto g2 = g.subgraph([X(1)], [Y(1)]);
+    assert(g2.length!X == 1);
+    assert(g2.length!Y == 1);
 }
