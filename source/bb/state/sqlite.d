@@ -67,7 +67,7 @@ private immutable tables = [
 
 /**
  * Deserializes a node from an SQLite statement. This assumes that the
- * statement has every column of the node.
+ * statement has every column of the node except the row ID.
  */
 Node parse(Node : Resource)(SQLite3.Statement s)
 {
@@ -84,7 +84,7 @@ Node parse(Node : Task)(SQLite3.Statement s)
 
 /**
  * Deserializes an edge from an SQLite statement. This assumes that the
- * statement has every column of the node.
+ * statement has every column of the node except the row ID.
  */
 E parse(E : Edge!(Resource, Task))(SQLite3.Statement s)
 {
@@ -547,12 +547,29 @@ class BuildState : SQLite3
             .rows!(Edge!(Task, Resource), parse!(Edge!(Task, Resource)));
     }
 
+    /// Ditto
+    @property auto taskEdgesSorted()
+    {
+        return prepare(
+            `SELECT "from","to","type" FROM taskEdge ORDER BY "from","to"`)
+            .rows!(Edge!(Task, Resource), parse!(Edge!(Task, Resource)));
+    }
+
     /**
      * Lists all outgoing resource edges.
      */
     @property auto resourceEdges()
     {
-        return prepare(`SELECT "from","to","type" FROM resourceEdge`)
+        return prepare(
+            `SELECT "from","to","type" FROM resourceEdge ORDER BY "from,"to"`)
+            .rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
+    }
+
+    /// Ditto
+    @property auto resourceEdgesSorted()
+    {
+        return prepare(
+            `SELECT "from","to","type" FROM resourceEdge ORDER BY "from","to"`)
             .rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
     }
 }
