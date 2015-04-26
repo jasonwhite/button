@@ -5,6 +5,13 @@
  */
 module bb.graph;
 
+version (unittest)
+{
+    // Dummy types for testing
+    private struct X { int x; }
+    private struct Y { int y; }
+}
+
 /**
  * Stupid set implementation using an associative array.
  *
@@ -12,7 +19,7 @@ module bb.graph;
  */
 private struct Set(T)
 {
-    private int[T] _items;
+    private bool[T] _items;
 
     /**
      * Initialize with a list of items.
@@ -83,10 +90,24 @@ struct Graph(A, B)
         Set!A[B] neighborsOutB;
 
         // Uniform way of accessing nodes.
-        alias neighborsOut(Node : A) = neighborsOutA;
-        alias neighborsOut(Node : B) = neighborsOutB;
         alias neighborsIn(Node : A) = neighborsInA;
         alias neighborsIn(Node : B) = neighborsInB;
+        alias neighborsOut(Node : A) = neighborsOutA;
+        alias neighborsOut(Node : B) = neighborsOutB;
+    }
+
+    invariant
+    {
+        assert(neighborsInA.length == neighborsOutA.length);
+        assert(neighborsInB.length == neighborsOutB.length);
+    }
+
+    /**
+     * Returns the number of nodes for the given type.
+     */
+    @property size_t length(Node)() const pure nothrow
+    {
+        return neighborsIn!Node.length;
     }
 
     /**
@@ -111,20 +132,48 @@ struct Graph(A, B)
         neighborsOut!Node.remove(node);
     }
 
+    unittest
+    {
+        auto g = Graph!(X,Y)();
+        g.add(X(1));
+        g.add(Y(1));
+        g.add(X(1));
+        g.add(Y(1));
+
+        assert(g.length!X == 1);
+        assert(g.length!Y == 1);
+
+        g.remove(X(1));
+
+        assert(g.length!X == 0);
+        assert(g.length!Y == 1);
+
+        g.remove(Y(1));
+
+        assert(g.length!X == 0);
+        assert(g.length!Y == 0);
+    }
+
     /**
-     * Adds an edge.
+     * Adds an edge. Both nodes must be added to the graph first.
      */
     void add(From,To)(From from, To to) pure
     {
-        if (auto p = to in neighborsIn!To)
-            p.add(from);
-        else
-            neighborsIn!To[to] = typeof(neighborsIn!To[to])([from]);
+        auto incoming = to in neighborsIn!To;
+        assert(incoming);
+        incoming.add(from);
 
-        if (auto p = from in neighborsOut!From)
-            p.add(to);
-        else
-            neighborsOut!From[from] = typeof(neighborsOut!From[from])([to]);
+        auto outgoing = from in neighborsOut!From;
+        assert(outgoing);
+        outgoing.add(to);
+    }
+
+    unittest
+    {
+        auto g = Graph!(X,Y)();
+        g.add(X(1));
+        g.add(Y(1));
+        g.add(X(1), Y(1));
     }
 
     /**
@@ -134,6 +183,28 @@ struct Graph(A, B)
     {
         neighborsIn!To[to].remove(from);
         neighborsOut!From[from].remove(to);
+    }
+
+    unittest
+    {
+        auto g = Graph!(X,Y)();
+        g.add(X(1));
+        g.add(Y(1));
+        g.add(X(1));
+        g.add(Y(1));
+
+        assert(g.length!X == 1);
+        assert(g.length!Y == 1);
+
+        g.remove(X(1));
+
+        assert(g.length!X == 0);
+        assert(g.length!Y == 1);
+
+        g.remove(Y(1));
+
+        assert(g.length!X == 0);
+        assert(g.length!Y == 0);
     }
 
     /**
@@ -243,15 +314,4 @@ struct Graph(A, B)
 
         return g;
     }
-}
-
-unittest
-{
-    import bb.index, bb.node;
-
-    auto g = Graph!(Index!Task, Index!Resource)();
-    g.add(Index!Task(42));
-    g.add(Index!Resource(42));
-    g.add(Index!Resource(42), Index!Task(42));
-    g.add(Index!Task(42), Index!Resource(42));
 }
