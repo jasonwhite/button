@@ -17,9 +17,13 @@ version (unittest)
  *
  * This data structure and more should REALLY be in the standard library.
  */
-private struct Set(T)
+private struct MultiSet(T)
 {
-    private bool[T] _items;
+    private
+    {
+        // All the items in the set.
+        size_t[T] _items;
+    }
 
     /**
      * Initialize with a list of items.
@@ -34,7 +38,10 @@ private struct Set(T)
      */
     void add(T item) pure
     {
-        _items[item] = typeof(_items[item]).init;
+        if (auto p = item in _items)
+            ++(*p);
+        else
+            _items[item] = 0;
     }
 
     // Ditto
@@ -55,8 +62,7 @@ private struct Set(T)
     /**
      * Returns the number of items in the set.
      */
-    @property
-    size_t length() const pure nothrow
+    @property size_t length() const pure nothrow
     {
         return _items.length;
     }
@@ -87,15 +93,13 @@ struct Graph(A, B)
 {
     private
     {
-        // NOTE: Using a MultiSet instead of a Set will allow duplicate edges.
-
         // Incoming edges.
-        Set!B[A] neighborsInA;
-        Set!A[B] neighborsInB;
+        MultiSet!B[A] neighborsInA;
+        MultiSet!A[B] neighborsInB;
 
         // Outgoing edges.
-        Set!B[A] neighborsOutA;
-        Set!A[B] neighborsOutB;
+        MultiSet!B[A] neighborsOutA;
+        MultiSet!A[B] neighborsOutB;
 
         // Uniform way of accessing vertices.
         alias neighborsIn(Vertex : A) = neighborsInA;
@@ -279,8 +283,8 @@ struct Graph(A, B)
          ) const
     {
         // Keep track of which vertices have been visited.
-        auto visitedA = Set!A(rootsA);
-        auto visitedB = Set!B(rootsB);
+        auto visitedA = MultiSet!A(rootsA);
+        auto visitedB = MultiSet!B(rootsB);
 
         // List of vertices queued to be visited. Vertices in the queue do not
         // depend on each other, and thus, can be visited in parallel.
