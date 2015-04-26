@@ -122,7 +122,7 @@ class BuildState : SQLite3
         createTables();
 
         // TODO: Do some version checking to find incompatibilities with
-        // databases created by older versions of this software.
+        // databases created by older versions of this code.
     }
 
     /**
@@ -223,7 +223,8 @@ class BuildState : SQLite3
     }
 
     /**
-     * Returns the node state for the given node name.
+     * Returns the node state for the given node name. Throws an exception if
+     * the node does not exist.
      */
     Resource opIndex(string path)
     {
@@ -436,8 +437,8 @@ class BuildState : SQLite3
         auto state = new BuildState;
 
         // Creating an edge to non-existent nodes should fail.
-        immutable edge = Edge!(Task, Resource)(Index!Task(4),
-                Index!Resource(8), EdgeType.explicit);
+        immutable edge = Edge!(Task, Resource)
+            (Index!Task(4), Index!Resource(8), EdgeType.explicit);
 
         assert(collectException!SQLite3Exception(state.add(edge)));
     }
@@ -460,7 +461,7 @@ class BuildState : SQLite3
     }
 
     /**
-     * Removes an edge. Throws an exception if the ege does not exist.
+     * Removes an edge. Throws an exception if the edge does not exist.
      */
     void remove(EdgeIndex!(Resource, Task) index)
     {
@@ -486,6 +487,58 @@ class BuildState : SQLite3
     }
 
     /**
+     * Gets the state associated with an edge.
+     */
+    Edge!(Task, Resource) opIndex(EdgeIndex!(Task, Resource) index)
+    {
+        import std.exception : enforce;
+
+        auto s = prepare(
+            `SELECT "from","to","type" FROM taskEdge WHERE id=?`, index);
+        enforce(s.step(), "Edge does not exist.");
+
+        return s.parse!(typeof(return));
+    }
+
+    /// Ditto
+    Edge!(Resource, Task) opIndex(EdgeIndex!(Resource, Task) index)
+    {
+        import std.exception : enforce;
+
+        auto s = prepare(
+            `SELECT "from","to","type" FROM resourceEdge WHERE id=?`, index);
+        enforce(s.step(), "Edge does not exist.");
+
+        return s.parse!(typeof(return));
+    }
+
+    /// Ditto
+    Edge!(Task, Resource) opIndex(Index!Task from, Index!Resource to)
+    {
+        import std.exception : enforce;
+
+        auto s = prepare(
+            `SELECT "from","to","type" FROM taskEdge WHERE "from"=? AND "to"=?`,
+            from, to);
+        enforce(s.step(), "Edge does not exist.");
+
+        return s.parse!(typeof(return));
+    }
+
+    /// Ditto
+    Edge!(Resource, Task) opIndex(Index!Resource from, Index!Task to)
+    {
+        import std.exception : enforce;
+
+        auto s = prepare(
+            `SELECT "from","to","type" FROM resourceEdge WHERE "from"=? AND "to"=?`,
+            from, to);
+        enforce(s.step(), "Edge does not exist.");
+
+        return s.parse!(typeof(return));
+    }
+
+    /**
      * Lists all outgoing task edges.
      */
     @property auto taskEdges()
@@ -501,53 +554,5 @@ class BuildState : SQLite3
     {
         return prepare(`SELECT "from","to","type" FROM resourceEdge`)
             .rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
-    }
-
-    /**
-     * Lists edges
-     */
-    auto incomingEdges(Index!Resource index)
-    {
-        return prepare(
-            `SELECT "from","to","type" FROM taskEdge WHERE "to"=?`, index)
-            .rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
-    }
-
-    /// Ditto
-    auto outgoingEdges(Index!Resource index)
-    {
-        return prepare(
-            `SELECT "from","to","type" FROM resourceEdge WHERE "from"=?`,
-            index).rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
-    }
-
-    /// Ditto
-    auto incomingEdges(Index!Task index)
-    {
-        return prepare(
-            `SELECT "from","to","type" FROM resourceEdge WHERE "to"=?`,
-            index).rows!(Edge!(Task, Resource), parse!(Edge!(Task, Resource)));
-    }
-
-    /// Ditto
-    auto outgoingEdges(Index!Task index)
-    {
-        return prepare(
-            `SELECT "from","to","type" FROM taskEdge WHERE "from"=?`,
-            index).rows!(Edge!(Task, Resource), parse!(Edge!(Task, Resource)));
-    }
-
-    // TODO: More comprehensive tests.
-    unittest
-    {
-        import std.algorithm : equal;
-        import std.array : array;
-
-        auto state = new BuildState;
-        immutable resId  = state.add(Resource("foo.c"));
-        immutable taskId = state.add(Task(["gcc", "foo.c"]));
-        immutable edgeId = state.add(Edge!(Resource, Task)(resId, taskId, EdgeType.explicit));
-
-        assert(array(state.incomingEdges(resId)) == []);
     }
 }
