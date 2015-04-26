@@ -560,8 +560,7 @@ class BuildState : SQLite3
      */
     @property auto resourceEdges()
     {
-        return prepare(
-            `SELECT "from","to","type" FROM resourceEdge ORDER BY "from,"to"`)
+        return prepare(`SELECT "from","to","type" FROM resourceEdge`)
             .rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
     }
 
