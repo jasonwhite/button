@@ -81,6 +81,8 @@ struct Graph(A, B)
 {
     private
     {
+        // NOTE: Using a MultiSet instead of a Set will allow duplicate edges.
+
         // Incoming edges.
         Set!B[A] neighborsInA;
         Set!A[B] neighborsInB;
@@ -125,6 +127,8 @@ struct Graph(A, B)
     /**
      * Removes a vertex and all the incoming and outgoing edges associated with
      * it.
+     *
+     * FIXME: This function may never be needed by real code.
      */
     void remove(Vertex)(Vertex v) pure
     {
@@ -178,6 +182,8 @@ struct Graph(A, B)
 
     /**
      * Removes an edge.
+     *
+     * FIXME: This function may never be needed by real code.
      */
     void remove(From, To)(From from, To to) pure
     {
