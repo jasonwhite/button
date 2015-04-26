@@ -89,11 +89,11 @@ struct Graph(A, B)
         Set!B[A] neighborsOutA;
         Set!A[B] neighborsOutB;
 
-        // Uniform way of accessing nodes.
-        alias neighborsIn(Node : A) = neighborsInA;
-        alias neighborsIn(Node : B) = neighborsInB;
-        alias neighborsOut(Node : A) = neighborsOutA;
-        alias neighborsOut(Node : B) = neighborsOutB;
+        // Uniform way of accessing vertices.
+        alias neighborsIn(Vertex : A) = neighborsInA;
+        alias neighborsIn(Vertex : B) = neighborsInB;
+        alias neighborsOut(Vertex : A) = neighborsOutA;
+        alias neighborsOut(Vertex : B) = neighborsOutB;
     }
 
     invariant
@@ -103,33 +103,33 @@ struct Graph(A, B)
     }
 
     /**
-     * Returns the number of nodes for the given type.
+     * Returns the number of vertices for the given type.
      */
-    @property size_t length(Node)() const pure nothrow
+    @property size_t length(Vertex)() const pure nothrow
     {
-        return neighborsIn!Node.length;
+        return neighborsIn!Vertex.length;
     }
 
     /**
-     * Adds a node.
+     * Adds a vertex.
      */
-    void add(Node)(Node node) pure
+    void add(Vertex)(Vertex v) pure
     {
-        if (node !in neighborsIn!Node)
-            neighborsIn!Node[node] = typeof(neighborsIn!Node[node])();
+        if (v !in neighborsIn!Vertex)
+            neighborsIn!Vertex[v] = typeof(neighborsIn!Vertex[v])();
 
-        if (node !in neighborsOut!Node)
-            neighborsOut!Node[node] = typeof(neighborsOut!Node[node])();
+        if (v !in neighborsOut!Vertex)
+            neighborsOut!Vertex[v] = typeof(neighborsOut!Vertex[v])();
     }
 
     /**
-     * Removes a node and all the incoming and outgoing edges associated with
+     * Removes a vertex and all the incoming and outgoing edges associated with
      * it.
      */
-    void remove(Node)(Node node) pure
+    void remove(Vertex)(Vertex v) pure
     {
-        neighborsIn!Node.remove(node);
-        neighborsOut!Node.remove(node);
+        neighborsIn!Vertex.remove(v);
+        neighborsOut!Vertex.remove(v);
     }
 
     unittest
@@ -155,16 +155,16 @@ struct Graph(A, B)
     }
 
     /**
-     * Adds an edge. Both nodes must be added to the graph first.
+     * Adds an edge. Both vertices must be added to the graph first.
      */
     void add(From,To)(From from, To to) pure
     {
         auto incoming = to in neighborsIn!To;
-        assert(incoming);
+        assert(incoming, "Invalid vertex ID");
         incoming.add(from);
 
         auto outgoing = from in neighborsOut!From;
-        assert(outgoing);
+        assert(outgoing, "Invalid vertex ID");
         outgoing.add(to);
     }
 
@@ -208,48 +208,48 @@ struct Graph(A, B)
     }
 
     /**
-     * Returns a range of nodes.
+     * Returns a range of vertices.
      */
-    auto nodes(Node)() const pure
+    auto vertices(Vertex)() const pure
     {
-        return neighborsOut!Node.byKey;
+        return neighborsOut!Vertex.byKey;
     }
 
     /**
-     * Returns a range of incoming edges to the given node.
+     * Returns a range of incoming edges to the given vertex.
      */
-    auto incoming(Node)(Node node) const pure
+    auto incoming(Vertex)(Vertex v) const pure
     {
-        return neighborsIn!Node[node].items;
+        return neighborsIn!Vertex[v].items;
     }
 
     /**
-     * Returns a range of outgoing edges from the given node.
+     * Returns a range of outgoing edges from the given vertex.
      */
-    auto outgoing(Node)(Node node) const pure
+    auto outgoing(Vertex)(Vertex v) const pure
     {
-        return neighborsOut!Node[node].items;
+        return neighborsOut!Vertex[v].items;
     }
 
     /**
-     * Number of incoming edges for the given node.
+     * Number of incoming edges for the given vertex.
      */
-    size_t degreeIncoming(Node)(Node node) const pure nothrow
+    size_t degreeIncoming(Vertex)(Vertex v) const pure nothrow
     {
-        return neighborsIn!Node[node].length;
+        return neighborsIn!Vertex[v].length;
     }
 
     /**
-     * Number of outgoing edges for the given node.
+     * Number of outgoing edges for the given vertex.
      */
-    size_t degreeOutgoing(Node)(Node node) const pure nothrow
+    size_t degreeOutgoing(Vertex)(Vertex v) const pure nothrow
     {
-        return neighborsOut!Node[node].length;
+        return neighborsOut!Vertex[v].length;
     }
 
     /**
      * Creates a subgraph using the given roots. This is done by traversing the
-     * graph and only adding the nodes and edges that we come across.
+     * graph and only adding the vertices and edges that we come across.
      *
      * TODO: Simplify and parallelize this.
      */
@@ -257,11 +257,11 @@ struct Graph(A, B)
     {
         auto g = typeof(return)();
 
-        // Keep track of which nodes have been visited.
+        // Keep track of which vertices have been visited.
         auto visitedA = Set!A(rootsA);
         auto visitedB = Set!B(rootsB);
 
-        // List of nodes queued to be visited. Nodes in the queue do not depend
+        // List of vertices queued to be visited. Nodes in the queue do not depend
         // on each other, and thus, can be visited in parallel.
         A[] queueA = rootsA.dup;
         B[] queueB = rootsB.dup;
@@ -271,20 +271,20 @@ struct Graph(A, B)
         {
             while (queueA.length > 0)
             {
-                // Pop off a node
-                auto node = queueA[$-1];
+                // Pop off a vertex
+                auto v = queueA[$-1];
                 queueA.length -= 1;
 
-                // Add the node
-                g.add(node);
+                // Add the vertex
+                g.add(v);
 
                 // Add any children
-                foreach (child; g.outgoing(node))
+                foreach (child; g.outgoing(v))
                 {
                     if (child in visitedB) continue;
 
                     // Add the edge.
-                    g.add(node, child);
+                    g.add(v, child);
                     visitedB.add(child);
                     queueB ~= child;
                 }
@@ -292,20 +292,20 @@ struct Graph(A, B)
 
             while (queueB.length > 0)
             {
-                // Pop off a node
-                auto node = queueB[$-1];
+                // Pop off a vertex
+                auto v = queueB[$-1];
                 queueB.length -= 1;
 
-                // Add the node
-                g.add(node);
+                // Add the vertex
+                g.add(v);
 
                 // Add any children
-                foreach (child; g.outgoing(node))
+                foreach (child; g.outgoing(v))
                 {
                     if (child in visitedA) continue;
 
                     // Add the edge.
-                    g.add(node, child);
+                    g.add(v, child);
                     visitedA.add(child);
                     queueA ~= child;
                 }
