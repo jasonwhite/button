@@ -13,12 +13,12 @@ struct Task
     import core.time : TickDuration;
     import std.datetime : SysTime;
 
-    alias Identifier = immutable(string)[];
+    alias Id = immutable(string)[];
 
     /**
      * The command to execute. The first argument is the name of the executable.
      */
-    Identifier command;
+    Id command;
 
     /**
      * When the task was created.
@@ -47,7 +47,7 @@ struct Task
     /**
      * Construct a task from the given unique command.
      */
-    this(Identifier command)
+    this(Id command)
     {
         this.command = command;
     }
@@ -68,7 +68,7 @@ struct Task
     /**
      * Returns the unique identifier for this node.
      */
-    @property const(Identifier) identifier() const pure nothrow
+    @property const(Id) identifier() const pure nothrow
     {
         return command;
     }
