@@ -114,7 +114,6 @@ unittest
                     "inputs": ["foo.o", "bar.o"],
                     "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
                     "outputs": ["foobar"],
-                    "description": "Linking"
                 }
             ]
         }
