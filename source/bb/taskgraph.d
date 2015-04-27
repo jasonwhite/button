@@ -35,8 +35,8 @@ struct TaskGraph
         }
 
         // Stores the index for the given node identifier.
-        Index!Resource[Resource.Identifier] resourceIndices;
-        Index!Task[Task.Identifier] taskIndices;
+        Index!Resource[Resource.Id] resourceIndices;
+        Index!Task[Task.Id] taskIndices;
 
         // Stores the data relating to nodes.
         Resource[] resources;
@@ -54,7 +54,7 @@ struct TaskGraph
     /**
      * Returns the index for the node with the given identifier.
      */
-    Index!Node getIndex(Node)(Node.Identifier id)
+    Index!Node getIndex(Node)(Node.Id id)
         if (isNode!Node)
     {
         static if (is(Node : Resource))
