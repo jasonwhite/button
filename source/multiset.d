@@ -12,7 +12,7 @@ module multiset;
  *
  * This data structure and more should REALLY be in the standard library.
  */
-private struct MultiSet(T)
+struct MultiSet(T)
 {
     private
     {
@@ -31,12 +31,12 @@ private struct MultiSet(T)
     /**
      * Adds a item to the set.
      */
-    void add(T item) pure
+    size_t add(T item) pure
     {
         if (auto p = item in _items)
-            ++(*p);
+            return ++(*p);
         else
-            _items[item] = 0;
+            return _items[item] = 0;
     }
 
     // Ditto
@@ -47,11 +47,16 @@ private struct MultiSet(T)
     }
 
     /**
-     * Removes an item from the set.
+     * Removes an item from the set and returns the number of remaining
+     * duplicates of the item.
      */
-    void remove(T item) pure
+    size_t remove(T item) pure
     {
-        _items.remove(item);
+        immutable count = --_items[item];
+        if (count == 0)
+            _items.remove(item);
+
+        return count;
     }
 
     /**
