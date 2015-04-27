@@ -44,6 +44,7 @@ struct Rules
         import std.algorithm : map;
         import std.array : array;
         import std.json : JSONException;
+        import std.path : buildNormalizedPath;
 
         if (rules.empty)
         {
@@ -53,10 +54,18 @@ struct Rules
 
         auto jsonRule = rules.front;
 
-        // TODO: Normalize input and output paths
-        auto inputs = jsonRule["inputs"].array().map!(x => x.str()).array();
-        auto outputs = jsonRule["outputs"].array().map!(x => x.str()).array();
-        auto task = jsonRule["task"].array().map!(x => x.str()).array().idup;
+        auto inputs = jsonRule["inputs"].array()
+            .map!(x => buildNormalizedPath(x.str()))
+            .array();
+
+        auto outputs = jsonRule["outputs"].array()
+            .map!(x => buildNormalizedPath(x.str()))
+            .array();
+
+        auto task = jsonRule["task"].array()
+            .map!(x => x.str())
+            .array()
+            .idup;
 
         rule = Rule(inputs, outputs, task);
 
