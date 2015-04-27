@@ -52,12 +52,13 @@ struct Change(T)
 /**
  * Range for iterating over changes between two sorted ranges.
  */
-struct Changes(alias pred, R)
+struct Changes(R, alias pred = "a < b")
     if (isForwardRange!R)
 {
     import std.range : ElementType;
+    import std.traits : Unqual;
 
-    alias T = ElementType!R;
+    alias T = Unqual!(ElementType!R);
 
     private
     {
@@ -124,7 +125,7 @@ struct Changes(alias pred, R)
         }
     }
 
-    Change!T front() const pure nothrow
+    ref const(Change!T) front() const pure nothrow
     {
         return current;
     }
@@ -141,7 +142,7 @@ struct Changes(alias pred, R)
  */
 auto changes(alias pred = "a < b", R)(R previous, R next)
 {
-    return Changes!(pred, R)(previous, next);
+    return Changes!(R, pred)(previous, next);
 }
 
 unittest
