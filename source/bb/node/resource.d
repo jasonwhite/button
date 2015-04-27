@@ -12,19 +12,13 @@ struct Resource
 {
     import std.datetime : SysTime;
 
-    alias Path = string;
-    alias Identifier = Path;
+    alias Identifier = string;
 
     /**
      * File path to the resource. To ensure uniqueness, this should never be
      * changed after construction.
      */
-    Path path;
-
-    /**
-     * Unique identifier for this resource.
-     */
-    alias identifier = path;
+    Identifier path;
 
     /**
      * Last time it was modified, according to the database
@@ -43,6 +37,14 @@ struct Resource
      * to the resource.
      */
     string toString() const pure nothrow
+    {
+        return path;
+    }
+
+    /**
+     * Returns the unique identifier for this node.
+     */
+    @property const(Identifier) identifier() const pure nothrow
     {
         return path;
     }
