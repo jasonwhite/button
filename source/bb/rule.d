@@ -97,5 +97,73 @@ unittest
 {
     import std.algorithm : equal;
 
-    //parseRules();
+    immutable json = q{
+        {
+            "rules": [
+                {
+                    "inputs": ["foo.c", "baz.h"],
+                    "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
+                    "outputs": ["foo.o"]
+                },
+                {
+                    "inputs": ["bar.c", "baz.h"],
+                    "task": ["gcc", "-c", "bar.c", "-o", "bar.o"],
+                    "outputs": ["bar.o"]
+                },
+                {
+                    "inputs": ["foo.o", "bar.o"],
+                    "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
+                    "outputs": ["foobar"],
+                    "description": "Linking"
+                }
+            ]
+        }
+    };
+
+    immutable Rule[] rules = [
+        {
+            inputs: ["foo.c", "baz.h"],
+            task: ["gcc", "-c", "foo.c", "-o", "foo.o"],
+            outputs: ["foo.o"]
+        },
+        {
+            inputs: ["bar.c", "baz.h"],
+            task: ["gcc", "-c", "bar.c", "-o", "bar.o"],
+            outputs: ["bar.o"]
+        },
+        {
+            inputs: ["foo.o", "bar.o"],
+            task: ["gcc", "foo.o", "bar.o", "-o", "foobar"],
+            outputs: ["foobar"],
+        }
+    ];
+
+    assert(parseRules(json).equal(rules));
+}
+
+unittest
+{
+    import std.algorithm : equal;
+
+    immutable json = q{
+        {
+            "rules": [
+                {
+                    "inputs": ["./test/../foo.c", "./baz.h"],
+                    "task": ["ls", "foo.c", "baz.h"],
+                    "outputs": ["this/../path/../is/../normalized"]
+                }
+            ]
+        }
+    };
+
+    immutable Rule[] rules = [
+        {
+            inputs: ["foo.c", "baz.h"],
+            task: ["ls", "foo.c", "baz.h"],
+            outputs: ["normalized"]
+        },
+    ];
+
+    assert(parseRules(json).equal(rules));
 }
