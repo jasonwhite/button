@@ -78,4 +78,12 @@ private struct MultiSet(T)
     {
         return (item in _items) != null;
     }
+
+    /**
+     * Gets the number of duplicates for the given item.
+     */
+    size_t opIndex(T item)
+    {
+        return _items[item];
+    }
 }
