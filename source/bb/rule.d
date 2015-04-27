@@ -10,17 +10,6 @@ module bb.rule;
 
 import io.stream.types : isSource;
 
-/**
- * Exception for errors occurring
- */
-class RuleException : Exception
-{
-    this(string msg)
-    {
-        super(msg);
-    }
-}
-
 struct Rule
 {
     string[] inputs, outputs;
