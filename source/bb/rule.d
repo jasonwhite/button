@@ -10,8 +10,6 @@ module bb.rule;
 
 import io.stream.types : isSource;
 
-import bb.node;
-
 /**
  * Exception for errors occurring
  */
@@ -25,10 +23,8 @@ class RuleException : Exception
 
 struct Rule
 {
-    Resource[] inputs;
-    Resource[] outputs;
-    Task task;
-    string description;
+    string[] inputs, outputs;
+    immutable(string)[] task;
 }
 
 struct Rules
@@ -68,24 +64,12 @@ struct Rules
 
         auto jsonRule = rules.front;
 
-        // TODO: Normalize input and output paths?
-        auto inputs = jsonRule["inputs"].array().map!(x => Resource(x.str())).array();
-        auto outputs = jsonRule["outputs"].array().map!(x => Resource(x.str())).array();
-        auto task = Task(jsonRule["task"].array().map!(x => x.str()).array().idup);
+        // TODO: Normalize input and output paths
+        auto inputs = jsonRule["inputs"].array().map!(x => x.str()).array();
+        auto outputs = jsonRule["outputs"].array().map!(x => x.str()).array();
+        auto task = jsonRule["task"].array().map!(x => x.str()).array().idup;
 
-        // Optional description
-        string description = null;
-
-        try
-        {
-            description = jsonRule["description"].str();
-        }
-        catch (JSONException e)
-        {
-            // Ignore. Description is optional.
-        }
-
-        rule = Rule(inputs, outputs, task, description);
+        rule = Rule(inputs, outputs, task);
 
         rules.popFront();
     }

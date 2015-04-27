@@ -180,15 +180,15 @@ struct TaskGraph
             //throw new Exception("Duplicate task.");
 
         // Add task to the graph
-        auto taskIndex = addNode(rule.task);
+        auto taskIndex = addNode(Task(rule.task));
 
         // Add edges to task
         foreach (input; rule.inputs)
-            addEdge(addNode(input), taskIndex);
+            addEdge(addNode(Resource(input)), taskIndex);
 
         // Add edges from task
         foreach (output; rule.outputs)
-            addEdge(taskIndex, addNode(output));
+            addEdge(taskIndex, addNode(Resource(output)));
     }
 
     /**
