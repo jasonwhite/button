@@ -8,7 +8,7 @@
  */
 module bb.rule;
 
-import io.stream.types : isSource;
+import std.range : isInputRange;
 
 struct Rule
 {
@@ -86,17 +86,16 @@ struct Rules
 /**
  * Convenience function for constructing a Rules range.
  */
-Rules parseRules(Stream)(Stream stream)
-    if (isSource!Stream)
+Rules parseRules(R)(R json)
+    if (isInputRange!R)
 {
     import std.json : parseJSON;
-    import io.range : byBlock;
-    return Rules(stream.byBlock!char.parseJSON()["rules"]);
+    return Rules(parseJSON(json)["rules"]);
 }
 
-/// Ditto
-Rules parseRules(string fileName)
+unittest
 {
-    import io.file;
-    return parseRules(File(fileName, FileFlags.readExisting));
+    import std.algorithm : equal;
+
+    //parseRules();
 }

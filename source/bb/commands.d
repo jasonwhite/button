@@ -71,10 +71,14 @@ private int displayHelp(string[] args)
  */
 private int update(string[] args)
 {
+    import io.range : byBlock;
+
     TaskGraph graph;
 
     stderr.println(" :: Reading build description from standard input...");
-    graph.addRules(stdin.parseRules());
+    graph.addRules(stdin.byBlock!char.parseRules());
+
+    // TODO: Diff build description with database
 
     stderr.println(" :: Updating...");
 
@@ -97,10 +101,12 @@ private int update(string[] args)
  */
 private int show(string[] args)
 {
+    import io.range : byBlock;
+
     TaskGraph graph;
 
     stderr.println(" :: Reading build description from standard input...");
-    graph.addRules(stdin.parseRules());
+    graph.addRules(stdin.byBlock!char.parseRules());
 
     stderr.println(" :: Generating input for GraphViz...");
     graph.show(stdout);
@@ -112,12 +118,7 @@ private int show(string[] args)
  */
 private int clean(string[] args)
 {
-    TaskGraph graph;
-
-    stderr.println(" :: Reading build description from standard input...");
-    graph.addRules(stdin.parseRules());
-
-    stderr.println(" :: Cleaning output files...");
+    // TODO
 
     return 0;
 }
