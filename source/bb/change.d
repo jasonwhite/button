@@ -4,27 +4,10 @@
  * Authors:   Jason White
  *
  * Description:
- * Finds differences between two build states.
+ * Finds differences between two ranges.
  *
- * The state of the previous build description is always kept around in order to
- * detect structural changes to the task graph when the build description
- * changes.
- *
- * The following changes are detected:
- *
- *   - Nodes added or removed
- *   - Edges added or removed
- *
- * If a resource is removed from the build description, it is deleted from the
- * file system.
- *
- * If a task is added to the build description, it is marked as out of date and
- * updated later.
- *
- * If an edge is added or removed, both of its end points are marked as out of
- * date and updated later.
- *
- * All changes are discovered in O(n) where n is the number of nodes and edges.
+ * All changes are discovered in O(max(n, m)) where n and m are the length of
+ * the two ranges.
  */
 module bb.change;
 
