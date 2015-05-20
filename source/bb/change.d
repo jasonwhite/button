@@ -11,7 +11,7 @@
  */
 module bb.change;
 
-import std.range : isForwardRange;
+import std.range : isForwardRange, ElementType;
 
 /**
  * Type of a change.
@@ -35,13 +35,14 @@ struct Change(T)
 /**
  * Range for iterating over changes between two sorted ranges.
  */
-struct Changes(R, alias pred = "a < b")
-    if (isForwardRange!R)
+struct Changes(R1, R2, alias pred = "a < b")
+    if (isForwardRange!R1 && isForwardRange!R2 &&
+        is(ElementType!R1 == ElementType!R2))
 {
     import std.range : ElementType;
     import std.traits : Unqual;
 
-    alias T = Unqual!(ElementType!R);
+    alias T = Unqual!(ElementType!R1);
 
     private
     {
@@ -49,12 +50,13 @@ struct Changes(R, alias pred = "a < b")
         Change!T current;
 
         // Next and previous states.
-        R prev, next;
+        R1 prev;
+        R2 next;
 
         bool _empty;
     }
 
-    this(R prev, R next)
+    this(R1 prev, R2 next)
     {
         this.prev = prev;
         this.next = next;
@@ -123,9 +125,9 @@ struct Changes(R, alias pred = "a < b")
  * Convenience function for constructing a range that finds changes between two
  * ranges.
  */
-auto changes(alias pred = "a < b", R)(R previous, R next)
+auto changes(alias pred = "a < b", R1, R2)(R1 previous, R2 next)
 {
-    return Changes!(R, pred)(previous, next);
+    return Changes!(R1, R2, pred)(previous, next);
 }
 
 unittest
