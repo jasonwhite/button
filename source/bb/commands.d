@@ -8,7 +8,7 @@
  */
 module bb.commands;
 
-import bb.node, bb.rule, bb.taskgraph;
+import bb.vertex, bb.rule;
 import io.text, io.file.stdio;
 
 /**
@@ -73,21 +73,13 @@ private int update(string[] args)
 {
     import io.range : byBlock;
 
-    TaskGraph graph;
-
     stderr.println(" :: Reading build description from standard input...");
-    graph.addRules(stdin.byBlock!char.parseRules());
 
     // TODO: Diff build description with database
 
     stderr.println(" :: Updating...");
 
-    // TODO: Use database to check for changes to resources and tasks.
-    auto changedResources = [
-            graph.getIndex!Resource("foo.c"),
-        ];
-
-    graph.subgraph(changedResources, []).update();
+    // TODO: Build subgraph and update.
 
     return 0;
 }
@@ -95,7 +87,7 @@ private int update(string[] args)
 /**
  * Generates some input for GraphViz.
  *
- * TODO: Allow the specification of root nodes.
+ * TODO: Allow the specification of root vertices.
  * TODO: Add --changed option to only show what has changed.
  * TODO: Add --all option to show the whole graph (default).
  */
@@ -103,22 +95,22 @@ private int show(string[] args)
 {
     import io.range : byBlock;
 
-    TaskGraph graph;
-
     stderr.println(" :: Reading build description from standard input...");
-    graph.addRules(stdin.byBlock!char.parseRules());
+
+    // TODO:
 
     stderr.println(" :: Generating input for GraphViz...");
-    graph.show(stdout);
 
     return 0;
 }
 
 /**
+ * Deletes all output resources.
  */
 private int clean(string[] args)
 {
-    // TODO
+    // TODO: Find all resources with no incoming edges and delete them.
+    // TODO: Investigate if this is a safe thing to do or not.
 
     return 0;
 }
