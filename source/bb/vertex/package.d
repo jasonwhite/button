@@ -3,7 +3,7 @@
  * License:   MIT
  * Authors:   Jason White
  */
-module bb.node;
+module bb.vertex;
 
-public import bb.node.resource;
-public import bb.node.task;
+public import bb.vertex.resource;
+public import bb.vertex.task;

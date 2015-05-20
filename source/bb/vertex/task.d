@@ -3,7 +3,7 @@
  * License:   MIT
  * Authors:   Jason White
  */
-module bb.node.task;
+module bb.vertex.task;
 
 /**
  * A representation of a task.
@@ -62,11 +62,11 @@ struct Task
     {
         import std.array : join;
         import std.algorithm : map;
-        return command.map!(arg => arg.escapeArg).join(" ");
+        return command.map!(arg => arg.escapeShellArg).join(" ");
     }
 
     /**
-     * Returns the unique identifier for this node.
+     * Returns the unique identifier for this vertex.
      */
     @property const(Id) identifier() const pure nothrow
     {
@@ -90,7 +90,7 @@ struct Task
  * An argument is surrounded with double quotes if it contains any special
  * characters. A backslash is always escaped with another backslash.
  */
-private string escapeArg(string arg)
+private string escapeShellArg(string arg)
 {
     // TODO
     return arg;

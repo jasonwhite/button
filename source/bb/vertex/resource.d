@@ -3,7 +3,7 @@
  * License:   MIT
  * Authors:   Jason White
  */
-module bb.node.resource;
+module bb.vertex.resource;
 
 /**
  * A representation of a file on the disk.
@@ -42,7 +42,7 @@ struct Resource
     }
 
     /**
-     * Returns the unique identifier for this node.
+     * Returns the unique identifier for this vertex.
      */
     @property const(Id) identifier() const pure nothrow
     {
