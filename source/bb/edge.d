@@ -2,12 +2,8 @@
  * Copyright: Copyright Jason White, 2015
  * License:   MIT
  * Authors:   Jason White
- *
- * TODO: Rename edges to links.
  */
 module bb.edge;
-
-import bb.index;
 
 /**
  * A resource can be explicitly specified by the build description. That is, the
@@ -21,16 +17,14 @@ enum EdgeType
 }
 
 /**
- * An edge. Because the graph is bipartite, an edge can never link two nodes of
- * the same type.
+ * An edge. Because the graph must be bipartite, an edge can never connect two
+ * vertices of the same type.
  */
 struct Edge(From, To)
     if (!is(From == To))
 {
-    Index!From from;
-    Index!To to;
+    From from;
+    To to;
 
     EdgeType type;
 }
-
-alias EdgeIndex(From, To) = Index!(Edge!(From, To));
