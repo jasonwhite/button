@@ -8,11 +8,11 @@
  */
 module bb.state.sqlite;
 
-import bb.index, bb.node, bb.edge;
+import bb.vertex, bb.edge;
 import sqlite3;
 
 /**
- * Table for holding resource nodes.
+ * Table for holding resource vertices.
  */
 private immutable resourcesTable = q"{
 CREATE TABLE IF NOT EXISTS resource (
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS resource (
 )}";
 
 /**
- * Table for holding task nodes.
+ * Table for holding task vertices.
  */
 private immutable tasksTable = q"{
 CREATE TABLE IF NOT EXISTS task (
@@ -66,17 +66,34 @@ private immutable tables = [
 ];
 
 /**
- * Deserializes a node from an SQLite statement. This assumes that the
- * statement has every column of the node except the row ID.
+ * Simple type to leverage the type system to differentiate between storage
+ * indices.
  */
-Node parse(Node : Resource)(SQLite3.Statement s)
+struct Index(T, N=ulong)
+{
+    N index;
+    alias index this;
+}
+
+unittest
+{
+    static assert( is(Index!(string, ulong) : ulong));
+    static assert( is(Index!(string, int)   : int));
+    static assert(!is(Index!(string, ulong) : int));
+}
+
+/**
+ * Deserializes a vertex from an SQLite statement. This assumes that the
+ * statement has every column of the vertex except the row ID.
+ */
+Vertex parse(Vertex : Resource)(SQLite3.Statement s)
 {
     import std.datetime : SysTime;
     return Resource(s.get!string(0), SysTime(s.get!long(1)));
 }
 
 /// Ditto
-Node parse(Node : Task)(SQLite3.Statement s)
+Vertex parse(Vertex : Task)(SQLite3.Statement s)
 {
     import std.conv : to;
     return Task(s.get!string(0).to!(string[]));
@@ -84,9 +101,9 @@ Node parse(Node : Task)(SQLite3.Statement s)
 
 /**
  * Deserializes an edge from an SQLite statement. This assumes that the
- * statement has every column of the node except the row ID.
+ * statement has every column of the vertex except the row ID.
  */
-E parse(E : Edge!(Resource, Task))(SQLite3.Statement s)
+E parse(E : Edge!(Index!Resource, Index!Task))(SQLite3.Statement s)
 {
     return E(
         Index!Resource(s.get!ulong(0)),
@@ -96,7 +113,7 @@ E parse(E : Edge!(Resource, Task))(SQLite3.Statement s)
 }
 
 /// Ditto
-E parse(E : Edge!(Task, Resource))(SQLite3.Statement s)
+E parse(E : Edge!(Index!Task, Index!Resource))(SQLite3.Statement s)
 {
     return E(
         Index!Task(s.get!ulong(0)),
@@ -139,8 +156,8 @@ class BuildState : SQLite3
     }
 
     /**
-     * Inserts a node into the database. An exception is thrown if the node
-     * already exists. Otherwise, the node's ID is returned.
+     * Inserts a vertex into the database. An exception is thrown if the vertex
+     * already exists. Otherwise, the vertex's ID is returned.
      */
     Index!Resource add(in Resource resource)
     {
@@ -166,24 +183,24 @@ class BuildState : SQLite3
         auto state = new BuildState;
 
         {
-            immutable node = Resource("foo.c", SysTime(9001));
+            immutable vertex = Resource("foo.c", SysTime(9001));
 
-            auto id = state.add(node);
+            auto id = state.add(vertex);
             assert(id == 1);
-            assert(state[id] == node);
+            assert(state[id] == vertex);
         }
 
         {
-            immutable node = Task(["foo", "test", "test test"]);
+            immutable vertex = Task(["foo", "test", "test test"]);
 
-            immutable id = state.add(node);
+            immutable id = state.add(vertex);
             assert(id == 1);
-            assert(state[id] == node);
+            assert(state[id] == vertex);
         }
     }
 
     /**
-     * Removes a node by the given index. If the node does not exist, an
+     * Removes a vertex by the given index. If the vertex does not exist, an
      * exception is thrown.
      */
     void remove(Index!Resource index)
@@ -198,7 +215,7 @@ class BuildState : SQLite3
     }
 
     /**
-     * Returns the node state at the given index.
+     * Returns the vertex state at the given index.
      */
     Resource opIndex(Index!Resource index)
     {
@@ -206,7 +223,7 @@ class BuildState : SQLite3
         import std.datetime : SysTime;
 
         auto s = prepare("SELECT path,lastModified FROM resource WHERE id=?", index);
-        enforce(s.step(), "Node does not exist.");
+        enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Resource();
     }
@@ -217,14 +234,16 @@ class BuildState : SQLite3
         import std.exception : enforce;
 
         auto s = prepare("SELECT command FROM task WHERE id=?", index);
-        enforce(s.step(), "Node does not exist.");
+        enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Task();
     }
 
     /**
-     * Returns the node state for the given node name. Throws an exception if
-     * the node does not exist.
+     * Returns the vertex state for the given vertex name. Throws an exception if
+     * the vertex does not exist.
+     *
+     * TODO: Only return the vertex's value.
      */
     Resource opIndex(string path)
     {
@@ -232,7 +251,7 @@ class BuildState : SQLite3
         import std.datetime : SysTime;
 
         auto s = prepare("SELECT path,lastModified FROM resource WHERE path=?", path);
-        enforce(s.step(), "Node does not exist.");
+        enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Resource();
     }
@@ -244,11 +263,11 @@ class BuildState : SQLite3
         import std.conv : to;
 
         auto s = prepare("SELECT command FROM task WHERE command=?", command.to!string);
-        enforce(s.step(), "Node does not exist.");
+        enforce(s.step(), "Vertex does not exist.");
 
         // This is kind of silly. The only information associated with a task is
         // its command, which is passed in as the argument. However, this
-        // function is for uniformity between the two different types of nodes.
+        // function is for uniformity between the two different types of vertices.
 
         return s.parse!Task();
     }
@@ -259,40 +278,40 @@ class BuildState : SQLite3
 
         auto state = new BuildState;
 
-        immutable node = Resource("foo.c", SysTime(9001));
+        immutable vertex = Resource("foo.c", SysTime(9001));
 
-        auto id = state.add(node);
+        auto id = state.add(vertex);
         assert(id == 1);
-        assert(state["foo.c"] == node);
+        assert(state["foo.c"] == vertex);
     }
 
     unittest
     {
         auto state = new BuildState;
 
-        immutable node = Task(["foo", "test", "test test"]);
+        immutable vertex = Task(["foo", "test", "test test"]);
 
-        immutable id = state.add(node);
+        immutable id = state.add(vertex);
         assert(id == 1);
-        assert(state[["foo", "test", "test test"]] == node);
+        assert(state[["foo", "test", "test test"]] == vertex);
     }
 
     /**
-     * Changes the state of the node at the given index. Throws an exception if
-     * the node does not exist.
+     * Changes the state of the vertex at the given index. Throws an exception if
+     * the vertex does not exist.
      */
-    void opIndexAssign(in Resource node, Index!Resource index)
+    void opIndexAssign(in Resource vertex, Index!Resource index)
     {
         execute(`UPDATE resource SET path=?,lastModified=? WHERE id=?`,
-                node.path, node.modified.stdTime, index);
+                vertex.path, vertex.modified.stdTime, index);
     }
 
     /// Ditto
-    void opIndexAssign(in Task node, Index!Task index)
+    void opIndexAssign(in Task vertex, Index!Task index)
     {
         import std.conv : to;
         execute(`UPDATE task SET command=? WHERE id=?`,
-                node.command.to!string, index);
+                vertex.command.to!string, index);
     }
 
     /**
@@ -312,17 +331,17 @@ class BuildState : SQLite3
 
         auto state = new BuildState;
 
-        immutable nodes = [
+        immutable vertices = [
             Resource("foo.o", SysTime(42)),
             Resource("foo.c", SysTime(1337)),
             Resource("bar.c", SysTime(9001)),
             Resource("bar.o", SysTime(0)),
             ];
 
-        foreach (node; nodes)
-            state.add(node);
+        foreach (vertex; vertices)
+            state.add(vertex);
 
-        assert(equal(nodes, state.resources));
+        assert(equal(vertices, state.resources));
     }
 
     /**
@@ -342,17 +361,17 @@ class BuildState : SQLite3
 
         auto state = new BuildState;
 
-        auto nodes = [
+        auto vertices = [
             Resource("foo.o", SysTime(42)),
             Resource("foo.c", SysTime(1337)),
             Resource("bar.c", SysTime(9001)),
             Resource("bar.o", SysTime(0)),
             ];
 
-        foreach (node; nodes)
-            state.add(node);
+        foreach (vertex; vertices)
+            state.add(vertex);
 
-        assert(equal(nodes.sort(), state.sortedResources));
+        assert(equal(vertices.sort(), state.sortedResources));
     }
 
     /**
@@ -399,23 +418,23 @@ class BuildState : SQLite3
 
         auto state = new BuildState;
 
-        auto nodes = [
+        auto vertices = [
             Task(["foo", "arg 1", "arg 2"]),
             Task(["bar", "arg 1"]),
             Task(["baz", "arg 1", "arg 2", "arg 3"]),
             ];
 
-        foreach (node; nodes)
-            state.add(node);
+        foreach (vertex; vertices)
+            state.add(vertex);
 
-        assert(equal(nodes.sort(), state.sortedTasks));
+        assert(equal(vertices.sort(), state.sortedTasks));
     }
 
     /**
      * Adds an edge. Throws an exception if the edge already exists. Returns the
      * index of the edge.
      */
-    EdgeIndex!(Resource, Task) add(Edge!(Resource, Task) edge)
+    Index!(Edge!(Resource, Task)) add(Edge!(Index!Resource, Index!Task) edge)
     {
         execute(`INSERT INTO resourceEdge("from", "to", type) VALUES(?, ?, ?)`,
                 edge.from, edge.to, edge.type);
@@ -423,7 +442,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    EdgeIndex!(Task, Resource) add(Edge!(Task, Resource) edge)
+    Index!(Edge!(Task, Resource)) add(Edge!(Index!Task, Index!Resource) edge)
     {
         execute(`INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`,
                 edge.from, edge.to, edge.type);
@@ -436,8 +455,8 @@ class BuildState : SQLite3
 
         auto state = new BuildState;
 
-        // Creating an edge to non-existent nodes should fail.
-        immutable edge = Edge!(Task, Resource)
+        // Creating an edge to non-existent vertices should fail.
+        immutable edge = Edge!(Index!Task, Index!Resource)
             (Index!Task(4), Index!Resource(8), EdgeType.explicit);
 
         assert(collectException!SQLite3Exception(state.add(edge)));
@@ -449,27 +468,27 @@ class BuildState : SQLite3
 
         auto state = new BuildState;
 
-        // Create a couple of nodes to link together
+        // Create a couple of vertices to link together
         immutable resId = state.add(Resource("foo.c"));
         assert(resId == 1);
 
         immutable taskId = state.add(Task(["gcc", "foo.c"]));
         assert(taskId == 1);
 
-        immutable edgeId = state.add(Edge!(Resource, Task)(resId, taskId, EdgeType.explicit));
+        immutable edgeId = state.add(Edge!(Index!Resource, Index!Task)(resId, taskId, EdgeType.explicit));
         assert(edgeId == 1);
     }
 
     /**
      * Removes an edge. Throws an exception if the edge does not exist.
      */
-    void remove(EdgeIndex!(Resource, Task) index)
+    void remove(Index!(Edge!(Resource, Task)) index)
     {
         execute(`DELETE FROM resourceEdge WHERE id=?`, index);
     }
 
     /// Ditto
-    void remove(EdgeIndex!(Task, Resource) index)
+    void remove(Index!(Edge!(Task, Resource)) index)
     {
         execute(`DELETE FROM taskEdge WHERE id=?`, index);
     }
@@ -480,7 +499,7 @@ class BuildState : SQLite3
 
         immutable resId  = state.add(Resource("foo.c"));
         immutable taskId = state.add(Task(["gcc", "foo.c"]));
-        immutable edgeId = state.add(Edge!(Resource, Task)(resId, taskId, EdgeType.explicit));
+        immutable edgeId = state.add(Edge!(Index!Resource, Index!Task)(resId, taskId, EdgeType.explicit));
         state.remove(edgeId);
         state.remove(resId);
         state.remove(taskId);
@@ -489,7 +508,7 @@ class BuildState : SQLite3
     /**
      * Gets the state associated with an edge.
      */
-    Edge!(Task, Resource) opIndex(EdgeIndex!(Task, Resource) index)
+    Edge!(Index!Task, Index!Resource) opIndex(Index!(Edge!(Task, Resource)) index)
     {
         import std.exception : enforce;
 
@@ -501,7 +520,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Edge!(Resource, Task) opIndex(EdgeIndex!(Resource, Task) index)
+    Edge!(Index!Resource, Index!Task) opIndex(Index!(Edge!(Resource, Task)) index)
     {
         import std.exception : enforce;
 
@@ -513,7 +532,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Edge!(Task, Resource) opIndex(Index!Task from, Index!Resource to)
+    Edge!(Index!Task, Index!Resource) opIndex(Index!Task from, Index!Resource to)
     {
         import std.exception : enforce;
 
@@ -526,7 +545,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Edge!(Resource, Task) opIndex(Index!Resource from, Index!Task to)
+    Edge!(Index!Resource, Index!Task) opIndex(Index!Resource from, Index!Task to)
     {
         import std.exception : enforce;
 
@@ -540,35 +559,43 @@ class BuildState : SQLite3
 
     /**
      * Lists all outgoing task edges.
+     *
+     * TODO: Return pairs of names and values.
      */
     @property auto taskEdges()
     {
+        alias T = Edge!(Index!Task, Index!Resource);
         return prepare(`SELECT "from","to","type" FROM taskEdge`)
-            .rows!(Edge!(Task, Resource), parse!(Edge!(Task, Resource)));
+            .rows!(T, parse!T);
     }
 
     /// Ditto
     @property auto taskEdgesSorted()
     {
+        alias T = Edge!(Index!Task, Index!Resource);
         return prepare(
             `SELECT "from","to","type" FROM taskEdge ORDER BY "from","to"`)
-            .rows!(Edge!(Task, Resource), parse!(Edge!(Task, Resource)));
+            .rows!(T, parse!T);
     }
 
     /**
      * Lists all outgoing resource edges.
+     *
+     * TODO: Return pairs of names and values.
      */
     @property auto resourceEdges()
     {
+        alias T = Edge!(Index!Resource, Index!Task);
         return prepare(`SELECT "from","to","type" FROM resourceEdge`)
-            .rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
+            .rows!(T, parse!T);
     }
 
     /// Ditto
     @property auto resourceEdgesSorted()
     {
+        alias T = Edge!(Index!Resource, Index!Task);
         return prepare(
             `SELECT "from","to","type" FROM resourceEdge ORDER BY "from","to"`)
-            .rows!(Edge!(Resource, Task), parse!(Edge!(Resource, Task)));
+            .rows!(T, parse!T);
     }
 }
