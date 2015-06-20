@@ -9,7 +9,7 @@
  * All changes are discovered in O(max(n, m)) where n and m are the length of
  * the two ranges.
  */
-module bb.change;
+module change;
 
 import std.range : isForwardRange, ElementType;
 
@@ -41,13 +41,28 @@ struct Changes(R1, R2, alias pred = "a < b")
 {
     import std.range : ElementType;
     import std.traits : Unqual;
+    import std.typecons : Rebindable;
 
-    alias T = Unqual!(ElementType!R1);
+    private alias E = ElementType!R1;
+
+    static if ((is(E == class) || is(E == interface)) &&
+               (is(E == const) || is(E == immutable)))
+    {
+        private alias MutableE = Rebindable!E;
+    }
+    else static if (is(E : Unqual!E))
+    {
+        private alias MutableE = Unqual!E;
+    }
+    else
+    {
+        private alias MutableE = E;
+    }
 
     private
     {
         // Current change.
-        Change!T current;
+        Change!MutableE _current;
 
         // Next and previous states.
         R1 prev;
@@ -75,44 +90,44 @@ struct Changes(R1, R2, alias pred = "a < b")
         }
         else if (prev.empty)
         {
-            current = Change!T(next.front, ChangeType.added);
+            _current = Change!E(next.front, ChangeType.added);
             next.popFront();
         }
         else if (next.empty)
         {
-            current = Change!T(prev.front, ChangeType.removed);
+            _current = Change!E(prev.front, ChangeType.removed);
             prev.popFront();
         }
         else
         {
-            immutable a = prev.front;
-            immutable b = next.front;
+            auto a = prev.front;
+            auto b = next.front;
 
             if (binaryFun!pred(a, b))
             {
                 // Removed
-                current = Change!T(a, ChangeType.removed);
+                _current = Change!E(a, ChangeType.removed);
                 prev.popFront();
             }
             else if (binaryFun!pred(b, a))
             {
                 // Added
-                current = Change!T(b, ChangeType.added);
+                _current = Change!E(b, ChangeType.added);
                 next.popFront();
             }
             else
             {
                 // No change
-                current = Change!T(a, ChangeType.none);
+                _current = Change!E(a, ChangeType.none);
                 prev.popFront();
                 next.popFront();
             }
         }
     }
 
-    ref const(Change!T) front() const pure nothrow
+    @property auto ref front() pure nothrow
     {
-        return current;
+        return _current;
     }
 
     bool empty() const pure nothrow
