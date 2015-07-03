@@ -382,10 +382,10 @@ class SQLite3
         }
 
         /// Ditto
-        T get(T)(uint i) if (is(T == string))
+        T get(T)(uint i) if (is(T : string))
         {
-            // We can safely cast to string here.
-            return cast(string)get!(char[])(i);
+            // We can safely cast here.
+            return cast(T)get!(char[])(i);
         }
 
         /// Ditto
@@ -433,58 +433,62 @@ class SQLite3
         {
             sqliteEnforce(sqlite3_clear_bindings(_stmt) == SQLITE_OK, db);
         }
-
-        /**
-         * Range that deserializes and returns row data.
-         */
-        static struct Rows(T, alias read)
-        {
-            private
-            {
-                Statement _statement;
-                bool _empty;
-                T _data;
-            }
-
-            this(Statement statement)
-            {
-                _statement = statement;
-
-                // Prime the cannons
-                popFront();
-            }
-
-            bool empty() const pure nothrow
-            {
-                return _empty;
-            }
-
-            void popFront()
-            {
-                if (!_statement.step())
-                {
-                    _empty = true;
-                    return;
-                }
-
-                _data = read(_statement);
-            }
-
-            T front() const pure nothrow
-            {
-                return _data;
-            }
-        }
-
-        /**
-         * Convenience function to return a range to iterate over rows in the
-         * statement.
-         */
-        @property auto rows(T, alias read)()
-        {
-            return Rows!(T, read)(this);
-        }
     }
+}
+
+/**
+ * Range that deserializes and returns row data.
+ */
+static struct Rows(alias read)
+{
+    import std.traits : ReturnType;
+
+    alias T = ReturnType!read;
+
+    private
+    {
+        SQLite3.Statement _statement;
+        bool _empty;
+        T _data;
+    }
+
+    this(SQLite3.Statement statement)
+    {
+        _statement = statement;
+
+        // Prime the cannons
+        popFront();
+    }
+
+    bool empty() const pure nothrow
+    {
+        return _empty;
+    }
+
+    void popFront()
+    {
+        if (!_statement.step())
+        {
+            _empty = true;
+            return;
+        }
+
+        _data = read(_statement);
+    }
+
+    auto ref front() pure nothrow
+    {
+        return _data;
+    }
+}
+
+/**
+ * Convenience function to return a range to iterate over rows in the
+ * statement.
+ */
+@property auto rows(alias read)(SQLite3.Statement s)
+{
+    return Rows!read(s);
 }
 
 // Converts a C-string string to a D-string.
