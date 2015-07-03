@@ -27,7 +27,7 @@ Here is a simple example of a build description:
             "inputs": ["foo.o", "bar.o"],
             "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
             "outputs": ["foobar"],
-            "description": "Linking"
+            "display": "Linking foobar"
         }
     ]
 }
