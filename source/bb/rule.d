@@ -12,8 +12,20 @@ import std.range : isInputRange;
 
 struct Rule
 {
+    /**
+     * The sets of inputs and outputs that this task is dependent on.
+     */
     string[] inputs, outputs;
+
+    /**
+     * The command to execute.
+     */
     immutable(string)[] task;
+
+    /**
+     * What to display when running the task.
+     */
+    string display;
 }
 
 struct Rules
