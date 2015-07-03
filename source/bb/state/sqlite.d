@@ -25,11 +25,14 @@ CREATE TABLE IF NOT EXISTS resource (
 
 /**
  * Table for holding task vertices.
+ *
+ * TODO: Add field to display in place of command.
  */
 private immutable tasksTable = q"{
 CREATE TABLE IF NOT EXISTS task (
     id      INTEGER,
     command TEXT     NOT NULL,
+    display TEXT,
     PRIMARY KEY(id),
     UNIQUE(command)
 )}";
@@ -96,7 +99,7 @@ Vertex parse(Vertex : Resource)(SQLite3.Statement s)
 Vertex parse(Vertex : Task)(SQLite3.Statement s)
 {
     import std.conv : to;
-    return Task(s.get!string(0).to!(string[]));
+    return Task(s.get!string(0).to!(string[]), s.get!string(1));
 }
 
 /**
@@ -137,9 +140,6 @@ class BuildState : SQLite3
         execute("PRAGMA foreign_keys = ON");
 
         createTables();
-
-        // TODO: Do some version checking to find incompatibilities with
-        // databases created by older versions of this code.
     }
 
     /**
@@ -171,7 +171,8 @@ class BuildState : SQLite3
     {
         import std.conv : to;
 
-        execute("INSERT INTO task(command) VALUES(?)", task.command.to!string());
+        execute("INSERT INTO task(command,display) VALUES(?,?)",
+                task.command.to!string(), task.display);
 
         return Index!Task(lastInsertId);
     }
@@ -233,7 +234,7 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        auto s = prepare("SELECT command FROM task WHERE id=?", index);
+        auto s = prepare("SELECT command,display FROM task WHERE id=?", index);
         enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Task();
@@ -262,12 +263,8 @@ class BuildState : SQLite3
         import std.exception : enforce;
         import std.conv : to;
 
-        auto s = prepare("SELECT command FROM task WHERE command=?", command.to!string);
+        auto s = prepare("SELECT command,display FROM task WHERE command=?", command.to!string);
         enforce(s.step(), "Vertex does not exist.");
-
-        // This is kind of silly. The only information associated with a task is
-        // its command, which is passed in as the argument. However, this
-        // function is for uniformity between the two different types of vertices.
 
         return s.parse!Task();
     }
@@ -310,8 +307,8 @@ class BuildState : SQLite3
     void opIndexAssign(in Task vertex, Index!Task index)
     {
         import std.conv : to;
-        execute(`UPDATE task SET command=? WHERE id=?`,
-                vertex.command.to!string, index);
+        execute(`UPDATE task SET command=?,display=? WHERE id=?`,
+                vertex.command.to!string, vertex.display, index);
     }
 
     /**
@@ -321,7 +318,7 @@ class BuildState : SQLite3
     @property auto resources()
     {
         return prepare("SELECT path,lastModified FROM resource")
-            .rows!(Resource, parse!Resource);
+            .rows!(parse!Resource);
     }
 
     unittest
@@ -345,13 +342,22 @@ class BuildState : SQLite3
     }
 
     /**
+     * Returns a list of resource paths.
+     */
+    @property auto resourceIdentifiers()
+    {
+        return prepare("SELECT path FROM resource")
+            .rows!((SQLite3.Statement s) => s.get!string(0));
+    }
+
+    /**
      * Returns an input range that iterates over all resources in sorted
      * ascending order.
      */
     @property auto sortedResources()
     {
         return prepare("SELECT path,lastModified FROM resource ORDER BY path")
-            .rows!(Resource, parse!Resource);
+            .rows!(parse!Resource);
     }
 
     unittest
@@ -380,8 +386,8 @@ class BuildState : SQLite3
      */
     @property auto tasks()
     {
-        return prepare("SELECT command FROM task")
-            .rows!(Task, parse!Task);
+        return prepare("SELECT command,display FROM task")
+            .rows!(parse!Task);
     }
 
     unittest
@@ -408,8 +414,8 @@ class BuildState : SQLite3
      */
     @property auto sortedTasks()
     {
-        return prepare("SELECT command FROM task ORDER BY command")
-            .rows!(Task, parse!Task);
+        return prepare("SELECT command,display FROM task ORDER BY command")
+            .rows!(parse!Task);
     }
 
     unittest
@@ -428,6 +434,16 @@ class BuildState : SQLite3
             state.add(vertex);
 
         assert(equal(vertices.sort(), state.sortedTasks));
+    }
+
+    /**
+     * Returns a list of resource paths.
+     */
+    @property auto taskIdentifiers()
+    {
+        import std.conv : to;
+        return prepare("SELECT command FROM task")
+            .rows!((SQLite3.Statement s) => s.get!string(0).to!(string[]).idup);
     }
 
     /**
@@ -566,7 +582,7 @@ class BuildState : SQLite3
     {
         alias T = Edge!(Index!Task, Index!Resource);
         return prepare(`SELECT "from","to","type" FROM taskEdge`)
-            .rows!(T, parse!T);
+            .rows!(parse!T);
     }
 
     /// Ditto
@@ -575,7 +591,17 @@ class BuildState : SQLite3
         alias T = Edge!(Index!Task, Index!Resource);
         return prepare(
             `SELECT "from","to","type" FROM taskEdge ORDER BY "from","to"`)
-            .rows!(T, parse!T);
+            .rows!(parse!T);
+    }
+
+    /// Ditto
+    @property auto taskEdgesNamed()
+    {
+        // TODO
+        alias T = Edge!(Index!Task, Index!Resource);
+        return prepare(
+            `SELECT "from","to","type" FROM taskEdge ORDER BY "from","to"`)
+            .rows!(parse!T);
     }
 
     /**
@@ -587,7 +613,7 @@ class BuildState : SQLite3
     {
         alias T = Edge!(Index!Resource, Index!Task);
         return prepare(`SELECT "from","to","type" FROM resourceEdge`)
-            .rows!(T, parse!T);
+            .rows!(parse!T);
     }
 
     /// Ditto
@@ -596,6 +622,6 @@ class BuildState : SQLite3
         alias T = Edge!(Index!Resource, Index!Task);
         return prepare(
             `SELECT "from","to","type" FROM resourceEdge ORDER BY "from","to"`)
-            .rows!(T, parse!T);
+            .rows!(parse!T);
     }
 }
