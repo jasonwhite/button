@@ -79,7 +79,18 @@ struct Rules
             .array()
             .idup;
 
-        rule = Rule(inputs, outputs, task);
+        string display;
+
+        try
+        {
+            display = jsonRule["display"].str();
+        }
+        catch (JSONException e)
+        {
+            // This is optional. Ignore if it doesn't exist.
+        }
+
+        rule = Rule(inputs, outputs, task, display);
 
         rules.popFront();
     }
