@@ -5,6 +5,12 @@
  */
 module bb.vertex.resource;
 
+
+/**
+ * A resource identifier.
+ */
+alias ResourceId = string;
+
 /**
  * A representation of a file on the disk.
  */
@@ -12,13 +18,11 @@ struct Resource
 {
     import std.datetime : SysTime;
 
-    alias Id = string;
-
     /**
      * File path to the resource. To ensure uniqueness, this should never be
      * changed after construction.
      */
-    Id path;
+    ResourceId path;
 
     /**
      * Last time it was modified, according to the database
@@ -44,7 +48,7 @@ struct Resource
     /**
      * Returns the unique identifier for this vertex.
      */
-    @property const(Id) identifier() const pure nothrow
+    @property const(ResourceId) identifier() const pure nothrow
     {
         return path;
     }

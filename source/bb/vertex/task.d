@@ -6,6 +6,11 @@
 module bb.vertex.task;
 
 /**
+ * A task identifier.
+ */
+alias TaskId = immutable(string)[];
+
+/**
  * A representation of a task.
  */
 struct Task
@@ -13,12 +18,17 @@ struct Task
     import core.time : TickDuration;
     import std.datetime : SysTime;
 
-    alias Id = immutable(string)[];
-
     /**
      * The command to execute. The first argument is the name of the executable.
      */
-    Id command;
+    TaskId command;
+
+    /**
+     * Text to display when running the command. If this is null, the command
+     * itself will be displayed. This is useful for reducing the amount of
+     * information that is displayed.
+     */
+    string display;
 
     /**
      * When the task was created.
@@ -45,14 +55,6 @@ struct Task
     //SysTime lastExecuted;
 
     /**
-     * Construct a task from the given unique command.
-     */
-    this(Id command)
-    {
-        this.command = command;
-    }
-
-    /**
      * Returns a string representation of the command.
      *
      * Since commands are specified as arrays, we format it into a string as one
@@ -62,13 +64,16 @@ struct Task
     {
         import std.array : join;
         import std.algorithm : map;
+
+        if (display) return display;
+
         return command.map!(arg => arg.escapeShellArg).join(" ");
     }
 
     /**
      * Returns the unique identifier for this vertex.
      */
-    @property const(Id) identifier() const pure nothrow
+    @property const(TaskId) identifier() const pure nothrow
     {
         return command;
     }
