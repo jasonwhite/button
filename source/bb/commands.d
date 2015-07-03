@@ -59,6 +59,7 @@ private int displayVersion(string[] args)
  */
 private int displayHelp(string[] args)
 {
+    // TODO: Make an argparse library?
     stdout.println("TODO: Display help information here.");
     return 0;
 }
@@ -71,13 +72,27 @@ private int displayHelp(string[] args)
  */
 private int update(string[] args)
 {
+    import io.file;
     import io.range : byBlock;
+    import bb.state;
 
-    stderr.println(" :: Reading build description from standard input...");
+    auto buildDesc = (args.length > 1) ? args[1] : "brilliant-build.json";
 
-    // TODO: Diff build description with database
+    try
+    {
+        auto f = File(buildDesc);
+        auto state = new BuildState(buildDesc ~ ".state");
 
-    stderr.println(" :: Updating...");
+        // TODO: Diff build description with database
+        stderr.println(":: Checking for build description changes...");
+    }
+    catch (ErrnoException e)
+    {
+        stderr.println(":: Error: " ~ e.msg);
+        return 1;
+    }
+
+    stderr.println(":: Updating...");
 
     // TODO: Build subgraph and update.
 
@@ -95,11 +110,7 @@ private int show(string[] args)
 {
     import io.range : byBlock;
 
-    stderr.println(" :: Reading build description from standard input...");
-
-    // TODO:
-
-    stderr.println(" :: Generating input for GraphViz...");
+    // TODO
 
     return 0;
 }
