@@ -83,4 +83,14 @@ struct Resource
 
         return Resource(path, lastModified, checksum);
     }
+
+    /**
+     * Returns true if this resource and the other have equal state. That is, if
+     * they are up-to-date.
+     */
+    bool uptodate()(auto ref typeof(this) rhs) const pure nothrow
+    {
+        return this.modified == rhs.modified &&
+               this.checksum == rhs.checksum;
+    }
 }
