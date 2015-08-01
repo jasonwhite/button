@@ -15,7 +15,7 @@ import io.text, io.file.stdio;
  */
 int displayVersion(string[] args)
 {
-    stdout.println("TODO: Display version information here.");
+    stdout.println("bb version 0.1.0");
     return 0;
 }
 
@@ -24,7 +24,30 @@ int displayVersion(string[] args)
  */
 int displayHelp(string[] args)
 {
-    // TODO: Make an argparse library?
-    stdout.println("TODO: Display help information here.");
+    if (args.length == 1)
+    {
+        displayUsage();
+        return 0;
+    }
+
     return 0;
+}
+
+immutable string usageHelp = q"EOS
+Usage: bb <command> {options] [<args>]
+
+The most commonly used commands are:
+   update   Builds based on changes.
+   help     Prints help on a specific command.
+
+Use 'bb help <command>' to for help on a specific command.
+EOS";
+
+/**
+ * Display usage information.
+ */
+int displayUsage()
+{
+    print(usageHelp);
+    return 1;
 }

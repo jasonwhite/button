@@ -10,17 +10,18 @@ import bb.commands;
 
 int main(string[] args)
 {
-    // Default to an update
     if (args.length <= 1)
-        return update(args);
+        return displayUsage();
 
     auto commandArgs = args[1 .. $];
 
     switch (args[1])
     {
+        case "--version":
         case "version":
             return displayVersion(commandArgs);
 
+        case "--help":
         case "help":
             return displayHelp(commandArgs);
 
