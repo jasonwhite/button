@@ -17,7 +17,7 @@ import io.text, io.file.stdio;
 @property
 private string stateName(string fileName) pure nothrow
 {
-    import std.path : dirName, baseName, buildNormalizedPath, setExtension;
+    import std.path : dirName, baseName, buildNormalizedPath;
 
     immutable string dir  = dirName(fileName);
     immutable string base = baseName(fileName);
@@ -28,18 +28,17 @@ private string stateName(string fileName) pure nothrow
     if (base.length > 0 && base[0] != '.')
         prefix = ".";
 
-    return buildNormalizedPath(dir, prefix ~ setExtension(base, "state"));
+    return buildNormalizedPath(dir, prefix ~ base ~ ".state");
 }
 
 unittest
 {
-    assert("bb.json".stateName == ".bb.state");
-    assert(".bb".stateName == ".bb.state");
-    assert(".bb.json".stateName == ".bb.state");
-    assert(".bb.test.json".stateName == ".bb.test.state");
-    assert("./bb.json".stateName == ".bb.state");
-    assert("test/bb.json".stateName == "test/.bb.state");
-    assert("/test/.bb.json".stateName == "/test/.bb.state");
+    assert("bb.json".stateName == ".bb.json.state");
+    assert(".bb.json".stateName == ".bb.json.state");
+    assert(".bb.test.json".stateName == ".bb.test.json.state");
+    assert("./bb.json".stateName == ".bb.json.state");
+    assert("test/bb.json".stateName == "test/.bb.json.state");
+    assert("/test/.bb.json".stateName == "/test/.bb.json.state");
 }
 
 /**
