@@ -28,7 +28,7 @@ struct Resource
      * Last time the file was modified, according to the database. If this is
      * SysTime.min, then it is taken to mean that the file does not exist.
      */
-    SysTime modified = SysTime.min;
+    SysTime lastModified = SysTime.min;
 
     /**
      * Checksum of the file.
@@ -74,9 +74,9 @@ struct Resource
     {
         import std.file : timeLastModified, FileException;
 
-        immutable lastModified = timeLastModified(path, modified.init);
+        immutable lastModified = timeLastModified(path, this.lastModified.init);
 
-        if (lastModified != modified.init && lastModified != modified)
+        if (lastModified != this.lastModified.init && lastModified != this.lastModified)
         {
             // TODO: Compute the checksum.
         }
@@ -90,7 +90,7 @@ struct Resource
      */
     bool uptodate()(auto ref typeof(this) rhs) const pure nothrow
     {
-        return this.modified == rhs.modified &&
+        return this.lastModified == rhs.lastModified &&
                this.checksum == rhs.checksum;
     }
 }

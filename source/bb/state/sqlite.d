@@ -162,7 +162,7 @@ class BuildState : SQLite3
     Index!Resource add(in Resource resource)
     {
         execute("INSERT INTO resource(path, lastModified) VALUES(?, ?)",
-                resource.path, resource.modified.stdTime);
+                resource.path, resource.lastModified.stdTime);
         return Index!Resource(lastInsertId);
     }
 
@@ -300,7 +300,7 @@ class BuildState : SQLite3
     void opIndexAssign(in Resource vertex, Index!Resource index)
     {
         execute(`UPDATE resource SET path=?,lastModified=? WHERE id=?`,
-                vertex.path, vertex.modified.stdTime, index);
+                vertex.path, vertex.lastModified.stdTime, index);
     }
 
     /// Ditto
