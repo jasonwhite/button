@@ -25,16 +25,15 @@ struct Resource
     ResourceId path;
 
     /**
-     * Last time it was modified, according to the database
+     * Last time the file was modified, according to the database. If this is
+     * SysTime.min, then it is taken to mean that the file does not exist.
      */
     SysTime modified = SysTime.min;
 
     /**
      * Checksum of the file.
-     *
-     * TODO: Implement this.
      */
-    ulong checksum;
+    ulong checksum = 0;
 
     /**
      * Returns a string representation of this resource. This is just the path
@@ -60,5 +59,28 @@ struct Resource
     {
         import std.algorithm : cmp;
         return cmp(this.path, rhs.path);
+    }
+
+    /**
+     * Returns a new resource with an updated time stamp and checksum.
+     *
+     * If this resource is not equal to the returned resource, then this
+     * resource is has changed (i.e., considered out of date).
+     *
+     * Note that the checksum is not recomputed if the modification time is the
+     * same.
+     */
+    @property typeof(this) updated() const
+    {
+        import std.file : timeLastModified, FileException;
+
+        immutable lastModified = timeLastModified(path, modified.init);
+
+        if (lastModified != modified.init && lastModified != modified)
+        {
+            // TODO: Compute the checksum.
+        }
+
+        return Resource(path, lastModified, checksum);
     }
 }
