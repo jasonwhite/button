@@ -15,7 +15,7 @@ import io.text, io.file.stdio;
  * file name.
  */
 @property
-private string buildStateName(string fileName) pure nothrow
+private string stateName(string fileName) pure nothrow
 {
     import std.path : dirName, baseName, buildNormalizedPath, setExtension;
 
@@ -33,13 +33,13 @@ private string buildStateName(string fileName) pure nothrow
 
 unittest
 {
-    assert(buildStateName("bb.json") == ".bb.state");
-    assert(buildStateName(".bb") == ".bb.state");
-    assert(buildStateName(".bb.json") == ".bb.state");
-    assert(buildStateName(".bb.test.json") == ".bb.test.state");
-    assert(buildStateName("./bb.json") == ".bb.state");
-    assert(buildStateName("test/bb.json") == "test/.bb.state");
-    assert(buildStateName("/test/.bb.json") == "/test/.bb.state");
+    assert("bb.json".stateName == ".bb.state");
+    assert(".bb".stateName == ".bb.state");
+    assert(".bb.json".stateName == ".bb.state");
+    assert(".bb.test.json".stateName == ".bb.test.state");
+    assert("./bb.json".stateName == ".bb.state");
+    assert("test/bb.json".stateName == "test/.bb.state");
+    assert("/test/.bb.json".stateName == "/test/.bb.state");
 }
 
 /**
@@ -59,7 +59,7 @@ int update(string[] args)
     try
     {
         auto f = File(buildDesc);
-        auto state = new BuildState(buildStateName(buildDesc));
+        auto state = new BuildState(buildDesc.stateName);
 
         // TODO: Diff build description with database
         stderr.println(":: Checking for build description changes...");
