@@ -11,6 +11,38 @@ module bb.commands.update;
 import io.text, io.file.stdio;
 
 /**
+ * Constructs the name of the build state file based on the build description
+ * file name.
+ */
+@property
+private string buildStateName(string fileName) pure nothrow
+{
+    import std.path : dirName, baseName, buildNormalizedPath, setExtension;
+
+    immutable string dir  = dirName(fileName);
+    immutable string base = baseName(fileName);
+
+    string prefix;
+
+    // Prepend a '.' if there isn't one already.
+    if (base.length > 0 && base[0] != '.')
+        prefix = ".";
+
+    return buildNormalizedPath(dir, prefix ~ setExtension(base, "state"));
+}
+
+unittest
+{
+    assert(buildStateName("bb.json") == ".bb.state");
+    assert(buildStateName(".bb") == ".bb.state");
+    assert(buildStateName(".bb.json") == ".bb.state");
+    assert(buildStateName(".bb.test.json") == ".bb.test.state");
+    assert(buildStateName("./bb.json") == ".bb.state");
+    assert(buildStateName("test/bb.json") == "test/.bb.state");
+    assert(buildStateName("/test/.bb.json") == "/test/.bb.state");
+}
+
+/**
  * Updates the build.
  *
  * TODO: Add --dryrun option to simulate an update. This would be useful for
@@ -22,12 +54,12 @@ int update(string[] args)
     import io.range : byBlock;
     import bb.state;
 
-    auto buildDesc = (args.length > 1) ? args[1] : "brilliant-build.json";
+    auto buildDesc = (args.length > 1) ? args[1] : "bb.json";
 
     try
     {
         auto f = File(buildDesc);
-        auto state = new BuildState(buildDesc ~ ".state");
+        auto state = new BuildState(buildStateName(buildDesc));
 
         // TODO: Diff build description with database
         stderr.println(":: Checking for build description changes...");
