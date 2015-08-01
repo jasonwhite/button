@@ -55,7 +55,7 @@ struct Resource
     /**
      * Compares this resource with another.
      */
-    int opCmp()(auto ref Resource rhs)
+    int opCmp()(auto ref Resource rhs) const pure
     {
         import std.algorithm : cmp;
         return cmp(this.path, rhs.path);
