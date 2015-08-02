@@ -8,39 +8,29 @@ module bb.graph;
 version (unittest)
 {
     // Dummy types for testing
-    private struct X { int x; }
-    private struct Y { int y; }
+    private struct X { int x; alias x this; }
+    private struct Y { int y; alias y this; }
 }
 
 /**
- * Bipartite graph.
+ * A bipartite graph.
  */
 struct Graph(A, B)
     if (!is(A == B))
 {
-    import multiset;
-
     private
     {
-        // Incoming edges.
-        MultiSet!B[A] neighborsInA;
-        MultiSet!A[B] neighborsInB;
+        import std.container.rbtree;
 
         // Outgoing edges.
-        MultiSet!B[A] neighborsOutA;
-        MultiSet!A[B] neighborsOutB;
+        RedBlackTree!B[A] neighborsOutA;
+        RedBlackTree!A[B] neighborsOutB;
 
         // Uniform way of accessing vertices.
-        alias neighborsIn(Vertex : A) = neighborsInA;
-        alias neighborsIn(Vertex : B) = neighborsInB;
+        alias degreeIn(Vertex : A) = degreeInA;
+        alias degreeIn(Vertex : B) = degreeInB;
         alias neighborsOut(Vertex : A) = neighborsOutA;
         alias neighborsOut(Vertex : B) = neighborsOutB;
-    }
-
-    invariant
-    {
-        assert(neighborsInA.length == neighborsOutA.length);
-        assert(neighborsInB.length == neighborsOutB.length);
     }
 
     /**
@@ -48,7 +38,7 @@ struct Graph(A, B)
      */
     @property size_t length(Vertex)() const pure nothrow
     {
-        return neighborsIn!Vertex.length;
+        return neighborsOut!Vertex.length;
     }
 
     /**
@@ -56,29 +46,16 @@ struct Graph(A, B)
      */
     void add(Vertex)(Vertex v) pure
     {
-        if (v !in neighborsIn!Vertex)
-            neighborsIn!Vertex[v] = typeof(neighborsIn!Vertex[v])();
-
         if (v !in neighborsOut!Vertex)
-            neighborsOut!Vertex[v] = typeof(neighborsOut!Vertex[v])();
-    }
-
-    /// Ditto
-    void add(Vertex)(const(Vertex[]) vertices) pure
-    {
-        foreach (v; vertices)
-            add(v);
+            neighborsOut!Vertex[v] = redBlackTree!(neighborsOut!Vertex[v].Elem)();
     }
 
     /**
      * Removes a vertex and all the incoming and outgoing edges associated with
      * it.
-     *
-     * FIXME: This function may never be needed by real code.
      */
     void remove(Vertex)(Vertex v) pure
     {
-        neighborsIn!Vertex.remove(v);
         neighborsOut!Vertex.remove(v);
     }
 
@@ -109,13 +86,9 @@ struct Graph(A, B)
      */
     void add(From,To)(From from, To to) pure
     {
-        auto incoming = to in neighborsIn!To;
-        assert(incoming, "Invalid vertex ID");
-        incoming.add(from);
-
         auto outgoing = from in neighborsOut!From;
         assert(outgoing, "Invalid vertex ID");
-        outgoing.add(to);
+        outgoing.insert(to);
     }
 
     unittest
@@ -128,12 +101,9 @@ struct Graph(A, B)
 
     /**
      * Removes an edge.
-     *
-     * FIXME: This function may never be needed by real code.
      */
     void remove(From, To)(From from, To to) pure
     {
-        neighborsIn!To[to].remove(from);
         neighborsOut!From[from].remove(to);
     }
 
@@ -162,41 +132,32 @@ struct Graph(A, B)
     /**
      * Returns a range of vertices.
      */
+    @property
     auto vertices(Vertex)() const pure
     {
         return neighborsOut!Vertex.byKey;
     }
 
     /**
-     * Returns a range of incoming edges to the given vertex.
+     * Returns a range of edges.
      */
-    auto incoming(Vertex)(Vertex v) const pure
+    auto edges(From, To)() const pure
     {
-        return neighborsIn!Vertex[v].items;
+        foreach (i; vertices!From)
+        {
+            foreach (j; neighbors(i))
+            {
+                //yield (i, j)
+            }
+        }
     }
 
     /**
-     * Returns a range of outgoing edges from the given vertex.
+     * Returns a range of outgoing neighbors from the given node.
      */
-    auto outgoing(Vertex)(Vertex v) const pure
+    auto outgoing(Vertex)(Vertex v) pure
     {
-        return neighborsOut!Vertex[v].items;
-    }
-
-    /**
-     * Number of incoming edges for the given vertex.
-     */
-    size_t degreeIncoming(Vertex)(Vertex v) const pure nothrow
-    {
-        return neighborsIn!Vertex[v].length;
-    }
-
-    /**
-     * Number of outgoing edges for the given vertex.
-     */
-    size_t degreeOutgoing(Vertex)(Vertex v) const pure nothrow
-    {
-        return neighborsOut!Vertex[v].length;
+        return neighborsOut!Vertex[v][];
     }
 
     /**
@@ -206,14 +167,17 @@ struct Graph(A, B)
      *
      * TODO: Parallelize this.
      */
-    void traverse(const(A[]) rootsA, const(B[]) rootsB,
+    void traverse(const(A)[] rootsA, const(B)[] rootsB,
          bool delegate(A) visitVertexA, bool delegate(B) visitVertexB,
          void delegate(A,B) visitEdgeAB, void delegate(B,A) visitEdgeBA
-         ) const
+         )
     {
         // Keep track of which vertices have been visited.
-        auto visitedA = MultiSet!A(rootsA);
-        auto visitedB = MultiSet!B(rootsB);
+        auto visitedA = redBlackTree!A;
+        auto visitedB = redBlackTree!B;
+
+        visitedA.insert(rootsA);
+        visitedB.insert(rootsB);
 
         // List of vertices queued to be visited. Vertices in the queue do not
         // depend on each other, and thus, can be visited in parallel.
@@ -236,7 +200,7 @@ struct Graph(A, B)
                 {
                     if (child in visitedB) continue;
                     visitEdgeAB(v, child);
-                    visitedB.add(child);
+                    visitedB.insert(child);
                     queueB ~= child;
                 }
             }
@@ -254,7 +218,7 @@ struct Graph(A, B)
                 {
                     if (child in visitedA) continue;
                     visitEdgeBA(v, child);
-                    visitedA.add(child);
+                    visitedA.insert(child);
                     queueA ~= child;
                 }
             }
@@ -267,7 +231,7 @@ struct Graph(A, B)
      *
      * TODO: Simplify and parallelize this.
      */
-    typeof(this) subgraph(const(A[]) rootsA, const(B[]) rootsB) const
+    typeof(this) subgraph(const(A[]) rootsA, const(B[]) rootsB)
     {
         auto g = typeof(return)();
 
@@ -289,11 +253,23 @@ struct Graph(A, B)
 
         return g;
     }
+
+    /**
+     * Returns a set of differences between this graph and another.
+     *
+     * The set of differences includes added/removed vertices and edges.
+     */
+    auto diff(const ref Graph!(A, B) other) const pure
+    {
+        // TODO
+    }
 }
 
 unittest
 {
-    auto g = Graph!(X,Y)();
+    import std.stdio;
+
+    auto g = Graph!(X, Y)();
     g.add(X(1));
     g.add(Y(1));
     g.add(X(1), Y(1));
