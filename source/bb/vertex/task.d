@@ -31,30 +31,6 @@ struct Task
     string display;
 
     /**
-     * When the task was created.
-     *
-     * TODO: Move this into a log instead.
-     */
-    //SysTime created;
-
-    /**
-     * How long it took to execute this task last time. We can use this to give
-     * a rough estimate of how long it will take this time. If the task has
-     * never been executed before, this will be a time of length 0.
-     *
-     * TODO: Move this into a log instead such that a complete history can be
-     * kept.
-     */
-    //TickDuration lastDuration;
-
-    /**
-     * When the task was last executed.
-     *
-     * TODO: Move this into a log instead.
-     */
-    //SysTime lastExecuted;
-
-    /**
      * Returns a string representation of the command.
      *
      * Since commands are specified as arrays, we format it into a string as one
@@ -85,6 +61,18 @@ struct Task
     {
         import std.algorithm : cmp;
         return cmp(this.command, rhs.command);
+    }
+
+    unittest
+    {
+        assert(Task(["a", "b"]) < Task(["a", "c"]));
+        assert(Task(["a", "b"]) > Task(["a", "a"]));
+
+        assert(Task(["a", "b"], "b") < Task(["a", "c"], "a"));
+        assert(Task(["a", "b"], "a") > Task(["a", "a"], "b"));
+
+        assert(Task(["a", "b"]) == Task(["a", "b"]));
+        assert(Task(["a", "b"]) != Task(["a", "b"], "test"));
     }
 }
 
