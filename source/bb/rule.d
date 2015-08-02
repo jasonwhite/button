@@ -10,22 +10,19 @@ module bb.rule;
 
 import std.range : isInputRange;
 
+import bb.vertex;
+
 struct Rule
 {
     /**
      * The sets of inputs and outputs that this task is dependent on.
      */
-    string[] inputs, outputs;
+    Resource[] inputs, outputs;
 
     /**
      * The command to execute.
      */
-    immutable(string)[] task;
-
-    /**
-     * What to display when running the task.
-     */
-    string display;
+    Task task;
 }
 
 struct Rules
@@ -67,14 +64,14 @@ struct Rules
         auto jsonRule = rules.front;
 
         auto inputs = jsonRule["inputs"].array()
-            .map!(x => buildNormalizedPath(x.str()))
+            .map!(x => Resource(buildNormalizedPath(x.str())))
             .array();
 
         auto outputs = jsonRule["outputs"].array()
-            .map!(x => buildNormalizedPath(x.str()))
+            .map!(x => Resource(buildNormalizedPath(x.str())))
             .array();
 
-        auto task = jsonRule["task"].array()
+        auto command = jsonRule["task"].array()
             .map!(x => x.str())
             .array()
             .idup;
@@ -90,7 +87,7 @@ struct Rules
             // This is optional. Ignore if it doesn't exist.
         }
 
-        rule = Rule(inputs, outputs, task, display);
+        rule = Rule(inputs, outputs, Task(command, display));
 
         rules.popFront();
     }
@@ -126,6 +123,7 @@ unittest
                 {
                     "inputs": ["foo.c", "baz.h"],
                     "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
+                    "display": "cc foo.c",
                     "outputs": ["foo.o"]
                 },
                 {
@@ -144,19 +142,19 @@ unittest
 
     immutable Rule[] rules = [
         {
-            inputs: ["foo.c", "baz.h"],
-            task: ["gcc", "-c", "foo.c", "-o", "foo.o"],
-            outputs: ["foo.o"]
+            inputs: [Resource("foo.c"), Resource("baz.h")],
+            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"], "cc foo.c"),
+            outputs: [Resource("foo.o")]
         },
         {
-            inputs: ["bar.c", "baz.h"],
-            task: ["gcc", "-c", "bar.c", "-o", "bar.o"],
-            outputs: ["bar.o"]
+            inputs: [Resource("bar.c"), Resource("baz.h")],
+            task: Task(["gcc", "-c", "bar.c", "-o", "bar.o"]),
+            outputs: [Resource("bar.o")]
         },
         {
-            inputs: ["foo.o", "bar.o"],
-            task: ["gcc", "foo.o", "bar.o", "-o", "foobar"],
-            outputs: ["foobar"]
+            inputs: [Resource("foo.o"), Resource("bar.o")],
+            task: Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]),
+            outputs: [Resource("foobar")]
         }
     ];
 
@@ -181,9 +179,9 @@ unittest
 
     immutable Rule[] rules = [
         {
-            inputs: ["foo.c", "baz.h"],
-            task: ["ls", "foo.c", "baz.h"],
-            outputs: ["normalized"]
+            inputs: [Resource("foo.c"), Resource("baz.h")],
+            task: Task(["ls", "foo.c", "baz.h"]),
+            outputs: [Resource("normalized")]
         },
     ];
 
