@@ -8,9 +8,10 @@
  */
 module bb.rule;
 
-import std.range : isInputRange;
+import std.range.primitives : isInputRange, ElementType;
 
 import bb.vertex;
+import bb.graph;
 
 struct Rule
 {
@@ -106,6 +107,7 @@ struct Rules
 /**
  * Convenience function for constructing a Rules range.
  */
+@property
 Rules parseRules(R)(R json)
     if (isInputRange!R)
 {
@@ -186,4 +188,57 @@ unittest
     ];
 
     assert(parseRules(json).equal(rules));
+}
+
+/**
+ * Generates a graph from a set of rules.
+ */
+Graph!(Resource, Task) graph(R)(auto ref R rules)
+    if (is(ElementType!R : const(Rule)))
+{
+    auto g = typeof(return)();
+
+    foreach (r; rules)
+    {
+        g.add(r.task);
+
+        foreach (v; r.inputs)
+        {
+            g.add(v);
+            g.add(v, r.task);
+        }
+
+        foreach (v; r.outputs)
+        {
+            g.add(v);
+            g.add(r.task, v);
+        }
+    }
+
+    return g;
+}
+
+unittest
+{
+    immutable Rule[] rules = [
+        {
+            inputs: [Resource("foo.c"), Resource("baz.h")],
+            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"], "cc foo.c"),
+            outputs: [Resource("foo.o")]
+        },
+        {
+            inputs: [Resource("bar.c"), Resource("baz.h")],
+            task: Task(["gcc", "-c", "bar.c", "-o", "bar.o"]),
+            outputs: [Resource("bar.o")]
+        },
+        {
+            inputs: [Resource("foo.o"), Resource("bar.o")],
+            task: Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]),
+            outputs: [Resource("foobar")]
+        }
+    ];
+
+    auto g = graph(rules);
+    assert(g.length!Task == 3);
+    assert(g.length!Resource == 6);
 }

@@ -8,7 +8,9 @@
  */
 module bb.commands.update;
 
-import io.text, io.file.stdio;
+import io.file, io.text, io.file.stdio;
+import bb.vertex;
+import bb.graph;
 
 /**
  * Constructs the name of the build state file based on the build description
@@ -52,12 +54,16 @@ int update(string[] args)
     import io.file;
     import io.range : byBlock;
     import bb.state;
+    import bb.rule;
 
     auto buildDesc = (args.length > 1) ? args[1] : "bb.json";
 
     try
     {
-        auto f = File(buildDesc);
+        stderr.println(":: Loading build description...");
+
+        auto g = graph(File(buildDesc).byBlock!char.parseRules);
+
         auto state = new BuildState(buildDesc.stateName);
 
         // TODO: Diff build description with database
