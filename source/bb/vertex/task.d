@@ -36,10 +36,10 @@ struct Task
      * Since commands are specified as arrays, we format it into a string as one
      * would enter into a shell.
      */
-    string toString() const
+    string toString() const pure nothrow
     {
         import std.array : join;
-        import std.algorithm : map;
+        import std.algorithm.iteration : map;
 
         if (display) return display;
 
@@ -59,7 +59,7 @@ struct Task
      */
     int opCmp()(auto ref Task rhs)
     {
-        import std.algorithm : cmp;
+        import std.algorithm.comparison : cmp;
         return cmp(this.command, rhs.command);
     }
 
@@ -83,7 +83,7 @@ struct Task
  * An argument is surrounded with double quotes if it contains any special
  * characters. A backslash is always escaped with another backslash.
  */
-private string escapeShellArg(string arg)
+private string escapeShellArg(string arg) pure nothrow
 {
     // TODO
     return arg;
