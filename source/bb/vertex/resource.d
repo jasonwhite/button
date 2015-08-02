@@ -5,7 +5,6 @@
  */
 module bb.vertex.resource;
 
-
 /**
  * A resource identifier.
  */
@@ -55,10 +54,16 @@ struct Resource
     /**
      * Compares this resource with another.
      */
-    int opCmp()(auto ref Resource rhs) const pure
+    int opCmp()(const auto ref Resource rhs) const pure
     {
         import std.algorithm : cmp;
         return cmp(this.path, rhs.path);
+    }
+
+    unittest
+    {
+        assert(Resource("a") < Resource("b"));
+        assert(Resource("b") > Resource("a"));
     }
 
     /**
@@ -70,7 +75,7 @@ struct Resource
      * Note that the checksum is not recomputed if the modification time is the
      * same.
      */
-    @property typeof(this) updated() const
+    @property typeof(this) update() const
     {
         import std.file : timeLastModified, FileException;
 
@@ -84,13 +89,9 @@ struct Resource
         return Resource(path, lastModified, checksum);
     }
 
-    /**
-     * Returns true if this resource and the other have equal state. That is, if
-     * they are up-to-date.
-     */
-    bool uptodate()(auto ref typeof(this) rhs) const pure nothrow
+    unittest
     {
-        return this.lastModified == rhs.lastModified &&
-               this.checksum == rhs.checksum;
+        assert(Resource("test", SysTime(1), 1) == Resource("test", SysTime(1), 1));
+        assert(Resource("test", SysTime(1), 1) != Resource("test", SysTime(2), 2));
     }
 }
