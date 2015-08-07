@@ -15,22 +15,20 @@ version (unittest)
 /**
  * A bipartite graph.
  */
-struct Graph(A, B)
+struct Graph(A, B, EdgeData)
     if (!is(A == B))
 {
     private
     {
-        import std.container.rbtree;
+        // Edges from A -> B
+        EdgeData[B][A] neighborsA;
 
-        // Outgoing edges.
-        RedBlackTree!B[A] neighborsOutA;
-        RedBlackTree!A[B] neighborsOutB;
+        // Edges from B -> A
+        EdgeData[A][B] neighborsB;
 
         // Uniform way of accessing vertices.
-        alias degreeIn(Vertex : A) = degreeInA;
-        alias degreeIn(Vertex : B) = degreeInB;
-        alias neighborsOut(Vertex : A) = neighborsOutA;
-        alias neighborsOut(Vertex : B) = neighborsOutB;
+        alias neighbors(Vertex : A) = neighborsA;
+        alias neighbors(Vertex : B) = neighborsB;
     }
 
     /**
@@ -38,7 +36,7 @@ struct Graph(A, B)
      */
     @property size_t length(Vertex)() const pure nothrow
     {
-        return neighborsOut!Vertex.length;
+        return neighbors!Vertex.length;
     }
 
     /**
@@ -46,8 +44,8 @@ struct Graph(A, B)
      */
     void add(Vertex)(Vertex v) pure
     {
-        if (v !in neighborsOut!Vertex)
-            neighborsOut!Vertex[v] = redBlackTree!(neighborsOut!Vertex[v].Elem)();
+        if (v !in neighbors!Vertex)
+            neighbors!Vertex[v] = neighbors!Vertex[v].init;
     }
 
     /**
@@ -56,12 +54,12 @@ struct Graph(A, B)
      */
     void remove(Vertex)(Vertex v) pure
     {
-        neighborsOut!Vertex.remove(v);
+        neighbors!Vertex.remove(v);
     }
 
     unittest
     {
-        auto g = Graph!(X,Y)();
+        auto g = Graph!(X,Y,int)();
         g.add(X(1));
         g.add(Y(1));
         g.add(X(1));
@@ -84,19 +82,17 @@ struct Graph(A, B)
     /**
      * Adds an edge. Both vertices must be added to the graph first.
      */
-    void add(From,To)(From from, To to) pure
+    void add(From,To)(From from, To to, EdgeData data) pure
     {
-        auto outgoing = from in neighborsOut!From;
-        assert(outgoing, "Invalid vertex ID");
-        outgoing.insert(to);
+        neighbors!From[from][to] = data;
     }
 
     unittest
     {
-        auto g = Graph!(X,Y)();
+        auto g = Graph!(X,Y,int)();
         g.add(X(1));
         g.add(Y(1));
-        g.add(X(1), Y(1));
+        g.add(X(1), Y(1), 42);
     }
 
     /**
@@ -104,29 +100,23 @@ struct Graph(A, B)
      */
     void remove(From, To)(From from, To to) pure
     {
-        neighborsOut!From[from].remove(to);
+        neighbors!From[from].remove(to);
     }
 
     unittest
     {
-        auto g = Graph!(X,Y)();
+        auto g = Graph!(X,Y,int)();
         g.add(X(1));
         g.add(Y(1));
-        g.add(X(1));
-        g.add(Y(1));
+        g.add(X(1), Y(1), 42);
 
         assert(g.length!X == 1);
         assert(g.length!Y == 1);
 
-        g.remove(X(1));
+        g.remove(X(1), Y(1));
 
-        assert(g.length!X == 0);
+        assert(g.length!X == 1);
         assert(g.length!Y == 1);
-
-        g.remove(Y(1));
-
-        assert(g.length!X == 0);
-        assert(g.length!Y == 0);
     }
 
     /**
@@ -135,11 +125,13 @@ struct Graph(A, B)
     @property
     auto vertices(Vertex)() const pure
     {
-        return neighborsOut!Vertex.byKey;
+        return neighbors!Vertex.byKey;
     }
 
     /**
      * Returns a range of edges.
+     *
+     * TODO
      */
     auto edges(From, To)() const pure
     {
@@ -157,7 +149,7 @@ struct Graph(A, B)
      */
     auto outgoing(Vertex)(Vertex v) pure
     {
-        return neighborsOut!Vertex[v][];
+        return neighbors!Vertex[v];
     }
 
     /**
@@ -169,9 +161,11 @@ struct Graph(A, B)
      */
     void traverse(const(A)[] rootsA, const(B)[] rootsB,
          bool delegate(A) visitVertexA, bool delegate(B) visitVertexB,
-         void delegate(A,B) visitEdgeAB, void delegate(B,A) visitEdgeBA
+         void delegate(A,B,EdgeData) visitEdgeAB, void delegate(B,A,EdgeData) visitEdgeBA
          )
     {
+        import std.container.rbtree : redBlackTree;
+
         // Keep track of which vertices have been visited.
         auto visitedA = redBlackTree!A;
         auto visitedB = redBlackTree!B;
@@ -196,12 +190,12 @@ struct Graph(A, B)
                 if (!visitVertexA(v)) continue;
 
                 // Queue its children.
-                foreach (child; outgoing(v))
+                foreach (child; outgoing(v).byKeyValue())
                 {
-                    if (child in visitedB) continue;
-                    visitEdgeAB(v, child);
-                    visitedB.insert(child);
-                    queueB ~= child;
+                    if (child.key in visitedB) continue;
+                    visitEdgeAB(v, child.key, child.value);
+                    visitedB.insert(child.key);
+                    queueB ~= child.key;
                 }
             }
 
@@ -214,12 +208,12 @@ struct Graph(A, B)
                 if (!visitVertexB(v)) continue;
 
                 // Queue its children.
-                foreach (child; outgoing(v))
+                foreach (child; outgoing(v).byKeyValue())
                 {
-                    if (child in visitedA) continue;
-                    visitEdgeBA(v, child);
-                    visitedA.insert(child);
-                    queueA ~= child;
+                    if (child.key in visitedA) continue;
+                    visitEdgeBA(v, child.key, child.value);
+                    visitedA.insert(child.key);
+                    queueA ~= child.key;
                 }
             }
         }
@@ -241,14 +235,14 @@ struct Graph(A, B)
             return true;
         }
 
-        void visitEdge(From, To)(From from, To to)
+        void visitEdge(From, To, EdgeData)(From from, To to, EdgeData data)
         {
-            g.add(from, to);
+            g.add(from, to, data);
         }
 
         traverse(rootsA, rootsB,
             &visitVertex!A, &visitVertex!B,
-            &visitEdge!(A,B), &visitEdge!(B,A)
+            &visitEdge!(A,B,EdgeData), &visitEdge!(B,A,EdgeData)
             );
 
         return g;
@@ -259,7 +253,7 @@ struct Graph(A, B)
      *
      * The set of differences includes added/removed vertices and edges.
      */
-    auto diff(const ref Graph!(A, B) other) const pure
+    auto diff(const ref Graph!(A, B, EdgeData) other) const pure
     {
         // TODO
     }
@@ -269,10 +263,10 @@ unittest
 {
     import std.stdio;
 
-    auto g = Graph!(X, Y)();
+    auto g = Graph!(X, Y, int)();
     g.add(X(1));
     g.add(Y(1));
-    g.add(X(1), Y(1));
+    g.add(X(1), Y(1), 42);
 
     auto g2 = g.subgraph([X(1)], [Y(1)]);
     assert(g2.length!X == 1);

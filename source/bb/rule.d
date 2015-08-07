@@ -10,7 +10,7 @@ module bb.rule;
 
 import std.range.primitives : isInputRange, ElementType;
 
-import bb.vertex;
+import bb.vertex, bb.edge;
 import bb.graph;
 
 struct Rule
@@ -193,7 +193,7 @@ unittest
 /**
  * Generates a graph from a set of rules.
  */
-Graph!(Resource, Task) graph(R)(auto ref R rules)
+Graph!(Resource, Task, EdgeType) graph(R)(auto ref R rules)
     if (is(ElementType!R : const(Rule)))
 {
     auto g = typeof(return)();
@@ -205,13 +205,13 @@ Graph!(Resource, Task) graph(R)(auto ref R rules)
         foreach (v; r.inputs)
         {
             g.add(v);
-            g.add(v, r.task);
+            g.add(v, r.task, EdgeType.explicit);
         }
 
         foreach (v; r.outputs)
         {
             g.add(v);
-            g.add(r.task, v);
+            g.add(r.task, v, EdgeType.explicit);
         }
     }
 
