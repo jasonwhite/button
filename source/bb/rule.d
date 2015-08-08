@@ -200,18 +200,18 @@ Graph!(Resource, Task, EdgeType) graph(R)(auto ref R rules)
 
     foreach (r; rules)
     {
-        g.add(r.task);
+        g.put(r.task);
 
         foreach (v; r.inputs)
         {
-            g.add(v);
-            g.add(v, r.task, EdgeType.explicit);
+            g.put(v);
+            g.put(v, r.task, EdgeType.explicit);
         }
 
         foreach (v; r.outputs)
         {
-            g.add(v);
-            g.add(r.task, v, EdgeType.explicit);
+            g.put(v);
+            g.put(r.task, v, EdgeType.explicit);
         }
     }
 

@@ -68,7 +68,7 @@ struct Graph(A, B, EdgeData)
     /**
      * Adds a vertex.
      */
-    void add(Vertex)(Vertex v) pure
+    void put(Vertex)(Vertex v) pure
         if (isVertex!Vertex)
     {
         if (v !in neighbors!Vertex)
@@ -88,10 +88,10 @@ struct Graph(A, B, EdgeData)
     unittest
     {
         auto g = G();
-        g.add(X(1));
-        g.add(Y(1));
-        g.add(X(1));
-        g.add(Y(1));
+        g.put(X(1));
+        g.put(Y(1));
+        g.put(X(1));
+        g.put(Y(1));
 
         assert(g.length!X == 1);
         assert(g.length!Y == 1);
@@ -110,7 +110,7 @@ struct Graph(A, B, EdgeData)
     /**
      * Adds an edge. Both vertices must be added to the graph first.
      */
-    void add(From,To)(From from, To to, EdgeData data) pure
+    void put(From,To)(From from, To to, EdgeData data) pure
         if (isEdge!(From, To))
     {
         neighbors!From[from][to] = data;
@@ -119,9 +119,9 @@ struct Graph(A, B, EdgeData)
     unittest
     {
         auto g = G();
-        g.add(X(1));
-        g.add(Y(1));
-        g.add(X(1), Y(1), 42);
+        g.put(X(1));
+        g.put(Y(1));
+        g.put(X(1), Y(1), 42);
     }
 
     /**
@@ -136,9 +136,9 @@ struct Graph(A, B, EdgeData)
     unittest
     {
         auto g = G();
-        g.add(X(1));
-        g.add(Y(1));
-        g.add(X(1), Y(1), 42);
+        g.put(X(1));
+        g.put(Y(1));
+        g.put(X(1), Y(1), 42);
 
         assert(g.length!X == 1);
         assert(g.length!Y == 1);
@@ -264,13 +264,13 @@ struct Graph(A, B, EdgeData)
 
         bool visitVertex(Vertex)(Vertex v)
         {
-            g.add(v);
+            g.put(v);
             return true;
         }
 
         void visitEdge(From, To, EdgeData)(From from, To to, EdgeData data)
         {
-            g.add(from, to, data);
+            g.put(from, to, data);
         }
 
         traverse(rootsA, rootsB,
@@ -319,9 +319,9 @@ unittest
     import std.stdio;
 
     auto g = G();
-    g.add(X(1));
-    g.add(Y(1));
-    g.add(X(1), Y(1), 42);
+    g.put(X(1));
+    g.put(Y(1));
+    g.put(X(1), Y(1), 42);
 
     auto g2 = g.subgraph([X(1)], [Y(1)]);
     assert(g2.length!X == 1);
@@ -337,18 +337,18 @@ unittest
     alias C = Change;
 
     auto g1 = G();
-    g1.add(X(1));
-    g1.add(X(2));
-    g1.add(Y(1));
-    g1.add(X(1), Y(1), 100);
-    g1.add(X(2), Y(1), 200);
+    g1.put(X(1));
+    g1.put(X(2));
+    g1.put(Y(1));
+    g1.put(X(1), Y(1), 100);
+    g1.put(X(2), Y(1), 200);
 
     auto g2 = G();
-    g2.add(X(1));
-    g2.add(X(3));
-    g2.add(Y(1));
-    g2.add(Y(2));
-    g2.add(X(1), Y(1), 101);
+    g2.put(X(1));
+    g2.put(X(3));
+    g2.put(Y(1));
+    g2.put(Y(2));
+    g2.put(X(1), Y(1), 101);
 
     assert(g1.diffVertices!X(g2).equal([
         C!X(X(1), ChangeType.none),
