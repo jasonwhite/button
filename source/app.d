@@ -28,6 +28,9 @@ int main(string[] args)
         case "update":
             return update(commandArgs);
 
+        case "graph":
+            return graph(commandArgs);
+
         default:
             displayHelp(commandArgs);
             return 1;

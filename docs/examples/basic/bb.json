@@ -3,18 +3,20 @@
         {
             "inputs": ["foo.c", "baz.h"],
             "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
-            "outputs": ["foo.o"]
+            "outputs": ["foo.o"],
+            "display": "cc foo.c"
         },
         {
             "inputs": ["bar.c", "baz.h"],
             "task": ["gcc", "-c", "bar.c", "-o", "bar.o"],
-            "outputs": ["bar.o"]
+            "outputs": ["bar.o"],
+            "display": "cc bar.c"
         },
         {
             "inputs": ["foo.o", "bar.o"],
             "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
             "outputs": ["foobar"],
-            "description": "Linking"
+            "display": "link foobar"
         }
     ]
 }

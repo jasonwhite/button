@@ -38,6 +38,7 @@ Usage: bb <command> {options] [<args>]
 
 The most commonly used commands are:
    update   Builds based on changes.
+   graph    Writes the build description in GraphViz format.
    help     Prints help on a specific command.
 
 Use 'bb help <command>' to for help on a specific command.
