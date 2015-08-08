@@ -10,6 +10,7 @@ version (unittest)
     // Dummy types for testing
     private struct X { int x; alias x this; }
     private struct Y { int y; alias y this; }
+    private alias G = Graph!(X, Y, int);
 }
 
 /**
@@ -31,10 +32,21 @@ struct Graph(A, B, EdgeData)
         alias neighbors(Vertex : B) = neighborsB;
     }
 
+    struct Edge(From, To)
+    {
+        From from;
+        To to;
+        EdgeData data;
+    }
+
+    enum isVertex(Vertex) = is(Vertex : A) || is(Vertex : B);
+    enum isEdge(From, To) = isVertex!From && isVertex!To;
+
     /**
      * Returns the number of vertices for the given type.
      */
     @property size_t length(Vertex)() const pure nothrow
+        if (isVertex!Vertex)
     {
         return neighbors!Vertex.length;
     }
@@ -43,6 +55,7 @@ struct Graph(A, B, EdgeData)
      * Adds a vertex.
      */
     void add(Vertex)(Vertex v) pure
+        if (isVertex!Vertex)
     {
         if (v !in neighbors!Vertex)
             neighbors!Vertex[v] = neighbors!Vertex[v].init;
@@ -53,13 +66,14 @@ struct Graph(A, B, EdgeData)
      * it.
      */
     void remove(Vertex)(Vertex v) pure
+        if (isVertex!Vertex)
     {
         neighbors!Vertex.remove(v);
     }
 
     unittest
     {
-        auto g = Graph!(X,Y,int)();
+        auto g = G();
         g.add(X(1));
         g.add(Y(1));
         g.add(X(1));
@@ -83,13 +97,14 @@ struct Graph(A, B, EdgeData)
      * Adds an edge. Both vertices must be added to the graph first.
      */
     void add(From,To)(From from, To to, EdgeData data) pure
+        if (isEdge!(From, To))
     {
         neighbors!From[from][to] = data;
     }
 
     unittest
     {
-        auto g = Graph!(X,Y,int)();
+        auto g = G();
         g.add(X(1));
         g.add(Y(1));
         g.add(X(1), Y(1), 42);
@@ -99,13 +114,14 @@ struct Graph(A, B, EdgeData)
      * Removes an edge.
      */
     void remove(From, To)(From from, To to) pure
+        if (isEdge!(From, To))
     {
         neighbors!From[from].remove(to);
     }
 
     unittest
     {
-        auto g = Graph!(X,Y,int)();
+        auto g = G();
         g.add(X(1));
         g.add(Y(1));
         g.add(X(1), Y(1), 42);
@@ -124,6 +140,7 @@ struct Graph(A, B, EdgeData)
      */
     @property
     auto vertices(Vertex)() const pure
+        if (isVertex!Vertex)
     {
         return neighbors!Vertex.byKey;
     }
@@ -134,20 +151,24 @@ struct Graph(A, B, EdgeData)
      * TODO
      */
     auto edges(From, To)() const pure
+        if (isEdge!(From, To))
     {
-        foreach (i; vertices!From)
-        {
-            foreach (j; neighbors(i))
-            {
-                //yield (i, j)
-            }
-        }
+        import std.array : appender;
+
+        auto edges = appender!(Edge!(From, To)[]);
+
+        foreach (j; neighbors!From.byKeyValue())
+            foreach (k; j.value.byKeyValue())
+                edges.put(Edge!(From, To)(j.key, k.key, k.value));
+
+        return edges.data;
     }
 
     /**
      * Returns a range of outgoing neighbors from the given node.
      */
     auto outgoing(Vertex)(Vertex v) pure
+        if (isVertex!Vertex)
     {
         return neighbors!Vertex[v];
     }
@@ -249,13 +270,32 @@ struct Graph(A, B, EdgeData)
     }
 
     /**
-     * Returns a set of differences between this graph and another.
-     *
-     * The set of differences includes added/removed vertices and edges.
+     * Returns the set of changes between the vertices in this graph and the
+     * other.
      */
-    auto diff(const ref Graph!(A, B, EdgeData) other) const pure
+    auto diffVertices(Vertex)(const ref typeof(this) other) const pure
+        if (isVertex!Vertex)
     {
-        // TODO
+        import std.array : array;
+        import std.algorithm.sorting : sort;
+        import change;
+
+        auto vertices      = this.neighbors!Vertex.byKey().array.sort();
+        auto otherVertices = other.neighbors!Vertex.byKey().array.sort();
+
+        return changes(vertices, otherVertices);
+    }
+
+    /**
+     * Returns the set of changes between the edges in this graph and the other.
+     */
+    auto diffEdges(From, To)(const ref typeof(this) other) const pure
+        if (isEdge!(From, To))
+    {
+        auto theseEdges = this.edges!(From, To).sort();
+        auto thoseEdges = other.edges!(From, To).sort();
+
+        return changes(theseEdges, thoseEdges);
     }
 }
 
@@ -263,7 +303,7 @@ unittest
 {
     import std.stdio;
 
-    auto g = Graph!(X, Y, int)();
+    auto g = G();
     g.add(X(1));
     g.add(Y(1));
     g.add(X(1), Y(1), 42);
@@ -271,4 +311,25 @@ unittest
     auto g2 = g.subgraph([X(1)], [Y(1)]);
     assert(g2.length!X == 1);
     assert(g2.length!Y == 1);
+}
+
+unittest
+{
+    import io;
+
+    auto g = G();
+    g.add(X(1));
+
+    g.add(Y(1));
+    g.add(Y(2));
+    g.add(Y(3));
+
+    g.add(X(1), Y(1), 0);
+    g.add(X(1), Y(2), 1);
+    g.add(X(1), Y(3), 2);
+
+    foreach (e; g.edges!(X, Y))
+    {
+        println(e.from, " -> ", e.to, " (", e.data, ")");
+    }
 }
