@@ -37,6 +37,20 @@ struct Graph(A, B, EdgeData)
         From from;
         To to;
         EdgeData data;
+
+        int opCmp()(const auto ref typeof(this) rhs) const pure nothrow
+        {
+            if (this.from != rhs.from)
+                return this.from < rhs.from ? -1 : 1;
+
+            if (this.to != rhs.to)
+                return this.to < rhs.to ? -1 : 1;
+
+            if (this.data != rhs.data)
+                return this.data < rhs.data ? -1 : 1;
+
+            return 0;
+        }
     }
 
     enum isVertex(Vertex) = is(Vertex : A) || is(Vertex : B);
@@ -136,7 +150,7 @@ struct Graph(A, B, EdgeData)
     }
 
     /**
-     * Returns a range of vertices.
+     * Returns a range of vertices of the given type.
      */
     @property
     auto vertices(Vertex)() const pure
@@ -146,9 +160,7 @@ struct Graph(A, B, EdgeData)
     }
 
     /**
-     * Returns a range of edges.
-     *
-     * TODO
+     * Returns an array of edges of the given type.
      */
     auto edges(From, To)() const pure
         if (isEdge!(From, To))
@@ -280,10 +292,10 @@ struct Graph(A, B, EdgeData)
         import std.algorithm.sorting : sort;
         import change;
 
-        auto vertices      = this.neighbors!Vertex.byKey().array.sort();
-        auto otherVertices = other.neighbors!Vertex.byKey().array.sort();
+        auto theseVertices = this.neighbors!Vertex.byKey().array.sort();
+        auto thoseVertices = other.neighbors!Vertex.byKey().array.sort();
 
-        return changes(vertices, otherVertices);
+        return changes(theseVertices, thoseVertices);
     }
 
     /**
@@ -292,6 +304,9 @@ struct Graph(A, B, EdgeData)
     auto diffEdges(From, To)(const ref typeof(this) other) const pure
         if (isEdge!(From, To))
     {
+        import std.algorithm.sorting : sort;
+        import change;
+
         auto theseEdges = this.edges!(From, To).sort();
         auto thoseEdges = other.edges!(From, To).sort();
 
@@ -315,21 +330,42 @@ unittest
 
 unittest
 {
+    import std.algorithm.comparison : equal;
+    import change;
     import io;
 
-    auto g = G();
-    g.add(X(1));
+    alias C = Change;
 
-    g.add(Y(1));
-    g.add(Y(2));
-    g.add(Y(3));
+    auto g1 = G();
+    g1.add(X(1));
+    g1.add(X(2));
+    g1.add(Y(1));
+    g1.add(X(1), Y(1), 100);
+    g1.add(X(2), Y(1), 200);
 
-    g.add(X(1), Y(1), 0);
-    g.add(X(1), Y(2), 1);
-    g.add(X(1), Y(3), 2);
+    auto g2 = G();
+    g2.add(X(1));
+    g2.add(X(3));
+    g2.add(Y(1));
+    g2.add(Y(2));
+    g2.add(X(1), Y(1), 101);
 
-    foreach (e; g.edges!(X, Y))
-    {
-        println(e.from, " -> ", e.to, " (", e.data, ")");
-    }
+    assert(g1.diffVertices!X(g2).equal([
+        C!X(X(1), ChangeType.none),
+        C!X(X(2), ChangeType.removed),
+        C!X(X(3), ChangeType.added),
+    ]));
+
+    assert(g1.diffVertices!Y(g2).equal([
+        C!Y(Y(1), ChangeType.none),
+        C!Y(Y(2), ChangeType.added),
+    ]));
+
+    alias E = G.Edge;
+
+    assert(g1.diffEdges!(X, Y)(g2).equal([
+        C!(E!(X, Y))(E!(X, Y)(X(1), Y(1), 100), ChangeType.removed),
+        C!(E!(X, Y))(E!(X, Y)(X(1), Y(1), 101), ChangeType.added),
+        C!(E!(X, Y))(E!(X, Y)(X(2), Y(1), 200), ChangeType.removed),
+    ]));
 }
