@@ -193,7 +193,7 @@ unittest
 /**
  * Generates a graph from a set of rules.
  */
-Graph!(Resource, Task, EdgeType) graph(R)(auto ref R rules)
+Graph!(Resource, Task) graph(R)(auto ref R rules)
     if (is(ElementType!R : const(Rule)))
 {
     auto g = typeof(return)();
@@ -205,13 +205,13 @@ Graph!(Resource, Task, EdgeType) graph(R)(auto ref R rules)
         foreach (v; r.inputs)
         {
             g.put(v);
-            g.put(v, r.task, EdgeType.explicit);
+            g.put(v, r.task);
         }
 
         foreach (v; r.outputs)
         {
             g.put(v);
-            g.put(r.task, v, EdgeType.explicit);
+            g.put(r.task, v);
         }
     }
 

@@ -8,8 +8,11 @@
  */
 module bb.state.sqlite;
 
-import bb.vertex, bb.edge;
+import bb.vertex;
+import bb.edge, bb.edgedata;
 import sqlite3;
+
+import std.typecons : tuple, Tuple;
 
 /**
  * Table for holding resource vertices.
@@ -25,8 +28,6 @@ CREATE TABLE IF NOT EXISTS resource (
 
 /**
  * Table for holding task vertices.
- *
- * TODO: Add field to display in place of command.
  */
 private immutable tasksTable = q"{
 CREATE TABLE IF NOT EXISTS task (
@@ -72,21 +73,28 @@ private immutable tables = [
  * Simple type to leverage the type system to differentiate between storage
  * indices.
  */
-struct Index(T, N=ulong)
+struct Index(T)
 {
-    N index;
+    ulong index;
     alias index this;
 }
 
-unittest
+/**
+ * Convenience type for an edge composed of two indices.
+ */
+alias Index(A, B) = Edge!(Index!A, Index!B);
+
+/**
+ * An edge row in the database.
+ */
+struct EdgeRow(A, B, EdgeData=EdgeType)
 {
-    static assert( is(Index!(string, ulong) : ulong));
-    static assert( is(Index!(string, int)   : int));
-    static assert(!is(Index!(string, ulong) : int));
+    Index!(A, B) edge;
+    EdgeData data;
 }
 
 /**
- * Deserializes a vertex from an SQLite statement. This assumes that the
+ * Deserializes a vertex from a SQLite statement. This assumes that the
  * statement has every column of the vertex except the row ID.
  */
 Vertex parse(Vertex : Resource)(SQLite3.Statement s)
@@ -103,26 +111,38 @@ Vertex parse(Vertex : Task)(SQLite3.Statement s)
 }
 
 /**
- * Deserializes an edge from an SQLite statement. This assumes that the
+ * Deserializes an edge from a SQLite statement. This assumes that the
  * statement has every column of the vertex except the row ID.
  */
-E parse(E : Edge!(Index!Resource, Index!Task))(SQLite3.Statement s)
+E parse(E : EdgeRow!(Resource, Task))(SQLite3.Statement s)
 {
     return E(
-        Index!Resource(s.get!ulong(0)),
-        Index!Task(s.get!ulong(1)),
+        Index!(Resource, Task)(
+            Index!Resource(s.get!ulong(0)),
+            Index!Task(s.get!ulong(1))
+        ),
         cast(EdgeType)s.get!int(2)
         );
 }
 
 /// Ditto
-E parse(E : Edge!(Index!Task, Index!Resource))(SQLite3.Statement s)
+E parse(E : EdgeRow!(Task, Resource))(SQLite3.Statement s)
 {
     return E(
-        Index!Task(s.get!ulong(0)),
-        Index!Resource(s.get!ulong(1)),
+        Index!(Task, Resource)(
+            Index!Task(s.get!ulong(0)),
+            Index!Resource(s.get!ulong(1))
+        ),
         cast(EdgeType)s.get!int(2)
         );
+}
+
+/**
+ * Deserializes edge data.
+ */
+E parse(E : EdgeType)(SQLite3.Statement s)
+{
+    return cast(EdgeType)s.get!int(0);
 }
 
 /**
@@ -450,18 +470,18 @@ class BuildState : SQLite3
      * Adds an edge. Throws an exception if the edge already exists. Returns the
      * index of the edge.
      */
-    Index!(Edge!(Resource, Task)) add(Edge!(Index!Resource, Index!Task) edge)
+    Index!(Edge!(Resource, Task)) add(Index!(Resource, Task) edge, EdgeType type)
     {
         execute(`INSERT INTO resourceEdge("from", "to", type) VALUES(?, ?, ?)`,
-                edge.from, edge.to, edge.type);
+                edge.from, edge.to, type);
         return typeof(return)(lastInsertId);
     }
 
     /// Ditto
-    Index!(Edge!(Task, Resource)) add(Edge!(Index!Task, Index!Resource) edge)
+    Index!(Edge!(Task, Resource)) add(Index!(Task, Resource) edge, EdgeType type)
     {
         execute(`INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`,
-                edge.from, edge.to, edge.type);
+                edge.from, edge.to, type);
         return typeof(return)(lastInsertId);
     }
 
@@ -472,10 +492,10 @@ class BuildState : SQLite3
         auto state = new BuildState;
 
         // Creating an edge to non-existent vertices should fail.
-        immutable edge = Edge!(Index!Task, Index!Resource)
-            (Index!Task(4), Index!Resource(8), EdgeType.explicit);
+        immutable edge = Index!(Task, Resource)
+            (Index!Task(4), Index!Resource(8));
 
-        assert(collectException!SQLite3Exception(state.add(edge)));
+        assert(collectException!SQLite3Exception(state.add(edge, EdgeType.explicit)));
     }
 
     unittest
@@ -491,7 +511,7 @@ class BuildState : SQLite3
         immutable taskId = state.add(Task(["gcc", "foo.c"]));
         assert(taskId == 1);
 
-        immutable edgeId = state.add(Edge!(Index!Resource, Index!Task)(resId, taskId, EdgeType.explicit));
+        immutable edgeId = state.add(Index!(Resource, Task)(resId, taskId, EdgeType.explicit));
         assert(edgeId == 1);
     }
 
@@ -515,7 +535,7 @@ class BuildState : SQLite3
 
         immutable resId  = state.add(Resource("foo.c"));
         immutable taskId = state.add(Task(["gcc", "foo.c"]));
-        immutable edgeId = state.add(Edge!(Index!Resource, Index!Task)(resId, taskId, EdgeType.explicit));
+        immutable edgeId = state.add(Index!(Resource, Task)(resId, taskId, EdgeType.explicit));
         state.remove(edgeId);
         state.remove(resId);
         state.remove(taskId);
@@ -524,7 +544,7 @@ class BuildState : SQLite3
     /**
      * Gets the state associated with an edge.
      */
-    Edge!(Index!Task, Index!Resource) opIndex(Index!(Edge!(Task, Resource)) index)
+    EdgeRow!(Task, Resource) opIndex(Index!(Edge!(Task, Resource)) index)
     {
         import std.exception : enforce;
 
@@ -536,7 +556,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Edge!(Index!Resource, Index!Task) opIndex(Index!(Edge!(Resource, Task)) index)
+    EdgeRow!(Resource, Task) opIndex(Index!(Edge!(Resource, Task)) index)
     {
         import std.exception : enforce;
 
@@ -548,12 +568,24 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Edge!(Index!Task, Index!Resource) opIndex(Index!Task from, Index!Resource to)
+    EdgeType opIndex(Index!Task from, Index!Resource to)
     {
         import std.exception : enforce;
 
         auto s = prepare(
-            `SELECT "from","to","type" FROM taskEdge WHERE "from"=? AND "to"=?`,
+            `SELECT "type" FROM taskEdge WHERE "from"=? AND "to"=?`, from, to);
+        enforce(s.step(), "Edge does not exist.");
+
+        return s.parse!(typeof(return));
+    }
+
+    /// Ditto
+    EdgeType opIndex(Index!Resource from, Index!Task to)
+    {
+        import std.exception : enforce;
+
+        auto s = prepare(
+            `SELECT "type" FROM resourceEdge WHERE "from"=? AND "to"=?`,
             from, to);
         enforce(s.step(), "Edge does not exist.");
 
@@ -561,16 +593,15 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Edge!(Index!Resource, Index!Task) opIndex(Index!Resource from, Index!Task to)
+    EdgeType opIndex(Index!(Resource, Task) edge)
     {
-        import std.exception : enforce;
+        return opIndex(edge.from, edge.to);
+    }
 
-        auto s = prepare(
-            `SELECT "from","to","type" FROM resourceEdge WHERE "from"=? AND "to"=?`,
-            from, to);
-        enforce(s.step(), "Edge does not exist.");
-
-        return s.parse!(typeof(return));
+    /// Ditto
+    EdgeType opIndex(Index!(Task, Resource) edge)
+    {
+        return opIndex(edge.from, edge.to);
     }
 
     /**
@@ -580,7 +611,7 @@ class BuildState : SQLite3
      */
     @property auto taskEdges()
     {
-        alias T = Edge!(Index!Task, Index!Resource);
+        alias T = EdgeRow!(Task, Resource);
         return prepare(`SELECT "from","to","type" FROM taskEdge`)
             .rows!(parse!T);
     }
@@ -588,7 +619,7 @@ class BuildState : SQLite3
     /// Ditto
     @property auto taskEdgesSorted()
     {
-        alias T = Edge!(Index!Task, Index!Resource);
+        alias T = EdgeRow!(Task, Resource);
         return prepare(
             `SELECT "from","to","type" FROM taskEdge ORDER BY "from","to"`)
             .rows!(parse!T);
@@ -598,7 +629,7 @@ class BuildState : SQLite3
     @property auto taskEdgesNamed()
     {
         // TODO
-        alias T = Edge!(Index!Task, Index!Resource);
+        alias T = EdgeRow!(Task, Resource);
         return prepare(
             `SELECT "from","to","type" FROM taskEdge ORDER BY "from","to"`)
             .rows!(parse!T);
@@ -611,7 +642,7 @@ class BuildState : SQLite3
      */
     @property auto resourceEdges()
     {
-        alias T = Edge!(Index!Resource, Index!Task);
+        alias T = EdgeRow!(Resource, Task);
         return prepare(`SELECT "from","to","type" FROM resourceEdge`)
             .rows!(parse!T);
     }
@@ -619,7 +650,7 @@ class BuildState : SQLite3
     /// Ditto
     @property auto resourceEdgesSorted()
     {
-        alias T = Edge!(Index!Resource, Index!Task);
+        alias T = EdgeRow!(Resource, Task);
         return prepare(
             `SELECT "from","to","type" FROM resourceEdge ORDER BY "from","to"`)
             .rows!(parse!T);

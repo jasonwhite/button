@@ -13,44 +13,25 @@ version (unittest)
     private alias G = Graph!(X, Y, int);
 }
 
+import bb.edge;
+
 /**
  * A bipartite graph.
  */
-struct Graph(A, B, EdgeData)
+struct Graph(A, B)
     if (!is(A == B))
 {
     private
     {
         // Edges from A -> B
-        EdgeData[B][A] neighborsA;
+        bool[B][A] neighborsA;
 
         // Edges from B -> A
-        EdgeData[A][B] neighborsB;
+        bool[A][B] neighborsB;
 
         // Uniform way of accessing vertices.
         alias neighbors(Vertex : A) = neighborsA;
         alias neighbors(Vertex : B) = neighborsB;
-    }
-
-    struct Edge(From, To)
-    {
-        From from;
-        To to;
-        EdgeData data;
-
-        int opCmp()(const auto ref typeof(this) rhs) const pure nothrow
-        {
-            if (this.from != rhs.from)
-                return this.from < rhs.from ? -1 : 1;
-
-            if (this.to != rhs.to)
-                return this.to < rhs.to ? -1 : 1;
-
-            if (this.data != rhs.data)
-                return this.data < rhs.data ? -1 : 1;
-
-            return 0;
-        }
     }
 
     enum isVertex(Vertex) = is(Vertex : A) || is(Vertex : B);
@@ -110,10 +91,10 @@ struct Graph(A, B, EdgeData)
     /**
      * Adds an edge. Both vertices must be added to the graph first.
      */
-    void put(From,To)(From from, To to, EdgeData data) pure
+    void put(From,To)(From from, To to) pure
         if (isEdge!(From, To))
     {
-        neighbors!From[from][to] = data;
+        neighbors!From[from][to] = true;
     }
 
     unittest
@@ -171,7 +152,7 @@ struct Graph(A, B, EdgeData)
 
         foreach (j; neighbors!From.byKeyValue())
             foreach (k; j.value.byKeyValue())
-                edges.put(Edge!(From, To)(j.key, k.key, k.value));
+                edges.put(Edge!(From, To)(j.key, k.key));
 
         return edges.data;
     }
@@ -194,7 +175,7 @@ struct Graph(A, B, EdgeData)
      */
     void traverse(const(A)[] rootsA, const(B)[] rootsB,
          bool delegate(A) visitVertexA, bool delegate(B) visitVertexB,
-         void delegate(A,B,EdgeData) visitEdgeAB, void delegate(B,A,EdgeData) visitEdgeBA
+         void delegate(A,B) visitEdgeAB, void delegate(B,A) visitEdgeBA
          )
     {
         import std.container.rbtree : redBlackTree;
@@ -226,7 +207,7 @@ struct Graph(A, B, EdgeData)
                 foreach (child; outgoing(v).byKeyValue())
                 {
                     if (child.key in visitedB) continue;
-                    visitEdgeAB(v, child.key, child.value);
+                    visitEdgeAB(v, child.key);
                     visitedB.insert(child.key);
                     queueB ~= child.key;
                 }
@@ -244,7 +225,7 @@ struct Graph(A, B, EdgeData)
                 foreach (child; outgoing(v).byKeyValue())
                 {
                     if (child.key in visitedA) continue;
-                    visitEdgeBA(v, child.key, child.value);
+                    visitEdgeBA(v, child.key);
                     visitedA.insert(child.key);
                     queueA ~= child.key;
                 }
@@ -268,14 +249,14 @@ struct Graph(A, B, EdgeData)
             return true;
         }
 
-        void visitEdge(From, To, EdgeData)(From from, To to, EdgeData data)
+        void visitEdge(From, To)(From from, To to)
         {
-            g.put(from, to, data);
+            g.put(from, to);
         }
 
         traverse(rootsA, rootsB,
             &visitVertex!A, &visitVertex!B,
-            &visitEdge!(A,B,EdgeData), &visitEdge!(B,A,EdgeData)
+            &visitEdge!(A,B), &visitEdge!(B,A)
             );
 
         return g;
@@ -311,6 +292,41 @@ struct Graph(A, B, EdgeData)
         auto thoseEdges = other.edges!(From, To).sort();
 
         return changes(theseEdges, thoseEdges);
+    }
+
+    import io.stream.types : isSink;
+
+    /**
+     * Generate input suitable for GraphViz.
+     */
+    void graphviz(Stream)(Stream stream)
+        if (isSink!Stream)
+    {
+        import io.text;
+        stream.println("digraph G {");
+        scope (success) stream.println("}");
+
+        stream.println("    subgraph {\n"
+                       "        node [shape=ellipse, fillcolor=lightskyblue2, style=filled];"
+                );
+        foreach (v; vertices!A)
+            stream.printfln(`        "%s";`, v);
+        stream.println("    }");
+
+        stream.println("    subgraph {\n"
+                       "        node [shape=box, fillcolor=gray91, style=filled];"
+                );
+        foreach (v; vertices!B)
+            stream.printfln(`        "%s";`, v);
+        stream.println("    }");
+
+        // Draw the edges from A -> B
+        foreach (edge; edges!(A, B))
+            stream.printfln(`    "%s" -> "%s";`, edge.from, edge.to);
+
+        // Draw the edges from B -> A
+        foreach (edge; edges!(B, A))
+            stream.printfln(`    "%s" -> "%s";`, edge.from, edge.to);
     }
 }
 

@@ -31,7 +31,8 @@ int update(string[] args)
     {
         stderr.println(":: Loading build description...");
 
-        auto g = graph(File(buildDesc).byBlock!char.parseRules);
+        auto r = File(buildDesc).byBlock!char;
+        auto g = graph(parseRules(&r));
 
         //auto state = new BuildState(buildDesc.stateName);
 

@@ -10,7 +10,6 @@ module bb.commands.graph;
 
 import bb.vertex;
 import bb.graph;
-import bb.graphviz;
 
 int graph(string[] args)
 {
@@ -23,7 +22,8 @@ int graph(string[] args)
     try
     {
         stderr.println(":: Loading build description...");
-        auto g = graph(File(buildDesc).byBlock!char.parseRules);
+        auto r = File(buildDesc).byBlock!char;
+        auto g = graph(parseRules(&r));
         g.graphviz(stdout);
     }
     catch (ErrnoException e)
