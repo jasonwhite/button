@@ -10,10 +10,8 @@ version (unittest)
     // Dummy types for testing
     private struct X { int x; alias x this; }
     private struct Y { int y; alias y this; }
-    private alias G = Graph!(X, Y, int);
+    private alias G = Graph!(X, Y);
 }
-
-import bb.edge;
 
 /**
  * A bipartite graph.
@@ -102,7 +100,7 @@ struct Graph(A, B)
         auto g = G();
         g.put(X(1));
         g.put(Y(1));
-        g.put(X(1), Y(1), 42);
+        g.put(X(1), Y(1));
     }
 
     /**
@@ -119,7 +117,7 @@ struct Graph(A, B)
         auto g = G();
         g.put(X(1));
         g.put(Y(1));
-        g.put(X(1), Y(1), 42);
+        g.put(X(1), Y(1));
 
         assert(g.length!X == 1);
         assert(g.length!Y == 1);
@@ -147,6 +145,7 @@ struct Graph(A, B)
         if (isEdge!(From, To))
     {
         import std.array : appender;
+        import bb.edge;
 
         auto edges = appender!(Edge!(From, To)[]);
 
@@ -337,7 +336,7 @@ unittest
     auto g = G();
     g.put(X(1));
     g.put(Y(1));
-    g.put(X(1), Y(1), 42);
+    g.put(X(1), Y(1));
 
     auto g2 = g.subgraph([X(1)], [Y(1)]);
     assert(g2.length!X == 1);
@@ -349,6 +348,7 @@ unittest
     import std.algorithm.comparison : equal;
     import change;
     import io;
+    import bb.edge;
 
     alias C = Change;
 
@@ -356,15 +356,15 @@ unittest
     g1.put(X(1));
     g1.put(X(2));
     g1.put(Y(1));
-    g1.put(X(1), Y(1), 100);
-    g1.put(X(2), Y(1), 200);
+    g1.put(X(1), Y(1));
+    g1.put(X(2), Y(1));
 
     auto g2 = G();
     g2.put(X(1));
     g2.put(X(3));
     g2.put(Y(1));
     g2.put(Y(2));
-    g2.put(X(1), Y(1), 101);
+    g2.put(X(1), Y(1));
 
     assert(g1.diffVertices!X(g2).equal([
         C!X(X(1), ChangeType.none),
@@ -377,11 +377,10 @@ unittest
         C!Y(Y(2), ChangeType.added),
     ]));
 
-    alias E = G.Edge;
+    alias E = Edge!(X, Y);
 
     assert(g1.diffEdges!(X, Y)(g2).equal([
-        C!(E!(X, Y))(E!(X, Y)(X(1), Y(1), 100), ChangeType.removed),
-        C!(E!(X, Y))(E!(X, Y)(X(1), Y(1), 101), ChangeType.added),
-        C!(E!(X, Y))(E!(X, Y)(X(2), Y(1), 200), ChangeType.removed),
+        C!E(E(X(1), Y(1)), ChangeType.none),
+        C!E(E(X(2), Y(1)), ChangeType.removed),
     ]));
 }
