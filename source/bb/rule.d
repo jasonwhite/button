@@ -107,8 +107,7 @@ struct Rules
 /**
  * Convenience function for constructing a Rules range.
  */
-@property
-Rules parseRules(R)(R json)
+@property Rules parseRules(R)(R json)
     if (isInputRange!R)
 {
     import std.json : parseJSON;

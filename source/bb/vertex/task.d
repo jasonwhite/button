@@ -57,7 +57,7 @@ struct Task
     /**
      * Compares this task with another.
      */
-    int opCmp()(const auto ref Task rhs) const pure nothrow
+    int opCmp()(const auto ref typeof(this) rhs) const pure nothrow
     {
         import std.algorithm.comparison : cmp;
         return cmp(this.command, rhs.command);
