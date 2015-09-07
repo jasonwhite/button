@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS resource (
     id              INTEGER NOT NULL,
     path            TEXT    NOT NULL,
     lastModified    INTEGER NOT NULL,
+    checksum        INTEGER NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (path)
 )}";
@@ -119,7 +120,11 @@ struct EdgeRow(A, B, EdgeData=EdgeType)
 Vertex parse(Vertex : Resource)(SQLite3.Statement s)
 {
     import std.datetime : SysTime;
-    return Resource(s.get!string(0), SysTime(s.get!long(1)));
+    return Resource(
+            s.get!string(0),        // Path
+            SysTime(s.get!long(1)), // Last modified
+            s.get!ulong(2)          // Checksum
+            );
 }
 
 /// Ditto
@@ -216,8 +221,13 @@ class BuildState : SQLite3
      */
     Index!Resource put(in Resource resource)
     {
-        execute("INSERT INTO resource(path, lastModified) VALUES(?, ?)",
-                resource.path, resource.lastModified.stdTime);
+        execute(`INSERT INTO resource`
+                ` (path, lastModified, checksum)`
+                ` VALUES(?, ?, ?)`,
+                resource.path,
+                resource.lastModified.stdTime,
+                resource.checksum
+                );
         return Index!Resource(lastInsertId);
     }
 
@@ -278,7 +288,10 @@ class BuildState : SQLite3
         import std.exception : enforce;
         import std.datetime : SysTime;
 
-        auto s = prepare("SELECT path,lastModified FROM resource WHERE id=?", index);
+        auto s = prepare(
+                `SELECT path,lastModified,checksum`
+                ` FROM resource WHERE id=?`, index
+                );
         enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Resource();
@@ -306,7 +319,10 @@ class BuildState : SQLite3
         import std.exception : enforce;
         import std.datetime : SysTime;
 
-        auto s = prepare("SELECT path,lastModified FROM resource WHERE path=?", path);
+        auto s = prepare(
+                `SELECT path,lastModified,checksum`
+                ` FROM resource WHERE path=?`, path
+                );
         enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Resource();
@@ -352,18 +368,22 @@ class BuildState : SQLite3
      * Changes the state of the vertex at the given index. Throws an exception if
      * the vertex does not exist.
      */
-    void opIndexAssign(in Resource vertex, Index!Resource index)
+    void opIndexAssign(in Resource v, Index!Resource index)
     {
-        execute(`UPDATE resource SET path=?,lastModified=? WHERE id=?`,
-                vertex.path, vertex.lastModified.stdTime, index);
+        execute(
+                `UPDATE resource`
+                ` SET path=?,lastModified=?,checksum=?`
+                ` WHERE id=?`,
+                v.path, v.lastModified.stdTime, v.checksum, index
+                );
     }
 
     /// Ditto
-    void opIndexAssign(in Task vertex, Index!Task index)
+    void opIndexAssign(in Task v, Index!Task index)
     {
         import std.conv : to;
         execute(`UPDATE task SET command=? WHERE id=?`,
-                vertex.command.to!string, index);
+                v.command.to!string, index);
     }
 
     /**
@@ -372,7 +392,7 @@ class BuildState : SQLite3
      */
     @property auto vertices(Vertex : Resource)()
     {
-        return prepare("SELECT path,lastModified FROM resource")
+        return prepare(`SELECT path,lastModified,checksum FROM resource`)
             .rows!(parse!Resource);
     }
 
@@ -401,7 +421,7 @@ class BuildState : SQLite3
      */
     @property auto identifiers(Vertex : Resource)()
     {
-        return prepare("SELECT path FROM resource ORDER BY path")
+        return prepare(`SELECT path FROM resource ORDER BY path`)
             .rows!((SQLite3.Statement s) => s.get!string(0));
     }
 
@@ -430,7 +450,10 @@ class BuildState : SQLite3
      */
     @property auto verticesSorted(Vertex : Resource)()
     {
-        return prepare("SELECT path,lastModified FROM resource ORDER BY path")
+        return prepare(
+                `SELECT path,lastModified,checksum`
+                ` FROM resource ORDER BY path`
+                )
             .rows!(parse!Resource);
     }
 
@@ -460,7 +483,7 @@ class BuildState : SQLite3
      */
     @property auto vertices(Vertex : Task)()
     {
-        return prepare("SELECT command FROM task")
+        return prepare(`SELECT command FROM task`)
             .rows!(parse!Task);
     }
 
@@ -524,7 +547,7 @@ class BuildState : SQLite3
         import std.array : array;
         import std.algorithm : sort;
 
-        return prepare("SELECT command FROM task")
+        return prepare(`SELECT command FROM task`)
             .rows!(
                 (SQLite3.Statement s) =>
                     cast(TaskId)(s.get!string(0).to!(string[]))
@@ -558,19 +581,33 @@ class BuildState : SQLite3
      * Adds an edge. Throws an exception if the edge already exists. Returns the
      * index of the edge.
      */
-    Index!(Edge!(Resource, Task)) put(Index!(Resource, Task) edge, EdgeType type)
+    Index!(Edge!(Task, Resource)) put(Index!Task from, Index!Resource to,
+            EdgeType type = EdgeType.explicit)
     {
-        execute(`INSERT INTO resourceEdge("from", "to", type) VALUES(?, ?, ?)`,
-                edge.from, edge.to, type);
+        execute(`INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`,
+                from, to, type);
         return typeof(return)(lastInsertId);
     }
 
     /// Ditto
-    Index!(Edge!(Task, Resource)) put(Index!(Task, Resource) edge, EdgeType type)
+    Index!(Edge!(Resource, Task)) put(Index!Resource from, Index!Task to,
+            EdgeType type = EdgeType.explicit)
     {
-        execute(`INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`,
-                edge.from, edge.to, type);
+        execute(`INSERT INTO resourceEdge("from", "to", type) VALUES(?, ?, ?)`,
+                from, to, type);
         return typeof(return)(lastInsertId);
+    }
+
+    /// Ditto
+    auto put(Index!(Resource, Task) edge, EdgeType type)
+    {
+        return put(edge.from, edge.to, type);
+    }
+
+    /// Ditto
+    auto put(Index!(Task, Resource) edge, EdgeType type = EdgeType.explicit)
+    {
+        return put(edge.from, edge.to, type);
     }
 
     unittest
@@ -625,6 +662,79 @@ class BuildState : SQLite3
         state.remove(edgeId);
         state.remove(resId);
         state.remove(taskId);
+    }
+
+    /**
+     * Returns the number of incoming edges to the given vertex.
+     */
+    size_t degreeIn(Index!Resource index)
+    {
+        import std.exception : enforce;
+        auto s = prepare(`SELECT COUNT("to") FROM taskEdge WHERE "to"=?`,
+                index);
+        enforce(s.step(), "Failed to count incoming edges to resource");
+        return s.get!(typeof(return))(0);
+    }
+
+    /// Ditto
+    size_t degreeIn(Index!Task index)
+    {
+        import std.exception : enforce;
+        auto s = prepare(`SELECT COUNT("to") FROM resourceEdge WHERE "to"=?`,
+                index);
+        enforce(s.step(), "Failed to count incoming edges to task");
+        return s.get!(typeof(return))(0);
+    }
+
+    /// Ditto
+    size_t degreeOut(Index!Resource index)
+    {
+        import std.exception : enforce;
+        auto s = prepare(`SELECT COUNT("to") FROM resourceEdge WHERE "from"=?`,
+                index);
+        enforce(s.step(), "Failed to count outgoing edges from resource");
+        return s.get!(typeof(return))(0);
+    }
+
+    /// Ditto
+    size_t degreeOut(Index!Task index)
+    {
+        import std.exception : enforce;
+        auto s = prepare(`SELECT COUNT("to") FROM taskEdge WHERE "from"=?`,
+                index);
+        enforce(s.step(), "Failed to count outgoing edges from task");
+        return s.get!(typeof(return))(0);
+    }
+
+    unittest
+    {
+        auto state = new BuildState();
+
+        auto resources = [
+            state.put(Resource("foo")),
+            state.put(Resource("bar")),
+            ];
+
+        auto tasks = [
+            state.put(Task(["test"])),
+            state.put(Task(["foobar", "foo", "bar"])),
+            ];
+
+        state.put(tasks[0], resources[0]);
+        state.put(tasks[0], resources[1]);
+
+        state.put(resources[0], tasks[1]);
+        state.put(resources[1], tasks[1]);
+
+        assert(state.degreeIn(tasks[0]) == 0);
+        assert(state.degreeIn(tasks[1]) == 2);
+        assert(state.degreeIn(resources[0]) == 1);
+        assert(state.degreeIn(resources[1]) == 1);
+
+        assert(state.degreeOut(tasks[0]) == 2);
+        assert(state.degreeOut(tasks[1]) == 0);
+        assert(state.degreeOut(resources[0]) == 1);
+        assert(state.degreeOut(resources[1]) == 1);
     }
 
     /**
