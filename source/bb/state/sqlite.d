@@ -195,7 +195,7 @@ class BuildState : SQLite3
      * Inserts a vertex into the database. An exception is thrown if the vertex
      * already exists. Otherwise, the vertex's ID is returned.
      */
-    Index!Resource add(in Resource resource)
+    Index!Resource put(in Resource resource)
     {
         execute("INSERT INTO resource(path, lastModified) VALUES(?, ?)",
                 resource.path, resource.lastModified.stdTime);
@@ -203,7 +203,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Index!Task add(in Task task)
+    Index!Task put(in Task task)
     {
         import std.conv : to;
 
@@ -222,7 +222,7 @@ class BuildState : SQLite3
         {
             immutable vertex = Resource("foo.c", SysTime(9001));
 
-            auto id = state.add(vertex);
+            auto id = state.put(vertex);
             assert(id == 1);
             assert(state[id] == vertex);
         }
@@ -230,7 +230,7 @@ class BuildState : SQLite3
         {
             immutable vertex = Task(["foo", "test", "test test"]);
 
-            immutable id = state.add(vertex);
+            immutable id = state.put(vertex);
             assert(id == 1);
             assert(state[id] == vertex);
         }
@@ -313,7 +313,7 @@ class BuildState : SQLite3
 
         immutable vertex = Resource("foo.c", SysTime(9001));
 
-        auto id = state.add(vertex);
+        auto id = state.put(vertex);
         assert(id == 1);
         assert(state["foo.c"] == vertex);
     }
@@ -324,7 +324,7 @@ class BuildState : SQLite3
 
         immutable vertex = Task(["foo", "test", "test test"]);
 
-        immutable id = state.add(vertex);
+        immutable id = state.put(vertex);
         assert(id == 1);
         assert(state[["foo", "test", "test test"]] == vertex);
     }
@@ -372,7 +372,7 @@ class BuildState : SQLite3
             ];
 
         foreach (vertex; vertices)
-            state.add(vertex);
+            state.put(vertex);
 
         assert(equal(vertices, state.resources));
     }
@@ -411,7 +411,7 @@ class BuildState : SQLite3
             ];
 
         foreach (vertex; vertices)
-            state.add(vertex);
+            state.put(vertex);
 
         assert(equal(vertices.sort(), state.sortedResources));
     }
@@ -439,7 +439,7 @@ class BuildState : SQLite3
             ];
 
         foreach (task; tasks)
-            state.add(task);
+            state.put(task);
 
         assert(equal(tasks, state.tasks));
     }
@@ -467,7 +467,7 @@ class BuildState : SQLite3
             ];
 
         foreach (vertex; vertices)
-            state.add(vertex);
+            state.put(vertex);
 
         assert(equal(vertices.sort(), state.sortedTasks));
     }
@@ -498,7 +498,7 @@ class BuildState : SQLite3
             ];
 
         foreach (vertex; vertices)
-            state.add(vertex);
+            state.put(vertex);
 
         assert(equal(vertices.sort().map!(v => v.identifier), state.taskIdentifiers));
     }
@@ -507,7 +507,7 @@ class BuildState : SQLite3
      * Adds an edge. Throws an exception if the edge already exists. Returns the
      * index of the edge.
      */
-    Index!(Edge!(Resource, Task)) add(Index!(Resource, Task) edge, EdgeType type)
+    Index!(Edge!(Resource, Task)) put(Index!(Resource, Task) edge, EdgeType type)
     {
         execute(`INSERT INTO resourceEdge("from", "to", type) VALUES(?, ?, ?)`,
                 edge.from, edge.to, type);
@@ -515,7 +515,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Index!(Edge!(Task, Resource)) add(Index!(Task, Resource) edge, EdgeType type)
+    Index!(Edge!(Task, Resource)) put(Index!(Task, Resource) edge, EdgeType type)
     {
         execute(`INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`,
                 edge.from, edge.to, type);
@@ -532,7 +532,7 @@ class BuildState : SQLite3
         immutable edge = Index!(Task, Resource)
             (Index!Task(4), Index!Resource(8));
 
-        assert(collectException!SQLite3Exception(state.add(edge, EdgeType.explicit)));
+        assert(collectException!SQLite3Exception(state.put(edge, EdgeType.explicit)));
     }
 
     unittest
@@ -540,13 +540,13 @@ class BuildState : SQLite3
         auto state = new BuildState;
 
         // Create a couple of vertices to link together
-        immutable resId = state.add(Resource("foo.c"));
+        immutable resId = state.put(Resource("foo.c"));
         assert(resId == 1);
 
-        immutable taskId = state.add(Task(["gcc", "foo.c"]));
+        immutable taskId = state.put(Task(["gcc", "foo.c"]));
         assert(taskId == 1);
 
-        immutable edgeId = state.add(Index!(Resource, Task)(resId, taskId), EdgeType.explicit);
+        immutable edgeId = state.put(Index!(Resource, Task)(resId, taskId), EdgeType.explicit);
         assert(edgeId == 1);
     }
 
@@ -568,9 +568,9 @@ class BuildState : SQLite3
     {
         auto state = new BuildState;
 
-        immutable resId  = state.add(Resource("foo.c"));
-        immutable taskId = state.add(Task(["gcc", "foo.c"]));
-        immutable edgeId = state.add(Index!(Resource, Task)(resId, taskId), EdgeType.explicit);
+        immutable resId  = state.put(Resource("foo.c"));
+        immutable taskId = state.put(Task(["gcc", "foo.c"]));
+        immutable edgeId = state.put(Index!(Resource, Task)(resId, taskId), EdgeType.explicit);
         state.remove(edgeId);
         state.remove(resId);
         state.remove(taskId);
@@ -760,26 +760,26 @@ class BuildState : SQLite3
             Resource("bar.o"),
             Resource("foobar"),
             ];
-        auto resourceIds = resources.map!(r => state.add(r)).array;
+        auto resourceIds = resources.map!(r => state.put(r)).array;
 
         auto tasks = [
             Task(["gcc", "foo.c"]),
             Task(["gcc", "bar.c"]),
             Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]),
             ];
-        auto taskIds = tasks.map!(t => state.add(t)).array;
+        auto taskIds = tasks.map!(t => state.put(t)).array;
 
         alias EIRT = Index!(Resource, Task);
         alias EITR = Index!(Task, Resource);
 
-        state.add(EIRT(resourceIds[0], taskIds[0]), EdgeType.explicit);
-        state.add(EIRT(resourceIds[1], taskIds[1]), EdgeType.explicit);
-        state.add(EIRT(resourceIds[2], taskIds[2]), EdgeType.explicit);
-        state.add(EIRT(resourceIds[3], taskIds[2]), EdgeType.explicit);
+        state.put(EIRT(resourceIds[0], taskIds[0]), EdgeType.explicit);
+        state.put(EIRT(resourceIds[1], taskIds[1]), EdgeType.explicit);
+        state.put(EIRT(resourceIds[2], taskIds[2]), EdgeType.explicit);
+        state.put(EIRT(resourceIds[3], taskIds[2]), EdgeType.explicit);
 
-        state.add(EITR(taskIds[0], resourceIds[2]), EdgeType.explicit);
-        state.add(EITR(taskIds[1], resourceIds[3]), EdgeType.explicit);
-        state.add(EITR(taskIds[2], resourceIds[4]), EdgeType.explicit);
+        state.put(EITR(taskIds[0], resourceIds[2]), EdgeType.explicit);
+        state.put(EITR(taskIds[1], resourceIds[3]), EdgeType.explicit);
+        state.put(EITR(taskIds[2], resourceIds[4]), EdgeType.explicit);
 
         // Edges should come out in the same order as they are inserted
         assert(equal(state.edgeIdentifiers!Resource, [
