@@ -72,6 +72,9 @@ struct BuildDescription
         alias VertexId(Vertex : Task) = TaskId;
     }
 
+    /**
+     * Reads the rules from the given build description file.
+     */
     this(string path)
     {
         import io.file;
@@ -82,6 +85,9 @@ struct BuildDescription
         this(parseRules(&r));
     }
 
+    /**
+     * Constructs the build description from a list of rules.
+     */
     this(R)(auto ref R rules)
         if (is(ElementType!R : const(Rule)))
     {
@@ -94,6 +100,9 @@ struct BuildDescription
             put(r);
     }
 
+    /**
+     * Adds a rule.
+     */
     void put()(auto ref Rule r)
     {
         // TODO: Throw exception if task already exists.
@@ -113,18 +122,28 @@ struct BuildDescription
         }
     }
 
+    /**
+     * Adds a vertex.
+     */
     void put(Vertex)(Vertex v)
         if (isVertex!Vertex)
     {
         vertices!Vertex.insert(v);
     }
 
+    /**
+     * Adds an edge.
+     */
     void put(From, To)(From from, To to)
         if (isEdge!(From, To))
     {
         edges!(From, To).insert(Edge!(From, To)(from, to));
     }
 
+    /**
+     * Determines the changes between the list of vertices in the build
+     * description and that in the build state.
+     */
     auto diffVertices(Vertex)(BuildState state)
         if (isVertex!Vertex)
     {
@@ -137,6 +156,10 @@ struct BuildDescription
             );
     }
 
+    /**
+     * Determines the changes between the list of edges in the build description
+     * and that in the build state.
+     */
     auto diffEdges(From, To)(BuildState state)
         if (isEdge!(From, To))
     {
