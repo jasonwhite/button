@@ -49,7 +49,7 @@ struct Task
     /**
      * Returns the unique identifier for this vertex.
      */
-    @property const(TaskId) identifier() const pure nothrow
+    @property inout(TaskId) identifier() inout pure nothrow
     {
         return command;
     }

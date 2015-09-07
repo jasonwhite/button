@@ -46,7 +46,7 @@ struct Resource
     /**
      * Returns the unique identifier for this vertex.
      */
-    @property const(ResourceId) identifier() const pure nothrow
+    @property inout(ResourceId) identifier() inout pure nothrow
     {
         return path;
     }
