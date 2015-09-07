@@ -62,20 +62,20 @@ CREATE TABLE IF NOT EXISTS taskEdge (
 )}";
 
 /**
- * Table of scheduled resources.
+ * Table of pending resources.
  */
-private immutable scheduledResourcesTable = q"{
-CREATE TABLE IF NOT EXISTS scheduledResources (
+private immutable pendingResourcesTable = q"{
+CREATE TABLE IF NOT EXISTS pendingResources (
     resid INTEGER NOT NULL REFERENCES resource(id),
     UNIQUE (resid)
 )}";
 
 /**
- * Table of scheduled tasks.
+ * Table of pending tasks.
  */
-private immutable scheduledTasksTable = q"{
-CREATE TABLE IF NOT EXISTS scheduledTasks (
-    taskid INTEGER NOT NULL REFERENCES resource(id),
+private immutable pendingTasksTable = q"{
+CREATE TABLE IF NOT EXISTS pendingTasks (
+    taskid INTEGER NOT NULL REFERENCES task(id),
     UNIQUE (taskid)
 )}";
 
@@ -84,8 +84,8 @@ private immutable tables = [
     tasksTable,
     resourceEdgesTable,
     taskEdgesTable,
-    scheduledResourcesTable,
-    scheduledTasksTable,
+    pendingResourcesTable,
+    pendingTasksTable,
 ];
 
 /**
