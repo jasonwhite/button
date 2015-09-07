@@ -887,7 +887,7 @@ class BuildState : SQLite3
     /// Ditto
     @property auto pending(Vertex : Task)()
     {
-        return prepare("SELECT resid FROM pendingTasks")
+        return prepare("SELECT taskid FROM pendingTasks")
             .rows!((SQLite3.Statement s) => Index!Vertex(s.get!ulong(0)));
     }
 }
