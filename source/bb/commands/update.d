@@ -59,6 +59,8 @@ struct BuildDescription
     import bb.vertex, bb.edge;
     import bb.rule;
     import std.container.rbtree;
+    import bb.state;
+    import std.range.primitives : ElementType;
 
     private
     {
@@ -79,13 +81,19 @@ struct BuildDescription
         enum isEdge(From, To) = isVertex!From && isVertex!To;
     }
 
-    this(Rules rules)
+    this(R)(auto ref R rules)
+        if (is(ElementType!R : const(Rule)))
     {
+        _resources = redBlackTree!(Resource)();
+        _tasks     = redBlackTree!(Task)();
+        _edgesRT   = redBlackTree!(Edge!(Resource, Task))();
+        _edgesTR   = redBlackTree!(Edge!(Task, Resource))();
+
         foreach (r; rules)
             put(r);
     }
 
-    void put(ref Rule r)
+    void put()(auto ref Rule r)
     {
         _tasks.insert(r.task);
 
@@ -113,4 +121,69 @@ struct BuildDescription
     {
         edges!(From, To).insert(Edge!(From, To)(from, to));
     }
+
+    auto diffVertices(Vertex)(BuildState state)
+        if (isVertex!Vertex)
+    {
+        import change;
+        import std.algorithm : map;
+
+        return changes(vertices!Vertex[].map!(v => v.identifier),
+                state.identifiers!Vertex);
+    }
+}
+
+unittest
+{
+    import std.algorithm : equal;
+    import bb.rule, bb.state;
+    import bb.vertex;
+    import change;
+
+    Rule[] rules = [
+        {
+            inputs: [Resource("foo.c"), Resource("baz.h")],
+            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"], "cc foo.c"),
+            outputs: [Resource("foo.o")]
+        },
+        {
+            inputs: [Resource("bar.c"), Resource("baz.h")],
+            task: Task(["gcc", "-c", "bar.c", "-o", "bar.o"]),
+            outputs: [Resource("bar.o")]
+        },
+        {
+            inputs: [Resource("foo.o"), Resource("bar.o")],
+            task: Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]),
+            outputs: [Resource("foobar")]
+        }
+    ];
+
+    auto build = BuildDescription(rules);
+
+    auto state = new BuildState;
+    state.put(Resource("foo.c"));
+    state.put(Resource("bar.c"));
+    state.put(Resource("baz.h"));
+    state.put(Resource("foo.o"));
+    state.put(Resource("baz.o"));
+
+    immutable Change!ResourceId[] resourceResult = [
+        {"bar.c",  ChangeType.none},
+        {"bar.o",  ChangeType.removed},
+        {"baz.h",  ChangeType.none},
+        {"baz.o",  ChangeType.added},
+        {"foo.c",  ChangeType.none},
+        {"foo.o",  ChangeType.none},
+        {"foobar", ChangeType.removed},
+        ];
+
+    assert(equal(build.diffVertices!Resource(state), resourceResult));
+
+    immutable Change!TaskId[] taskResult = [
+        {["gcc", "-c", "bar.c", "-o", "bar.o"],     ChangeType.removed},
+        {["gcc", "-c", "foo.c", "-o", "foo.o"],     ChangeType.removed},
+        {["gcc", "foo.o", "bar.o", "-o", "foobar"], ChangeType.removed},
+        ];
+
+    assert(equal(build.diffVertices!Task(state), taskResult));
 }
