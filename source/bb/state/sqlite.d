@@ -726,13 +726,13 @@ class BuildState : SQLite3
         state.put(resources[0], tasks[1]);
         state.put(resources[1], tasks[1]);
 
-        assert(state.degreeIn(tasks[0]) == 0);
-        assert(state.degreeIn(tasks[1]) == 2);
+        assert(state.degreeIn(tasks[0])     == 0);
+        assert(state.degreeIn(tasks[1])     == 2);
         assert(state.degreeIn(resources[0]) == 1);
         assert(state.degreeIn(resources[1]) == 1);
 
-        assert(state.degreeOut(tasks[0]) == 2);
-        assert(state.degreeOut(tasks[1]) == 0);
+        assert(state.degreeOut(tasks[0])     == 2);
+        assert(state.degreeOut(tasks[1])     == 0);
         assert(state.degreeOut(resources[0]) == 1);
         assert(state.degreeOut(resources[1]) == 1);
     }
