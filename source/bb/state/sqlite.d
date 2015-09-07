@@ -351,7 +351,7 @@ class BuildState : SQLite3
      * Returns an input range that iterates over all resources. The order is
      * guaranteed to be the same as the order they were inserted in.
      */
-    @property auto resources()
+    @property auto vertices(Vertex : Resource)()
     {
         return prepare("SELECT path,lastModified FROM resource")
             .rows!(parse!Resource);
@@ -374,13 +374,13 @@ class BuildState : SQLite3
         foreach (vertex; vertices)
             state.put(vertex);
 
-        assert(equal(vertices, state.resources));
+        assert(equal(vertices, state.vertices!Resource));
     }
 
     /**
      * Returns a sorted range of resource identifiers.
      */
-    @property auto resourceIdentifiers()
+    @property auto identifiers(Vertex : Resource)()
     {
         return prepare("SELECT path FROM resource")
             .rows!((SQLite3.Statement s) => s.get!string(0));
@@ -390,7 +390,7 @@ class BuildState : SQLite3
      * Returns an input range that iterates over all resources in sorted
      * ascending order.
      */
-    @property auto sortedResources()
+    @property auto verticesSorted(Vertex : Resource)()
     {
         return prepare("SELECT path,lastModified FROM resource ORDER BY path")
             .rows!(parse!Resource);
@@ -413,14 +413,14 @@ class BuildState : SQLite3
         foreach (vertex; vertices)
             state.put(vertex);
 
-        assert(equal(vertices.sort(), state.sortedResources));
+        assert(equal(vertices.sort(), state.verticesSorted!Resource));
     }
 
     /**
      * Returns an input range that iterates over all tasks. The order is
      * guaranteed to be the same as the order they were inserted in.
      */
-    @property auto tasks()
+    @property auto vertices(Vertex : Task)()
     {
         return prepare("SELECT command,display FROM task")
             .rows!(parse!Task);
@@ -441,14 +441,14 @@ class BuildState : SQLite3
         foreach (task; tasks)
             state.put(task);
 
-        assert(equal(tasks, state.tasks));
+        assert(equal(tasks, state.vertices!Task));
     }
 
     /**
      * Returns an input range that iterates over all tasks in sorted ascending
      * order.
      */
-    @property auto sortedTasks()
+    @property auto verticesSorted(Vertex : Task)()
     {
         return prepare("SELECT command,display FROM task ORDER BY command")
             .rows!(parse!Task);
@@ -469,13 +469,13 @@ class BuildState : SQLite3
         foreach (vertex; vertices)
             state.put(vertex);
 
-        assert(equal(vertices.sort(), state.sortedTasks));
+        assert(equal(vertices.sort(), state.verticesSorted!Task));
     }
 
     /**
      * Returns a sorted range of task identifiers.
      */
-    @property auto taskIdentifiers()
+    @property auto identifiers(Vertex : Task)()
     {
         import std.conv : to;
         return prepare("SELECT command FROM task")
@@ -500,7 +500,8 @@ class BuildState : SQLite3
         foreach (vertex; vertices)
             state.put(vertex);
 
-        assert(equal(vertices.sort().map!(v => v.identifier), state.taskIdentifiers));
+        assert(equal(vertices.sort().map!(v => v.identifier),
+                    state.identifiers!Task));
     }
 
     /**
@@ -641,10 +642,8 @@ class BuildState : SQLite3
 
     /**
      * Lists all outgoing task edges.
-     *
-     * TODO: Return pairs of names and values.
      */
-    @property auto taskEdges()
+    @property auto edges(Vertex : Task)()
     {
         alias T = EdgeRow!(Task, Resource);
         return prepare(`SELECT "from","to","type" FROM taskEdge`)
@@ -652,18 +651,8 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    @property auto taskEdgesSorted()
+    @property auto edgesSorted(Vertex : Task)()
     {
-        alias T = EdgeRow!(Task, Resource);
-        return prepare(
-            `SELECT "from","to","type" FROM taskEdge ORDER BY "from","to"`)
-            .rows!(parse!T);
-    }
-
-    /// Ditto
-    @property auto taskEdgesNamed()
-    {
-        // TODO
         alias T = EdgeRow!(Task, Resource);
         return prepare(
             `SELECT "from","to","type" FROM taskEdge ORDER BY "from","to"`)
@@ -672,10 +661,8 @@ class BuildState : SQLite3
 
     /**
      * Lists all outgoing resource edges.
-     *
-     * TODO: Return pairs of names and values.
      */
-    @property auto resourceEdges()
+    @property auto edges(Vertex : Resource)()
     {
         alias T = EdgeRow!(Resource, Task);
         return prepare(`SELECT "from","to","type" FROM resourceEdge`)
@@ -683,7 +670,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    @property auto resourceEdgesSorted()
+    @property auto edgesSorted(Vertex : Resource)()
     {
         alias T = EdgeRow!(Resource, Task);
         return prepare(
