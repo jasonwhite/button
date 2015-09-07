@@ -382,7 +382,7 @@ class SQLite3
         }
 
         /// Ditto
-        T get(T)(uint i) if (is(T : string))
+        T get(T)(uint i) if (is(T : const(string)))
         {
             // We can safely cast here.
             return cast(T)get!(char[])(i);
@@ -441,7 +441,7 @@ class SQLite3
  */
 static struct Rows(alias read)
 {
-    import std.traits : ReturnType;
+    import std.traits : Unqual, ReturnType;
 
     alias T = ReturnType!read;
 
@@ -449,7 +449,7 @@ static struct Rows(alias read)
     {
         SQLite3.Statement _statement;
         bool _empty;
-        T _data;
+        Unqual!T _data;
     }
 
     this(SQLite3.Statement statement)
@@ -476,7 +476,7 @@ static struct Rows(alias read)
         _data = read(_statement);
     }
 
-    auto ref front() pure nothrow
+    ref T front() pure nothrow
     {
         return _data;
     }
