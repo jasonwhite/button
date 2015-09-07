@@ -24,16 +24,15 @@ int update(string[] args)
     import bb.state, bb.rule;
     import std.array : array;
 
-    auto buildDesc = (args.length > 1) ? args[1] : "bb.json";
+    // Path to the build description
+    auto path = (args.length > 1) ? args[1] : "bb.json";
 
     try
     {
         stderr.println(":: Loading build description...");
 
-        auto r = File(buildDesc).byBlock!char;
-        auto g = graph(parseRules(&r));
-
-        auto state = new BuildState(buildDesc.stateName);
+        auto build = BuildDescription(path);
+        auto state = new BuildState(path.stateName);
 
         // TODO: Diff build description with database
         stderr.println(":: Checking for build description changes...");

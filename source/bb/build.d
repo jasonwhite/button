@@ -72,6 +72,16 @@ struct BuildDescription
         alias VertexId(Vertex : Task) = TaskId;
     }
 
+    this(string path)
+    {
+        import io.file;
+        import io.range : byBlock;
+        import bb.rule;
+
+        auto r = File(path).byBlock!char;
+        this(parseRules(&r));
+    }
+
     this(R)(auto ref R rules)
         if (is(ElementType!R : const(Rule)))
     {
