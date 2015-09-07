@@ -11,7 +11,7 @@
  */
 module change;
 
-import std.range : isForwardRange, ElementType;
+import std.range : isInputRange, ElementType;
 
 /**
  * Type of a change.
@@ -36,7 +36,7 @@ struct Change(T)
  * Range for iterating over changes between two sorted ranges.
  */
 struct Changes(R1, R2, alias pred = "a < b")
-    if (isForwardRange!R1 && isForwardRange!R2 &&
+    if (isInputRange!R1 && isInputRange!R2 &&
         is(ElementType!R1 == ElementType!R2))
 {
     import std.range : ElementType;
