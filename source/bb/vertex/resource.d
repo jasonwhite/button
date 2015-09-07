@@ -94,4 +94,15 @@ struct Resource
         assert(Resource("test", SysTime(1), 1) == Resource("test", SysTime(1), 1));
         assert(Resource("test", SysTime(1), 1) != Resource("test", SysTime(2), 2));
     }
+
+    /**
+     * Deletes the resource from disk, but only if it is an output resource.
+     */
+    void remove() const
+    {
+        import std.file : unlink = remove, isFile;
+
+        if (lastModified != lastModified.init)
+            unlink(path);
+    }
 }
