@@ -15,7 +15,7 @@ import sqlite3;
 import std.typecons : tuple, Tuple;
 
 /**
- * Table for holding resource vertices.
+ * Table of resource vertices.
  */
 private immutable resourcesTable = q"{
 CREATE TABLE IF NOT EXISTS resource (
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS resource (
 )}";
 
 /**
- * Table for holding task vertices.
+ * Table of task vertices.
  */
 private immutable tasksTable = q"{
 CREATE TABLE IF NOT EXISTS task (
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS task (
 )}";
 
 /**
- * Table for holding outgoing edges from resources.
+ * Table of outgoing edges from resources.
  */
 private immutable resourceEdgesTable = q"{
 CREATE TABLE IF NOT EXISTS resourceEdge (
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS resourceEdge (
 )}";
 
 /**
- * Table for holding outgoing edges from tasks.
+ * Table of outgoing edges from tasks.
  */
 private immutable taskEdgesTable = q"{
 CREATE TABLE IF NOT EXISTS taskEdge (
@@ -61,11 +61,31 @@ CREATE TABLE IF NOT EXISTS taskEdge (
     UNIQUE ("from", "to")
 )}";
 
+/**
+ * Table of scheduled resources.
+ */
+private immutable scheduledResourcesTable = q"{
+CREATE TABLE IF NOT EXISTS scheduledResources (
+    resid INTEGER NOT NULL REFERENCES resource(id),
+    UNIQUE (resid)
+)}";
+
+/**
+ * Table of scheduled tasks.
+ */
+private immutable scheduledTasksTable = q"{
+CREATE TABLE IF NOT EXISTS scheduledTasks (
+    taskid INTEGER NOT NULL REFERENCES resource(id),
+    UNIQUE (taskid)
+)}";
+
 private immutable tables = [
     resourcesTable,
     tasksTable,
     resourceEdgesTable,
     taskEdgesTable,
+    scheduledResourcesTable,
+    scheduledTasksTable,
 ];
 
 /**
