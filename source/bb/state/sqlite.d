@@ -890,4 +890,36 @@ class BuildState : SQLite3
         return prepare("SELECT taskid FROM pendingTasks")
             .rows!((SQLite3.Statement s) => Index!Vertex(s.get!ulong(0)));
     }
+
+    unittest
+    {
+        import std.algorithm : map, equal;
+        import std.array : array;
+
+        auto state = new BuildState;
+
+        assert(state.pending!Resource.empty);
+        assert(state.pending!Task.empty);
+
+        immutable resources = ["a", "b", "c"];
+        auto resourceIds = resources.map!(r => state.put(Resource(r))).array;
+
+        immutable tasks = [["foo"], ["bar"]];
+        auto taskIds = tasks.map!(t => state.put(Task(t))).array;
+
+        foreach (immutable id; resourceIds)
+            state.addPending(id);
+
+        foreach (immutable id; taskIds)
+            state.addPending(id);
+
+        assert(equal(state.pending!Resource, resourceIds));
+        assert(equal(state.pending!Task, taskIds));
+
+        state.removePending(Index!Resource(1));
+        state.removePending(Index!Task(2));
+
+        assert(equal(state.pending!Resource, [2, 3].map!(x => Index!Resource(x))));
+        assert(equal(state.pending!Task, [Index!Task(1)]));
+    }
 }
