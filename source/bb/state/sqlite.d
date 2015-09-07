@@ -845,4 +845,49 @@ class BuildState : SQLite3
             Edge!(TaskId, ResourceId)(["gcc", "foo.o", "bar.o", "-o", "foobar"], "foobar"),
             ]));
     }
+
+    /**
+     * Adds a vertex to the list of pending vertices. If the vertex is already
+     * pending, nothing is done.
+     */
+    void addPending(Vertex : Resource)(Index!Vertex v)
+    {
+        execute(`INSERT OR IGNORE INTO pendingResources(resid) VALUES(?)`, v);
+    }
+
+    /// Ditto
+    void addPending(Vertex : Task)(Index!Vertex v)
+    {
+        execute(`INSERT OR IGNORE INTO pendingTasks(taskid) VALUES(?)`, v);
+    }
+
+    /**
+     * Removes a pending vertex.
+     */
+    void removePending(Vertex : Resource)(Index!Vertex v)
+    {
+        execute("DELETE FROM pendingResources WHERE resid=?", v);
+    }
+
+    /// Ditto
+    void removePending(Vertex : Task)(Index!Vertex v)
+    {
+        execute("DELETE FROM pendingTasks WHERE taskid=?", v);
+    }
+
+    /**
+     * Lists the pending vertices.
+     */
+    @property auto pending(Vertex : Resource)()
+    {
+        return prepare("SELECT resid FROM pendingResources")
+            .rows!((SQLite3.Statement s) => Index!Vertex(s.get!ulong(0)));
+    }
+
+    /// Ditto
+    @property auto pending(Vertex : Task)()
+    {
+        return prepare("SELECT resid FROM pendingTasks")
+            .rows!((SQLite3.Statement s) => Index!Vertex(s.get!ulong(0)));
+    }
 }
