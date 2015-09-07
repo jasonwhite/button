@@ -79,6 +79,9 @@ struct BuildDescription
 
         enum isVertex(Vertex) = is(Vertex : Resource) || is(Vertex : Task);
         enum isEdge(From, To) = isVertex!From && isVertex!To;
+
+        alias VertexId(Vertex : Resource) = ResourceId;
+        alias VertexId(Vertex : Task) = TaskId;
     }
 
     this(R)(auto ref R rules)
@@ -128,22 +131,51 @@ struct BuildDescription
         import change;
         import std.algorithm : map;
 
-        return changes(vertices!Vertex[].map!(v => v.identifier),
-                state.identifiers!Vertex);
+        return changes(
+            state.identifiers!Vertex,
+            vertices!Vertex[].map!(v => v.identifier)
+            );
+    }
+
+    auto diffEdges(From, To)(BuildState state)
+        if (isEdge!(From, To))
+    {
+        import change;
+        import std.algorithm : map;
+
+        return changes(
+            state.edgeIdentifiers!(VertexId!From, VertexId!To),
+            edges!(From, To)[].map!(
+                e => Edge!(VertexId!From, VertexId!To)(e.from.identifier, e.to.identifier)
+                )
+            );
     }
 }
 
 unittest
 {
     import std.algorithm : equal;
-    import bb.rule, bb.state;
-    import bb.vertex;
+    import bb.vertex, bb.edge, bb.rule, bb.state;
     import change;
+
+    auto state = new BuildState;
+
+    // Resources
+    state.put(Resource("foo.c"));
+    state.put(Resource("bar.c"));
+    state.put(Resource("baz.h"));
+    state.put(Resource("foo.o"));
+    state.put(Resource("baz.o"));
+
+    // Tasks
+    state.put(Task(["gcc", "-c", "foo.c", "-o", "foo.o"]));
+    state.put(Task(["gcc", "-c", "bar.c", "-o", "bar.o"]));
+    state.put(Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]));
 
     Rule[] rules = [
         {
             inputs: [Resource("foo.c"), Resource("baz.h")],
-            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"], "cc foo.c"),
+            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"]),
             outputs: [Resource("foo.o")]
         },
         {
@@ -153,37 +185,42 @@ unittest
         },
         {
             inputs: [Resource("foo.o"), Resource("bar.o")],
-            task: Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]),
+            task: Task(["gcc", "foo.o", "bar.o", "-o", "barfoo"]),
             outputs: [Resource("foobar")]
         }
     ];
 
     auto build = BuildDescription(rules);
 
-    auto state = new BuildState;
-    state.put(Resource("foo.c"));
-    state.put(Resource("bar.c"));
-    state.put(Resource("baz.h"));
-    state.put(Resource("foo.o"));
-    state.put(Resource("baz.o"));
-
     immutable Change!ResourceId[] resourceResult = [
         {"bar.c",  ChangeType.none},
-        {"bar.o",  ChangeType.removed},
+        {"bar.o",  ChangeType.added},
         {"baz.h",  ChangeType.none},
-        {"baz.o",  ChangeType.added},
+        {"baz.o",  ChangeType.removed},
         {"foo.c",  ChangeType.none},
         {"foo.o",  ChangeType.none},
-        {"foobar", ChangeType.removed},
+        {"foobar", ChangeType.added},
         ];
 
     assert(equal(build.diffVertices!Resource(state), resourceResult));
 
     immutable Change!TaskId[] taskResult = [
-        {["gcc", "-c", "bar.c", "-o", "bar.o"],     ChangeType.removed},
-        {["gcc", "-c", "foo.c", "-o", "foo.o"],     ChangeType.removed},
+        {["gcc", "-c", "bar.c", "-o", "bar.o"],     ChangeType.none},
+        {["gcc", "-c", "foo.c", "-o", "foo.o"],     ChangeType.none},
+        {["gcc", "foo.o", "bar.o", "-o", "barfoo"], ChangeType.added},
         {["gcc", "foo.o", "bar.o", "-o", "foobar"], ChangeType.removed},
         ];
 
     assert(equal(build.diffVertices!Task(state), taskResult));
+
+    immutable Change!(Edge!(string, TaskId))[] taskEdgeResult = [
+        {{"bar.c", ["gcc", "-c", "bar.c", "-o", "bar.o"]},     ChangeType.added},
+        {{"bar.o", ["gcc", "foo.o", "bar.o", "-o", "barfoo"]}, ChangeType.added},
+        {{"baz.h", ["gcc", "-c", "bar.c", "-o", "bar.o"]},     ChangeType.added},
+        {{"baz.h", ["gcc", "-c", "foo.c", "-o", "foo.o"]},     ChangeType.added},
+        {{"foo.c", ["gcc", "-c", "foo.c", "-o", "foo.o"]},     ChangeType.added},
+        {{"foo.o", ["gcc", "foo.o", "bar.o", "-o", "barfoo"]}, ChangeType.added},
+        ];
+
+    assert(equal(build.diffEdges!(Resource, Task)(state), taskEdgeResult));
 }
