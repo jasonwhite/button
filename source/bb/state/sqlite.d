@@ -301,7 +301,7 @@ class BuildState : SQLite3
      *
      * TODO: Only return the vertex's value.
      */
-    Resource opIndex(string path)
+    Resource opIndex(ResourceId path)
     {
         import std.exception : enforce;
         import std.datetime : SysTime;
@@ -313,7 +313,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Task opIndex(immutable string[] command)
+    Task opIndex(TaskId command)
     {
         import std.exception : enforce;
         import std.conv : to;
