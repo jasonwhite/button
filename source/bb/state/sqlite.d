@@ -694,7 +694,7 @@ class BuildState : SQLite3
     /**
      * Returns a range of edges as pairs of identifiers.
      */
-    @property auto resourceEdgeIdentifiers()
+    @property auto edgeIdentifiers(Vertex : Resource)()
     {
         alias T = Edge!(ResourceId, TaskId);
         return prepare(
@@ -706,7 +706,19 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    @property auto resourceEdgeIdentifiersSorted()
+    @property auto edgeIdentifiers(Vertex : Task)()
+    {
+        alias T = Edge!(TaskId, ResourceId);
+        return prepare(
+            `SELECT task.command, resource.path`
+            ` FROM taskEdge AS e`
+            ` JOIN resource ON e."from"=task.id`
+            ` JOIN task ON e."to"=resource.id`
+            ).rows!(parse!T);
+    }
+
+    /// Ditto
+    @property auto edgeIdentifiersSorted(Vertex : Resource)()
     {
         alias T = Edge!(ResourceId, TaskId);
         return prepare(
@@ -719,19 +731,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    @property auto taskEdgeIdentifiers()
-    {
-        alias T = Edge!(TaskId, ResourceId);
-        return prepare(
-            `SELECT task.command, resource.path`
-            ` FROM taskEdge AS e`
-            ` JOIN resource ON e."from"=task.id`
-            ` JOIN task ON e."to"=resource.id`
-            ).rows!(parse!T);
-    }
-
-    /// Ditto
-    @property auto taskEdgeIdentifiersSorted()
+    @property auto edgeIdentifiersSorted(Vertex : Task)()
     {
         alias T = Edge!(TaskId, ResourceId);
         return prepare(
@@ -782,26 +782,26 @@ class BuildState : SQLite3
         state.add(EITR(taskIds[2], resourceIds[4]), EdgeType.explicit);
 
         // Edges should come out in the same order as they are inserted
-        assert(equal(state.resourceEdgeIdentifiers, [
+        assert(equal(state.edgeIdentifiers!Resource, [
             Edge!(ResourceId, TaskId)("foo.c", ["gcc", "foo.c"]),
             Edge!(ResourceId, TaskId)("bar.c", ["gcc", "bar.c"]),
             Edge!(ResourceId, TaskId)("foo.o", ["gcc", "foo.o", "bar.o", "-o", "foobar"]),
             Edge!(ResourceId, TaskId)("bar.o", ["gcc", "foo.o", "bar.o", "-o", "foobar"]),
             ]));
-        assert(equal(state.taskEdgeIdentifiers, [
+        assert(equal(state.edgeIdentifiers!Task, [
             Edge!(TaskId, ResourceId)(["gcc", "foo.c"], "foo.o"),
             Edge!(TaskId, ResourceId)(["gcc", "bar.c"], "bar.o"),
             Edge!(TaskId, ResourceId)(["gcc", "foo.o", "bar.o", "-o", "foobar"], "foobar"),
             ]));
 
         // Edges should be sorted by their identifiers
-        assert(equal(state.resourceEdgeIdentifiersSorted, [
+        assert(equal(state.edgeIdentifiersSorted!Resource, [
             Edge!(ResourceId, TaskId)("bar.c", ["gcc", "bar.c"]),
             Edge!(ResourceId, TaskId)("bar.o", ["gcc", "foo.o", "bar.o", "-o", "foobar"]),
             Edge!(ResourceId, TaskId)("foo.c", ["gcc", "foo.c"]),
             Edge!(ResourceId, TaskId)("foo.o", ["gcc", "foo.o", "bar.o", "-o", "foobar"]),
             ]));
-        assert(equal(state.taskEdgeIdentifiersSorted, [
+        assert(equal(state.edgeIdentifiersSorted!Task, [
             Edge!(TaskId, ResourceId)(["gcc", "bar.c"], "bar.o"),
             Edge!(TaskId, ResourceId)(["gcc", "foo.c"], "foo.o"),
             Edge!(TaskId, ResourceId)(["gcc", "foo.o", "bar.o", "-o", "foobar"], "foobar"),
