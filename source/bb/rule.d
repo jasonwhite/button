@@ -77,18 +77,7 @@ struct Rules
             .array()
             .idup;
 
-        string display;
-
-        try
-        {
-            display = jsonRule["display"].str();
-        }
-        catch (JSONException e)
-        {
-            // This is optional. Ignore if it doesn't exist.
-        }
-
-        rule = Rule(inputs, outputs, Task(command, display));
+        rule = Rule(inputs, outputs, Task(command));
 
         rules.popFront();
     }
@@ -144,7 +133,7 @@ unittest
     immutable Rule[] rules = [
         {
             inputs: [Resource("foo.c"), Resource("baz.h")],
-            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"], "cc foo.c"),
+            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"]),
             outputs: [Resource("foo.o")]
         },
         {
@@ -222,7 +211,7 @@ unittest
     immutable Rule[] rules = [
         {
             inputs: [Resource("foo.c"), Resource("baz.h")],
-            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"], "cc foo.c"),
+            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"]),
             outputs: [Resource("foo.o")]
         },
         {

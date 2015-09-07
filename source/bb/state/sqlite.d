@@ -33,7 +33,6 @@ private immutable tasksTable = q"{
 CREATE TABLE IF NOT EXISTS task (
     id      INTEGER,
     command TEXT     NOT NULL,
-    display TEXT,
     PRIMARY KEY(id),
     UNIQUE(command)
 )}";
@@ -107,7 +106,7 @@ Vertex parse(Vertex : Resource)(SQLite3.Statement s)
 Vertex parse(Vertex : Task)(SQLite3.Statement s)
 {
     import std.conv : to;
-    return Task(s.get!string(0).to!(string[]), s.get!string(1));
+    return Task(s.get!string(0).to!(string[]));
 }
 
 /**
@@ -207,8 +206,8 @@ class BuildState : SQLite3
     {
         import std.conv : to;
 
-        execute("INSERT INTO task(command,display) VALUES(?,?)",
-                task.command.to!string(), task.display);
+        execute("INSERT INTO task(command) VALUES(?)",
+                task.command.to!string());
 
         return Index!Task(lastInsertId);
     }
@@ -270,7 +269,7 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        auto s = prepare("SELECT command,display FROM task WHERE id=?", index);
+        auto s = prepare("SELECT command FROM task WHERE id=?", index);
         enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Task();
@@ -299,7 +298,7 @@ class BuildState : SQLite3
         import std.exception : enforce;
         import std.conv : to;
 
-        auto s = prepare("SELECT command,display FROM task WHERE command=?", command.to!string);
+        auto s = prepare("SELECT command FROM task WHERE command=?", command.to!string);
         enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Task();
@@ -343,8 +342,8 @@ class BuildState : SQLite3
     void opIndexAssign(in Task vertex, Index!Task index)
     {
         import std.conv : to;
-        execute(`UPDATE task SET command=?,display=? WHERE id=?`,
-                vertex.command.to!string, vertex.display, index);
+        execute(`UPDATE task SET command=? WHERE id=?`,
+                vertex.command.to!string, index);
     }
 
     /**
@@ -382,7 +381,7 @@ class BuildState : SQLite3
      */
     @property auto identifiers(Vertex : Resource)()
     {
-        return prepare("SELECT path FROM resource")
+        return prepare("SELECT path FROM resource ORDER BY path")
             .rows!((SQLite3.Statement s) => s.get!string(0));
     }
 
@@ -441,7 +440,7 @@ class BuildState : SQLite3
      */
     @property auto vertices(Vertex : Task)()
     {
-        return prepare("SELECT command,display FROM task")
+        return prepare("SELECT command FROM task")
             .rows!(parse!Task);
     }
 
@@ -469,8 +468,13 @@ class BuildState : SQLite3
      */
     @property auto verticesSorted(Vertex : Task)()
     {
-        return prepare("SELECT command,display FROM task ORDER BY command")
-            .rows!(parse!Task);
+        import std.array : array;
+        import std.algorithm : sort;
+
+        // SQLite cannot correctly sort an array when that array is stored as a
+        // string. Thus, we must sort it in D. This has the penalty of loading
+        // all tasks into memory at once.
+        return vertices!Vertex.array.sort();
     }
 
     unittest
@@ -497,17 +501,21 @@ class BuildState : SQLite3
     @property auto identifiers(Vertex : Task)()
     {
         import std.conv : to;
+        import std.array : array;
+        import std.algorithm : sort;
+
         return prepare("SELECT command FROM task")
             .rows!(
                 (SQLite3.Statement s) =>
                     cast(TaskId)(s.get!string(0).to!(string[]))
-                );
+                )
+            .array()
+            .sort();
     }
 
     unittest
     {
         import std.algorithm : equal, map, sort;
-        import io;
 
         auto state = new BuildState;
 
@@ -723,25 +731,34 @@ class BuildState : SQLite3
     /// Ditto
     @property auto edgeIdentifiersSorted(From : ResourceId, To : TaskId)()
     {
+        import std.array : array;
+        import std.algorithm : sort;
+
         return prepare(
             `SELECT resource.path, task.command`
             ` FROM resourceEdge AS e`
             ` JOIN task ON e."from"=resource.id`
-            ` JOIN resource ON e."to"=task.id`
-            ` ORDER BY resource.path, task.command`
-            ).rows!(parse!(Edge!(From, To)));
+            ` JOIN resource ON e."to"=task.id`)
+            .rows!(parse!(Edge!(From, To)))
+            .array
+            .sort();
     }
 
     /// Ditto
     @property auto edgeIdentifiersSorted(From : TaskId, To : ResourceId)()
     {
+        import std.array : array;
+        import std.algorithm : sort;
+
         return prepare(
             `SELECT task.command, resource.path`
             ` FROM taskEdge AS e`
             ` JOIN resource ON e."from"=task.id`
             ` JOIN task ON e."to"=resource.id`
-            ` ORDER BY task.command, resource.path`
-            ).rows!(parse!(Edge!(From, To)));
+            ` ORDER BY task.command, resource.path`)
+            .rows!(parse!(Edge!(From, To)))
+            .array
+            .sort();
     }
 
     unittest

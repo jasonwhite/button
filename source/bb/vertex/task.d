@@ -28,7 +28,7 @@ struct Task
      * itself will be displayed. This is useful for reducing the amount of
      * information that is displayed.
      */
-    string display;
+    //string display;
 
     /**
      * Returns a string representation of the command.
@@ -41,7 +41,7 @@ struct Task
         import std.array : join;
         import std.algorithm.iteration : map;
 
-        if (display) return display;
+        //if (display) return display;
 
         return command.map!(arg => arg.escapeShellArg).join(" ");
     }
@@ -68,11 +68,10 @@ struct Task
         assert(Task(["a", "b"]) < Task(["a", "c"]));
         assert(Task(["a", "b"]) > Task(["a", "a"]));
 
-        assert(Task(["a", "b"], "b") < Task(["a", "c"], "a"));
-        assert(Task(["a", "b"], "a") > Task(["a", "a"], "b"));
+        assert(Task(["a", "b"]) < Task(["a", "c"]));
+        assert(Task(["a", "b"]) > Task(["a", "a"]));
 
         assert(Task(["a", "b"]) == Task(["a", "b"]));
-        assert(Task(["a", "b"]) != Task(["a", "b"], "test"));
     }
 }
 
