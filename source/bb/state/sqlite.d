@@ -280,6 +280,40 @@ class BuildState : SQLite3
         execute("DELETE FROM task WHERE id=?", index);
     }
 
+    /// Ditto
+    void remove(ResourceId path)
+    {
+        execute(`DELETE FROM resource WHERE path=?`, path);
+    }
+
+    /// Ditto
+    void remove(TaskId command)
+    {
+        import std.conv : to;
+        execute(`DELETE FROM task WHERE command=?`, command.to!string);
+    }
+
+    /**
+     * Returns the index of the given vertex.
+     */
+    Index!Resource find(ResourceId id)
+    {
+        import std.exception : enforce;
+        auto s = prepare(`SELECT id FROM resource WHERE path=?`, id);
+        enforce(s.step(), "Resource does not exist.");
+        return typeof(return)(s.get!ulong(0));
+    }
+
+    /// Ditto
+    Index!Task find(TaskId id)
+    {
+        import std.conv : to;
+        import std.exception : enforce;
+        auto s = prepare(`SELECT id FROM task WHERE command=?`, id.to!string);
+        enforce(s.step(), "Task does not exist.");
+        return typeof(return)(s.get!ulong(0));
+    }
+
     /**
      * Returns the vertex state at the given index.
      */
@@ -610,6 +644,38 @@ class BuildState : SQLite3
         return put(edge.from, edge.to, type);
     }
 
+    /// Ditto
+    Index!(Edge!(Resource, Task)) put(ResourceId a, TaskId b,
+            EdgeType type = EdgeType.explicit)
+    {
+        import std.conv : to;
+        import std.exception : enforce;
+
+        // TODO: Turn this into a single SQLite query
+        execute(
+                `INSERT INTO resourceEdge("from","to",type)`
+                ` VALUES (?, ?, ?)`,
+                find(a), find(b), type
+                );
+        return typeof(return)(lastInsertId);
+    }
+
+    /// Ditto
+    Index!(Edge!(Task, Resource)) put(TaskId a, ResourceId b,
+            EdgeType type = EdgeType.explicit)
+    {
+        import std.conv : to;
+        import std.exception : enforce;
+
+        // TODO: Turn this into a single SQLite query
+        execute(
+                `INSERT INTO taskEdge("from","to",type)`
+                ` VALUES (?, ?, ?)`,
+                find(a), find(b), type
+                );
+        return typeof(return)(lastInsertId);
+    }
+
     unittest
     {
         import std.exception : collectException;
@@ -638,6 +704,18 @@ class BuildState : SQLite3
         assert(edgeId == 1);
     }
 
+    unittest
+    {
+        auto state = new BuildState;
+
+        // Create a couple of vertices to link together
+        immutable resId = state.put(Resource("foo.c"));
+        immutable taskId = state.put(Task(["gcc", "foo.c"]));
+
+        immutable edgeId = state.put("foo.c", ["gcc", "foo.c"]);
+        assert(edgeId == 1);
+    }
+
     /**
      * Removes an edge. Throws an exception if the edge does not exist.
      */
@@ -650,6 +728,30 @@ class BuildState : SQLite3
     void remove(Index!(Edge!(Task, Resource)) index)
     {
         execute(`DELETE FROM taskEdge WHERE id=?`, index);
+    }
+
+    /// Ditto
+    void remove(Index!Resource from, Index!Task to)
+    {
+        execute(`DELETE FROM resourceEdge WHERE "from"=? AND "to"=?`, from, to);
+    }
+
+    /// Ditto
+    void remove(Index!Task from, Index!Resource to)
+    {
+        execute(`DELETE FROM taskEdge WHERE "from"=? AND "to"=?`, from, to);
+    }
+
+    /// Ditto
+    void remove(TaskId from, ResourceId to)
+    {
+        remove(find(from), find(to));
+    }
+
+    /// Ditto
+    void remove(ResourceId from, TaskId to)
+    {
+        remove(find(from), find(to));
     }
 
     unittest
@@ -983,6 +1085,18 @@ class BuildState : SQLite3
     void removePending(Vertex : Task)(Index!Vertex v)
     {
         execute("DELETE FROM pendingTasks WHERE taskid=?", v);
+    }
+
+    /// Ditto
+    void removePending(ResourceId v)
+    {
+        removePending(find(v));
+    }
+
+    /// Ditto
+    void removePending(TaskId v)
+    {
+        removePending(find(v));
     }
 
     /**

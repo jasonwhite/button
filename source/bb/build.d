@@ -167,11 +167,117 @@ struct BuildDescription
         import std.algorithm : map;
 
         return changes(
-            state.edgeIdentifiers!(VertexId!From, VertexId!To),
+            state.edgeIdentifiersSorted!(VertexId!From, VertexId!To),
             edges!(From, To)[].map!(
                 e => Edge!(VertexId!From, VertexId!To)(e.from.identifier, e.to.identifier)
                 )
             );
+    }
+
+    /**
+     * Synchronizes the build state with the build description.
+     */
+    void sync(BuildState state)
+    {
+        import change;
+        import std.array : array;
+
+        // TODO: Delete removed resources
+
+        auto resourceDiff     = diffVertices!Resource(state).array;
+        auto taskDiff         = diffVertices!Task(state).array;
+        auto resourceEdgeDiff = diffEdges!(Resource, Task)(state).array;
+        auto taskEdgeDiff     = diffEdges!(Task, Resource)(state).array;
+
+        state.begin();
+        scope (success) state.commit();
+        scope (failure) state.rollback();
+
+        // Delete output resources that are no longer part of the build. Note
+        // that the resource cannot be removed from the database yet. Edges that
+        // reference it must first be removed.
+        //
+        // FIXME: This assumes only explicit edges are referencing this
+        // resource. When implicit edges are introduced, resources should be
+        // garbage collected instead.
+        foreach (c; resourceDiff)
+        {
+            if (c.type == ChangeType.removed)
+            {
+                auto index = state.find(c.value);
+                if (state.degreeIn(index) > 0)
+                    state[index].remove();
+            }
+        }
+
+        // Add the vertices and mark as pending
+        foreach (c; taskDiff)
+        {
+            if (c.type == ChangeType.added)
+            {
+                state.addPending(state.put(Task(c.value)));
+            }
+        }
+
+        foreach (c; resourceDiff)
+        {
+            if (c.type == ChangeType.added)
+            {
+                state.addPending(state.put(Resource(c.value)));
+            }
+        }
+
+        // Add new edges and remove old edges
+        foreach (c; resourceEdgeDiff)
+        {
+            final switch (c.type)
+            {
+            case ChangeType.added:
+                state.put(c.value.from, c.value.to);
+                break;
+            case ChangeType.removed:
+                state.remove(c.value.from, c.value.to);
+                break;
+            case ChangeType.none:
+                break;
+            }
+        }
+
+        foreach (c; taskEdgeDiff)
+        {
+            final switch (c.type)
+            {
+            case ChangeType.added:
+                state.put(c.value.from, c.value.to);
+                break;
+            case ChangeType.removed:
+                state.remove(c.value.from, c.value.to);
+                break;
+            case ChangeType.none:
+                break;
+            }
+        }
+
+        // Remove old vertices
+        foreach (c; taskDiff)
+        {
+            if (c.type == ChangeType.removed)
+            {
+                auto id = state.find(c.value);
+                state.removePending(id);
+                state.remove(id);
+            }
+        }
+
+        foreach (c; resourceDiff)
+        {
+            if (c.type == ChangeType.removed)
+            {
+                auto id = state.find(c.value);
+                state.removePending(id);
+                state.remove(id);
+            }
+        }
     }
 }
 

@@ -101,8 +101,12 @@ struct Resource
     void remove() const
     {
         import std.file : unlink = remove, isFile;
+        import io;
 
-        if (lastModified != lastModified.init)
-            unlink(path);
+        println(":: Deleting `", path, "`");
+
+        // TODO: Delete for real when this is verified to be safe
+        //if (lastModified != lastModified.init)
+            //unlink(path);
     }
 }

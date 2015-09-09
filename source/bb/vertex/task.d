@@ -30,6 +30,8 @@ struct Task
      */
     //string display;
 
+    // TODO: Store last execution duration.
+
     /**
      * Returns a string representation of the command.
      *

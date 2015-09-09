@@ -8,8 +8,6 @@
  */
 module bb.commands.update;
 
-import bb.graph;
-import bb.build;
 
 /**
  * Updates the build.
@@ -21,8 +19,9 @@ int update(string[] args)
 {
     import io.text, io.file, io.buffer;
     import io.range : byBlock;
-    import bb.state, bb.rule;
     import std.array : array;
+
+    import bb.state, bb.rule, bb.graph, bb.build, bb.vertex, bb.edge;
 
     // Path to the build description
     auto path = (args.length > 1) ? args[1] : "bb.json";
@@ -31,8 +30,11 @@ int update(string[] args)
     {
         stderr.println(":: Loading build description...");
 
-        auto build = BuildDescription(path);
         auto state = new BuildState(path.stateName);
+        auto build = BuildDescription(path);
+        build.sync(state);
+
+        // The minimal subgraph can now be constructed
 
         // TODO: Diff build description with database
         stderr.println(":: Checking for build description changes...");
