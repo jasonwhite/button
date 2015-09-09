@@ -20,6 +20,7 @@ int update(string[] args)
     import io.text, io.file, io.buffer;
     import io.range : byBlock;
     import std.array : array;
+    import std.algorithm.iteration : filter;
 
     import bb.state, bb.rule, bb.graph, bb.build, bb.vertex, bb.edge;
 
@@ -34,12 +35,18 @@ int update(string[] args)
         auto build = BuildDescription(path);
         build.sync(state);
 
-        auto g = state.buildGraph();
+        stderr.println(":: Constructing subgraph...");
 
-        // The minimal subgraph can now be constructed
+        // Construct the minimal subgraph based on pending vertices
+        auto resourceRoots = state.pending!Resource
+            .filter!(v => state.degreeIn(v) == 0)
+            .array;
 
-        // TODO: Diff build description with database
-        stderr.println(":: Checking for build description changes...");
+        auto taskRoots = state.pending!Task
+            .filter!(v => state.degreeIn(v) == 0)
+            .array;
+
+        auto g = state.buildGraph.subgraph(resourceRoots, taskRoots);
     }
     catch (ErrnoException e)
     {
@@ -47,9 +54,7 @@ int update(string[] args)
         return 1;
     }
 
-    stderr.println(":: Updating...");
-
-    // TODO: Build subgraph and update.
+    stderr.println(":: Done.");
 
     return 0;
 }

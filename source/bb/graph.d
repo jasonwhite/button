@@ -292,41 +292,6 @@ struct Graph(A, B)
 
         return changes(theseEdges, thoseEdges);
     }
-
-    import io.stream.types : isSink;
-
-    /**
-     * Generate input suitable for GraphViz.
-     */
-    void graphviz(Stream)(Stream stream)
-        if (isSink!Stream)
-    {
-        import io.text;
-        stream.println("digraph G {");
-        scope (success) stream.println("}");
-
-        stream.println("    subgraph {\n"
-                       "        node [shape=ellipse, fillcolor=lightskyblue2, style=filled];"
-                );
-        foreach (v; vertices!A)
-            stream.printfln(`        "%s";`, v);
-        stream.println("    }");
-
-        stream.println("    subgraph {\n"
-                       "        node [shape=box, fillcolor=gray91, style=filled];"
-                );
-        foreach (v; vertices!B)
-            stream.printfln(`        "%s";`, v);
-        stream.println("    }");
-
-        // Draw the edges from A -> B
-        foreach (edge; edges!(A, B))
-            stream.printfln(`    "%s" -> "%s";`, edge.from, edge.to);
-
-        // Draw the edges from B -> A
-        foreach (edge; edges!(B, A))
-            stream.printfln(`    "%s" -> "%s";`, edge.from, edge.to);
-    }
 }
 
 unittest

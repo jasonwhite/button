@@ -10,21 +10,20 @@ module bb.commands.graph;
 
 import bb.vertex;
 import bb.graph;
+import bb.state;
+import bb.build;
+import bb.visualize;
 
 int graph(string[] args)
 {
     import io.text, io.file;
     import io.range : byBlock;
-    import bb.rule;
 
-    auto buildDesc = (args.length > 1) ? args[1] : "bb.json";
+    auto path = (args.length > 1) ? args[1] : "bb.json";
 
     try
     {
-        stderr.println(":: Loading build description...");
-        auto r = File(buildDesc).byBlock!char;
-        auto g = graph(parseRules(&r));
-        g.graphviz(stdout);
+        (new BuildState(path.stateName)).graphviz(stdout);
     }
     catch (ErrnoException e)
     {

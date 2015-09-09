@@ -352,7 +352,7 @@ unittest
 /**
  * Constructs a graph from the build state.
  */
-@property Graph!(Index!Task, Index!Resource) buildGraph(BuildState state)
+@property Graph!(Index!Resource, Index!Task) buildGraph(BuildState state)
 {
     auto g = typeof(return)();
 
