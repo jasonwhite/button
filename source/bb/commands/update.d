@@ -34,6 +34,8 @@ int update(string[] args)
         auto build = BuildDescription(path);
         build.sync(state);
 
+        auto g = state.buildGraph();
+
         // The minimal subgraph can now be constructed
 
         // TODO: Diff build description with database

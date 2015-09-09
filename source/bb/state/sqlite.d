@@ -162,6 +162,20 @@ E parse(E : EdgeRow!(Task, Resource))(SQLite3.Statement s)
 }
 
 /**
+ * Parses an edge without the associated data.
+ */
+E parse(E : Index!(Resource, Task))(SQLite3.Statement s)
+{
+    return E(Index!Resource(s.get!ulong(0)), Index!Task(s.get!ulong(1)));
+}
+
+/// Ditto
+E parse(E : Index!(Task, Resource))(SQLite3.Statement s)
+{
+    return E(Index!Task(s.get!ulong(0)), Index!Resource(s.get!ulong(1)));
+}
+
+/**
  * Deserializes edge data.
  */
 E parse(E : EdgeType)(SQLite3.Statement s)
@@ -612,6 +626,22 @@ class BuildState : SQLite3
     }
 
     /**
+     * Returns a range of row indices.
+     */
+    @property auto indices(Vertex : Resource)()
+    {
+        return prepare(`SELECT id FROM resource`)
+            .rows!((SQLite3.Statement s) => Index!Vertex(s.get!ulong(0)));
+    }
+
+    /// Ditto
+    @property auto indices(Vertex : Task)()
+    {
+        return prepare(`SELECT id FROM task`)
+            .rows!((SQLite3.Statement s) => Index!Vertex(s.get!ulong(0)));
+    }
+
+    /**
      * Adds an edge. Throws an exception if the edge already exists. Returns the
      * index of the edge.
      */
@@ -907,16 +937,8 @@ class BuildState : SQLite3
      */
     @property auto edges(From : Task, To : Resource)()
     {
-        return prepare(`SELECT "from","to","type" FROM taskEdge`)
-            .rows!(parse!(EdgeRow!(From, To)));
-    }
-
-    /// Ditto
-    @property auto edgesSorted(From : Task, To : Resource)()
-    {
-        return prepare(
-            `SELECT "from","to","type" FROM taskEdge ORDER BY "from","to"`)
-            .rows!(parse!(EdgeRow!(From, To)));
+        return prepare(`SELECT "from","to" FROM taskEdge`)
+            .rows!(parse!(Index!(From, To)));
     }
 
     /**
@@ -924,16 +946,8 @@ class BuildState : SQLite3
      */
     @property auto edges(From : Resource, To : Task)()
     {
-        return prepare(`SELECT "from","to","type" FROM resourceEdge`)
-            .rows!(parse!(EdgeRow!(From, To)));
-    }
-
-    /// Ditto
-    @property auto edgesSorted(From : Resource, To : Task)()
-    {
-        return prepare(
-            `SELECT "from","to","type" FROM resourceEdge ORDER BY "from","to"`)
-            .rows!(parse!(EdgeRow!(From, To)));
+        return prepare(`SELECT "from","to" FROM resourceEdge`)
+            .rows!(parse!(Index!(From, To)));
     }
 
     /**

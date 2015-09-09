@@ -8,6 +8,10 @@
  */
 module bb.build;
 
+import bb.graph;
+import bb.vertex;
+import bb.state;
+
 /**
  * Constructs the name of the build state file based on the build description
  * file name.
@@ -44,10 +48,9 @@ unittest
  */
 struct BuildDescription
 {
-    import bb.vertex, bb.edge;
+    import bb.edge;
     import bb.rule;
     import std.container.rbtree;
-    import bb.state;
     import std.range.primitives : ElementType;
 
     private
@@ -344,4 +347,22 @@ unittest
         ];
 
     assert(equal(build.diffEdges!(Resource, Task)(state), taskEdgeResult));
+}
+
+/**
+ * Constructs a graph from the build state.
+ */
+@property Graph!(Index!Task, Index!Resource) buildGraph(BuildState state)
+{
+    auto g = typeof(return)();
+
+    // Add all vertices
+    foreach (v; state.indices!Resource) g.put(v);
+    foreach (v; state.indices!Task)     g.put(v);
+
+    // Add all edges
+    foreach (v; state.edges!(Resource, Task)) g.put(v.from, v.to);
+    foreach (v; state.edges!(Task, Resource)) g.put(v.from, v.to);
+
+    return g;
 }
