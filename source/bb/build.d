@@ -212,20 +212,12 @@ struct BuildDescription
 
         // Add the vertices and mark as pending
         foreach (c; taskDiff)
-        {
             if (c.type == ChangeType.added)
-            {
                 state.addPending(state.put(Task(c.value)));
-            }
-        }
 
         foreach (c; resourceDiff)
-        {
             if (c.type == ChangeType.added)
-            {
                 state.addPending(state.put(Resource(c.value)));
-            }
-        }
 
         // Add new edges and remove old edges
         foreach (c; resourceEdgeDiff)
