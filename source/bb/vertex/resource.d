@@ -52,12 +52,12 @@ struct Resource
     }
 
     /**
-     * Compares this resource with another.
+     * Compares the file path of this resource with another.
      */
     int opCmp()(const auto ref Resource rhs) const pure
     {
-        import std.algorithm : cmp;
-        return cmp(this.path, rhs.path);
+        import std.path : filenameCmp;
+        return filenameCmp(this.path, rhs.path);
     }
 
     unittest
