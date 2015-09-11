@@ -16,20 +16,29 @@ version (unittest)
 /**
  * A bipartite graph.
  */
-struct Graph(A, B)
+struct Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     if (!is(A == B))
 {
+    alias EdgeData(From : A, To : B) = EdgeDataAB;
+    alias EdgeData(From : B, To : A) = EdgeDataBA;
+
     private
     {
+        // Number of incoming edges
+        size_t[A] _degreeInA;
+        size_t[B] _degreeInB;
+
         // Edges from A -> B
-        bool[B][A] neighborsA;
+        EdgeData!(A, B)[B][A] neighborsA;
 
         // Edges from B -> A
-        bool[A][B] neighborsB;
+        EdgeData!(B, A)[A][B] neighborsB;
 
-        // Uniform way of accessing vertices.
+        // Uniform way of accessing data structures for each vertex type.
         alias neighbors(Vertex : A) = neighborsA;
         alias neighbors(Vertex : B) = neighborsB;
+        alias _degreeIn(Vertex : A)  = _degreeInA;
+        alias _degreeIn(Vertex : B)  = _degreeInB;
     }
 
     enum isVertex(Vertex) = is(Vertex : A) || is(Vertex : B);
@@ -45,13 +54,24 @@ struct Graph(A, B)
     }
 
     /**
+     * Returns the number of edges going into the given vertex.
+     */
+    size_t degreeIn(Vertex)(Vertex v)
+    {
+        return _degreeIn!Vertex[v];
+    }
+
+    /**
      * Adds a vertex.
      */
     void put(Vertex)(Vertex v) pure
         if (isVertex!Vertex)
     {
         if (v !in neighbors!Vertex)
+        {
             neighbors!Vertex[v] = neighbors!Vertex[v].init;
+            _degreeIn!Vertex[v] = 0;
+        }
     }
 
     /**
@@ -62,6 +82,7 @@ struct Graph(A, B)
         if (isVertex!Vertex)
     {
         neighbors!Vertex.remove(v);
+        _degreeIn!Vertex.remove(v);
     }
 
     unittest
@@ -89,10 +110,15 @@ struct Graph(A, B)
     /**
      * Adds an edge. Both vertices must be added to the graph first.
      */
-    void put(From,To)(From from, To to) pure
+    void put(From,To)(From from, To to,
+            EdgeData!(From, To) data = EdgeData!(From,To).init
+            ) pure
         if (isEdge!(From, To))
     {
-        neighbors!From[from][to] = true;
+        assert(to !in neighbors!From[from], "Attempted to add duplicate edge");
+
+        neighbors!From[from][to] = data;
+        ++_degreeIn!To[to];
     }
 
     unittest
@@ -101,6 +127,7 @@ struct Graph(A, B)
         g.put(X(1));
         g.put(Y(1));
         g.put(X(1), Y(1));
+        assert(g.degreeIn(Y(1)) == 1);
     }
 
     /**
@@ -109,7 +136,10 @@ struct Graph(A, B)
     void remove(From, To)(From from, To to) pure
         if (isEdge!(From, To))
     {
+        assert(to in neighbors!From[from], "Attempted to remove non-existent edge");
+
         neighbors!From[from].remove(to);
+        --_degreeIn!To[to];
     }
 
     unittest
@@ -121,11 +151,13 @@ struct Graph(A, B)
 
         assert(g.length!X == 1);
         assert(g.length!Y == 1);
+        assert(g.degreeIn(Y(1)) == 1);
 
         g.remove(X(1), Y(1));
 
         assert(g.length!X == 1);
         assert(g.length!Y == 1);
+        assert(g.degreeIn(Y(1)) == 0);
     }
 
     /**
@@ -147,11 +179,14 @@ struct Graph(A, B)
         import std.array : appender;
         import bb.edge;
 
-        auto edges = appender!(Edge!(From, To)[]);
+        alias E = Edge!(From, To, EdgeData!(From, To));
+
+        // TODO: Lazily return list of edges.
+        auto edges = appender!(E[]);
 
         foreach (j; neighbors!From.byKeyValue())
             foreach (k; j.value.byKeyValue())
-                edges.put(Edge!(From, To)(j.key, k.key));
+                edges.put(E(j.key, k.key, k.value));
 
         return edges.data;
     }
@@ -342,10 +377,10 @@ unittest
         C!Y(Y(2), ChangeType.added),
     ]));
 
-    alias E = Edge!(X, Y);
+    alias E = Edge!(X, Y, size_t);
 
     assert(g1.diffEdges!(X, Y)(g2).equal([
-        C!E(E(X(1), Y(1)), ChangeType.none),
-        C!E(E(X(2), Y(1)), ChangeType.removed),
+        C!E(E(X(1), Y(1), 0), ChangeType.none),
+        C!E(E(X(2), Y(1), 0), ChangeType.removed),
     ]));
 }
