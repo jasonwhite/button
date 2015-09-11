@@ -8,6 +8,17 @@
  */
 module bb.commands.update;
 
+import std.array : array;
+import std.algorithm.iteration : filter;
+
+import io.text,
+       io.file;
+
+import bb.state,
+       bb.rule,
+       bb.graph,
+       bb.build,
+       bb.vertex;
 
 /**
  * Updates the build.
@@ -17,18 +28,10 @@ module bb.commands.update;
  */
 int update(string[] args)
 {
-    import io.text, io.file, io.buffer;
-    import io.range : byBlock;
-    import std.array : array;
-    import std.algorithm.iteration : filter;
-
-    import bb.state, bb.rule, bb.graph, bb.build, bb.vertex, bb.edge;
-
-    // Path to the build description
-    auto path = (args.length > 1) ? args[1] : "bb.json";
-
     try
     {
+        string path = buildDescriptionPath((args.length > 1) ? args[1] : null);
+
         stderr.println(":: Loading build description...");
 
         auto state = new BuildState(path.stateName);
@@ -48,13 +51,11 @@ int update(string[] args)
 
         auto g = state.buildGraph.subgraph(resourceRoots, taskRoots);
     }
-    catch (ErrnoException e)
+    catch (BuildException e)
     {
         stderr.println(":: Error: " ~ e.msg);
         return 1;
     }
-
-    stderr.println(":: Done.");
 
     return 0;
 }

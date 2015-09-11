@@ -13,6 +13,17 @@ import bb.vertex;
 import bb.state;
 
 /**
+ * An exception relating to the build.
+ */
+class BuildException : Exception
+{
+    this(string msg)
+    {
+        super(msg);
+    }
+}
+
+/**
  * Constructs the name of the build state file based on the build description
  * file name.
  */
@@ -84,8 +95,15 @@ struct BuildDescription
         import io.range : byBlock;
         import bb.rule;
 
-        auto r = File(path).byBlock!char;
-        this(parseRules(&r));
+        try
+        {
+            auto r = File(path).byBlock!char;
+            this(parseRules(&r));
+        }
+        catch (ErrnoException e)
+        {
+            throw new BuildException("Failed to open build description: " ~ e.msg);
+        }
     }
 
     /**
@@ -365,4 +383,51 @@ unittest
     foreach (v; state.edges!(Task, Resource)) g.put(v.from, v.to);
 
     return g;
+}
+
+/**
+ * Finds the path to the build description.
+ *
+ * Throws BuildException if no path is given and none could be found.
+ */
+string findBuildPath(string path)
+{
+    if (path !is null)
+        return path;
+
+    // TODO: Search for "bb.json" in the current directory and all parent
+    // directories.
+    //
+    // If none is found, throw BuildException.
+    return "bb.json";
+}
+
+/**
+ * Changes the current working directory to be the parent directory of the build
+ * build path. The new path to the build description is returned.
+ */
+string changeToBuildPath(string path)
+{
+    import std.file : chdir, FileException;
+    import std.path : dirName, baseName;
+
+    try
+    {
+        chdir(path.dirName);
+    }
+    catch (FileException e)
+    {
+        // Rethrow
+        throw new BuildException(e.msg);
+    }
+
+    return path.baseName;
+}
+
+/**
+ * Gets the path to the build description.
+ */
+string buildDescriptionPath(string path)
+{
+    return path.findBuildPath.changeToBuildPath;
 }

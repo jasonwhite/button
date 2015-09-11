@@ -8,24 +8,24 @@
  */
 module bb.commands.graph;
 
-import bb.vertex;
-import bb.graph;
-import bb.state;
-import bb.build;
-import bb.visualize;
+import io.text,
+       io.file;
+
+import bb.vertex,
+       bb.graph,
+       bb.state,
+       bb.build,
+       bb.visualize;
 
 int graph(string[] args)
 {
-    import io.text, io.file;
-    import io.range : byBlock;
-
-    auto path = (args.length > 1) ? args[1] : "bb.json";
-
     try
     {
+        string path = buildDescriptionPath((args.length > 1) ? args[1] : null);
+
         (new BuildState(path.stateName)).graphviz(stdout);
     }
-    catch (ErrnoException e)
+    catch (BuildException e)
     {
         stderr.println(":: Error: " ~ e.msg);
         return 1;
