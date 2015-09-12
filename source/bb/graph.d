@@ -19,6 +19,15 @@ version (unittest)
 struct Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     if (!is(A == B))
 {
+    /**
+     * Find the opposite vertex type of the given vertex type.
+     */
+    alias Opposite(Vertex : A) = B;
+    alias Opposite(Vertex : B) = A; /// Ditto
+
+    /**
+     * Uniform way of referencing edge data.
+     */
     alias EdgeData(From : A, To : B) = EdgeDataAB;
     alias EdgeData(From : B, To : A) = EdgeDataBA;
 
@@ -51,6 +60,14 @@ struct Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         if (isVertex!Vertex)
     {
         return neighbors!Vertex.length;
+    }
+
+    /**
+     * Returns true if the graph is empty.
+     */
+    @property bool empty() const pure nothrow
+    {
+        return length!A == 0 && length!B == 0;
     }
 
     /**
@@ -88,10 +105,15 @@ struct Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     unittest
     {
         auto g = G();
+
+        assert(g.empty);
+
         g.put(X(1));
         g.put(Y(1));
         g.put(X(1));
         g.put(Y(1));
+
+        assert(!g.empty);
 
         assert(g.length!X == 1);
         assert(g.length!Y == 1);
@@ -170,25 +192,43 @@ struct Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         return neighbors!Vertex.byKey;
     }
 
+    static struct Edges(From, To)
+    {
+        import bb.edge;
+        alias Neighbors = EdgeData!(From, To)[To][From];
+        alias E = Edge!(From, To, EdgeData!(From, To));
+
+        private const(Neighbors) _neighbors;
+
+        this(const(Neighbors) neighbors)
+        {
+            _neighbors = neighbors;
+        }
+
+        int opApply(int delegate(E) dg) const
+        {
+            int result = 0;
+
+            foreach (j; _neighbors.byKeyValue())
+            {
+                foreach (k; j.value.byKeyValue())
+                {
+                    result = dg(E(j.key, k.key, k.value));
+                    if (result) break;
+                }
+            }
+
+            return result;
+        }
+    }
+
     /**
      * Returns an array of edges of the given type.
      */
     auto edges(From, To)() const pure
         if (isEdge!(From, To))
     {
-        import std.array : appender;
-        import bb.edge;
-
-        alias E = Edge!(From, To, EdgeData!(From, To));
-
-        // TODO: Lazily return list of edges.
-        auto edges = appender!(E[]);
-
-        foreach (j; neighbors!From.byKeyValue())
-            foreach (k; j.value.byKeyValue())
-                edges.put(E(j.key, k.key, k.value));
-
-        return edges.data;
+        return Edges!(From, To)(neighbors!From);
     }
 
     /**
@@ -316,14 +356,15 @@ struct Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Returns the set of changes between the edges in this graph and the other.
      */
-    auto diffEdges(From, To)(const ref typeof(this) other) const pure
+    auto diffEdges(From, To)(const ref typeof(this) other) const
         if (isEdge!(From, To))
     {
+        import std.array : array;
         import std.algorithm.sorting : sort;
         import change;
 
-        auto theseEdges = this.edges!(From, To).sort();
-        auto thoseEdges = other.edges!(From, To).sort();
+        auto theseEdges = this.edges!(From, To).array.sort();
+        auto thoseEdges = other.edges!(From, To).array.sort();
 
         return changes(theseEdges, thoseEdges);
     }
