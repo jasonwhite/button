@@ -453,14 +453,35 @@ void checkRaces(BuildStateGraph graph, BuildState state)
  */
 string findBuildPath(string path)
 {
-    if (path !is null)
-        return path;
+    import std.file : isFile, FileException;
+    import std.format : format;
 
-    // TODO: Search for "bb.json" in the current directory and all parent
-    // directories.
-    //
-    // If none is found, throw BuildException.
-    return "bb.json";
+    if (path is null)
+    {
+        // TODO: Search for "bb.json" in the current directory and all parent
+        // directories.
+        //
+        // If none is found, throw BuildException.
+        path = "bb.json";
+    }
+
+    try
+    {
+        if (!path.isFile)
+            throw new BuildException(
+                "Build description `%s` is not a file."
+                .format(path)
+                );
+    }
+    catch (FileException e)
+    {
+        throw new BuildException(
+            "Build description `%s` does not exist."
+            .format(path)
+            );
+    }
+
+    return path;
 }
 
 /**
