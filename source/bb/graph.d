@@ -518,14 +518,12 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         int opApply(scope int delegate(SCC c) dg)
         {
-            int result = 0;
-
             foreach (v; _graph.vertices!A)
             {
                 if (v !in data!A)
                 {
-                    if (stronglyConnected(v, dg))
-                        break;
+                    if (immutable result = stronglyConnected(v, dg))
+                        return result;
                 }
             }
 
@@ -533,12 +531,12 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
             {
                 if (v !in data!B)
                 {
-                    if (stronglyConnected(v, dg))
-                        break;
+                    if (immutable result = stronglyConnected(v, dg))
+                        return result;
                 }
             }
 
-            return result;
+            return 0;
         }
     }
 
