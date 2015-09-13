@@ -449,12 +449,12 @@ void checkRaces(BuildStateGraph graph, BuildState state)
 void addChangedResources(BuildStateGraph graph, BuildState state)
 {
     import std.algorithm : filter;
+    import std.parallelism : parallel;
 
     auto resources = graph.vertices!(Index!Resource)
                           .filter!(v => graph.degreeIn(v) == 0);
 
-    // TODO: Do this in parallel
-    foreach (v; resources)
+    foreach (v; resources.parallel)
     {
         auto r = state[v];
         if (r.update())
