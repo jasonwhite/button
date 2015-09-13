@@ -407,6 +407,8 @@ void checkCycles(BuildGraph graph)
 
 /**
  * Checks for race conditions.
+ *
+ * Throws: BuildException exception if one or more race conditions are found.
  */
 void checkRaces(BuildGraph graph, BuildState state)
 {
