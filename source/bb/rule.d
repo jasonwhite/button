@@ -184,7 +184,7 @@ unittest
 Graph!(Resource, Task) graph(R)(auto ref R rules)
     if (is(ElementType!R : const(Rule)))
 {
-    auto g = typeof(return)();
+    auto g = new typeof(return)();
 
     foreach (r; rules)
     {

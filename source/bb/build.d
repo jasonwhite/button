@@ -372,7 +372,7 @@ unittest
  */
 @property Graph!(Index!Resource, Index!Task) buildGraph(BuildState state)
 {
-    auto g = typeof(return)();
+    auto g = new typeof(return)();
 
     // Add all vertices
     foreach (v; state.indices!Resource) g.put(v);

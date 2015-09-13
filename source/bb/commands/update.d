@@ -49,6 +49,8 @@ int update(string[] args)
             .filter!(v => state.degreeIn(v) == 0)
             .array;
 
+        // TODO: Check for cycles in the graph.
+
         auto g = state.buildGraph.subgraph(resourceRoots, taskRoots);
     }
     catch (BuildException e)
