@@ -406,15 +406,6 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
      */
     private struct StronglyConnectedComponents
     {
-        // DESIGN:
-        //
-        // Maintain two stacks, two indices, and two TarjanData maps.
-        //
-        // When recursing, call for the opposite vertex type.
-        //
-        // A connected component will consist of two arrays of vertices, one for
-        // each type.
-
         alias G = Graph!(A, B, EdgeDataAB, EdgeDataBA);
 
         private
@@ -428,7 +419,6 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
             TarjanData[A] _dataA;
             TarjanData[B] _dataB;
 
-            // TODO: Use a more efficient data structure
             Appender!(A[]) _stackA;
             Appender!(B[]) _stackB;
 
