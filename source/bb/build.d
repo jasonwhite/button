@@ -12,7 +12,7 @@ import bb.graph;
 import bb.vertex;
 import bb.state;
 
-alias BuildGraph = Graph!(Index!Resource, Index!Task);
+alias BuildStateGraph = Graph!(Index!Resource, Index!Task);
 
 /**
  * An exception relating to the build.
@@ -372,7 +372,7 @@ unittest
 /**
  * Constructs a graph from the build state.
  */
-@property BuildGraph buildGraph(BuildState state)
+@property BuildStateGraph buildGraph(BuildState state)
 {
     auto g = new typeof(return)();
 
@@ -392,7 +392,7 @@ unittest
  *
  * Throws: BuildException exception if one or more cycles are found.
  */
-void checkCycles(BuildGraph graph)
+void checkCycles(BuildStateGraph graph)
 {
     import std.format : format;
 
@@ -410,7 +410,7 @@ void checkCycles(BuildGraph graph)
  *
  * Throws: BuildException exception if one or more race conditions are found.
  */
-void checkRaces(BuildGraph graph, BuildState state)
+void checkRaces(BuildStateGraph graph, BuildState state)
 {
     import std.format : format;
     import std.algorithm : filter, map, joiner;
