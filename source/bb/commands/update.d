@@ -84,7 +84,7 @@ int update(string[] args)
     }
     catch (BuildException e)
     {
-        stderr.println(":: Error: " ~ e.msg);
+        stderr.println(":: Error: ", e.msg);
         return 1;
     }
 
