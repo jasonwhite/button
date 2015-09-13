@@ -1,8 +1,8 @@
-.bb
 .dub
 docs.json
 *.o
 *.swp
-/brilliant-build
+/bb
 dub.selections.json
 __test__library__
+.state
