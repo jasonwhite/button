@@ -390,13 +390,16 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     }
 
     /**
-     * A connected component.
+     * A strongly connected component.
      */
-    private struct ConnectedComponent
+    struct SCC
     {
         A[] _verticesA;
         B[] _verticesB;
 
+        /**
+         * Uniform access to the vertices.
+         */
         alias vertices(Vertex : A) = _verticesA;
         alias vertices(Vertex : B) = _verticesB;
     }
@@ -404,7 +407,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Range of strongly connected components in the graph.
      */
-    private struct StronglyConnectedComponents
+    private struct Tarjan
     {
         alias G = Graph!(A, B, EdgeDataAB, EdgeDataBA);
 
@@ -437,18 +440,10 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
             _stackB = appender!(B[]);
         }
 
-        int stronglyConnected(V1)(V1 v, scope int delegate(ConnectedComponent c) dg,
-                size_t level = 1)
+        int stronglyConnected(V1)(V1 v, scope int delegate(SCC c) dg)
         {
             import std.algorithm.comparison : min;
             import std.array : appender;
-
-            // FOR TESTING
-            import std.range : repeat;
-            import std.array : array;
-            import io;
-
-            auto indent = ' '.repeat(level * 4).array();
 
             alias V2 = Opposite!V1;
 
@@ -458,60 +453,52 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
             auto p = v in data!V1;
 
-            println(indent, "Vertex data: ", *p);
-
             // Consider successors of this vertex
             foreach (w; _graph.neighbors!V1[v].byKey())
             {
-                printfln("%sConsidering child %s(%s)", indent, typeof(w).stringof, w);
-
                 auto c = w in data!V2; // Child data
                 if (!c)
                 {
-                    printfln("%sRecursing on %s(%s) {", indent, typeof(w).stringof, w);
-
                     // Successor w has not yet been visited, recurse on it
-                    if (immutable result = stronglyConnected(w, dg, level+1))
+                    if (immutable result = stronglyConnected(w, dg))
                         return result;
-
-                    println(indent, "}");
 
                     p.lowlink = min(p.lowlink, data!V2[w].lowlink);
                 }
                 else if (c.inStack)
                 {
-                    printfln("%sAlready in stack: %s(%s)", indent, typeof(w).stringof, w);
-
                     // Successor w is on the stack and hence in the current SCC
                     p.lowlink = min(p.lowlink, c.index);
                 }
-                println(indent, "Post child vertex data: ", *p);
             }
 
             // If v is a root vertex, pop the stacks and generate an SCC
             if (p.lowlink == p.index)
             {
-                auto scc = ConnectedComponent();
+                auto scc = SCC();
 
                 auto sccA = appender!(V1[]);
                 auto sccB = appender!(V2[]);
 
                 while (true)
                 {
-                    println(indent, V1.stringof, " stack = ", stack!V1.data);
-                    println(indent, V2.stringof, " stack = ", stack!V2.data);
-
                     auto successorA = stack!V1.data[stack!V1.data.length-1];
                     stack!V1.shrinkTo(stack!V1.data.length - 1);
                     data!V1[successorA].inStack = false;
                     sccA.put(successorA);
 
+                    // Only pop the other stack if there is something top pop
+                    // and the top is part of the same SCC.
                     if (stack!V2.data.length)
                     {
                         auto successorB = stack!V2.data[stack!V2.data.length-1];
-                        stack!V2.shrinkTo(stack!V2.data.length - 1);
-                        data!V2[successorB].inStack = false;
-                        sccB.put(successorB);
+
+                        if (data!V2[successorB].lowlink == p.lowlink)
+                        {
+                            stack!V2.shrinkTo(stack!V2.data.length - 1);
+                            data!V2[successorB].inStack = false;
+                            sccB.put(successorB);
+                        }
                     }
 
                     // Pop the stack until we get back to this vertex
@@ -529,20 +516,16 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
             return 0;
         }
 
-        int opApply(scope int delegate(ConnectedComponent c) dg)
+        int opApply(scope int delegate(SCC c) dg)
         {
-            import io; // FOR TESTING
-
             int result = 0;
 
             foreach (v; _graph.vertices!A)
             {
                 if (v !in data!A)
                 {
-                    println(typeof(v).stringof, " ", v, " {");
                     if (stronglyConnected(v, dg))
                         break;
-                    println("}");
                 }
             }
 
@@ -550,10 +533,8 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
             {
                 if (v !in data!B)
                 {
-                    println(typeof(v).stringof, " ", v, " {");
                     if (stronglyConnected(v, dg))
                         break;
-                    println("}");
                 }
             }
 
@@ -564,49 +545,73 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Using Tarjan's algorithm, returns a range of strongly connected
      * components (SCCs). Each SCC consists of a list of vertices that are
-     * strongly connected.
+     * strongly connected. The SCCs are listed in reverse topological order.
      *
      * Time complexity: O(|v| + |E|)
      *
      * By filtering for SCCs that consist of more than 1 vertex, we can find and
      * display all the cycles in a graph.
      */
-    auto stronglyConnectedComponents()
+    @property auto tarjan()
     {
-        return StronglyConnectedComponents(this);
+        return Tarjan(this);
     }
 }
 
 unittest
 {
-    import io; // FOR TESTING
+    import std.algorithm.comparison : equal;
+    import std.array : array;
 
-    // Simplest possible cycle (for a bipartite graph)
-    auto g = new G();
-    g.put(X(1));
-    g.put(Y(1));
-    g.put(X(1), Y(1));
-    //g.put(Y(1), X(1));
-
-    //g.put(X(1));
-    //g.put(Y(2));
-    //g.put(X(3));
-    //g.put(Y(4));
-    //g.put(Y(5));
-    //g.put(X(6));
-
-    //g.put(X(1), Y(2));
-    //g.put(Y(2), X(3));
-    //g.put(X(3), Y(4));
-    //g.put(X(3), Y(5));
-    //g.put(Y(4), X(6));
-    //g.put(X(6), Y(4));
-    //g.put(Y(5), X(1));
-
-    // TODO: Test this
-    foreach (scc; g.stronglyConnectedComponents)
     {
-        println("Found SCC: ", scc);
+        auto g = new G();
+        g.put(X(1));
+
+        assert(g.tarjan.array.equal([G.SCC([X(1)], [])]));
+    }
+
+    {
+        auto g = new G();
+        g.put(Y(1));
+
+        assert(g.tarjan.array.equal([G.SCC([], [Y(1)])]));
+    }
+
+    {
+        // Simplest possible cycle (for a bipartite graph)
+        auto g = new G();
+        g.put(X(1));
+        g.put(Y(1));
+        g.put(X(1), Y(1));
+        g.put(Y(1), X(1));
+
+        // There should be only 1 connected component, encompassing the entire
+        // graph
+        assert(g.tarjan.array.equal([G.SCC([X(1)], [Y(1)])]));
+    }
+
+    {
+        import io;
+        auto g = new G();
+        g.put(X(1));
+        g.put(Y(2));
+        g.put(X(3));
+        g.put(Y(4));
+        g.put(Y(5));
+        g.put(X(6));
+
+        g.put(X(1), Y(2));
+        g.put(Y(2), X(3));
+        g.put(X(3), Y(4));
+        g.put(X(3), Y(5));
+        g.put(Y(4), X(6));
+        g.put(X(6), Y(4));
+        g.put(Y(5), X(1));
+
+        assert(g.tarjan.array.equal([
+            G.SCC([X(6)], [Y(4)]),
+            G.SCC([X(1), X(3)], [Y(2), Y(5)]),
+        ]));
     }
 }
 
