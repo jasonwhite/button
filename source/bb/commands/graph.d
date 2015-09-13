@@ -28,7 +28,21 @@ private struct Options
 
     // Only display the minimal subgraph?
     bool changes;
+
+    enum Edges
+    {
+        explicit = 1 << 0,
+        implicit = 1 << 1,
+        both = explicit | implicit,
+    }
+
+    // What types of edges to show
+    Edges edges = Edges.both;
 }
+
+immutable usage = q"EOS
+Usage: bb graph [-f FILE] [--changes] [--edges {explicit,implicit,both}]
+EOS";
 
 int graph(string[] args)
 {
@@ -41,11 +55,14 @@ int graph(string[] args)
         "changes|c",
             "Only display the subgraph that will be traversed on an update",
             &options.changes,
+        "edges|e",
+            "Type of edges to show",
+            &options.edges,
     );
 
     if (helpInfo.helpWanted)
     {
-        defaultGetoptPrinter("Usage: bb graph [--f FILE] [-c]\n", helpInfo.options);
+        defaultGetoptPrinter(usage, helpInfo.options);
         return 0;
     }
 

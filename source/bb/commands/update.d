@@ -10,6 +10,7 @@ module bb.commands.update;
 
 import std.array : array;
 import std.algorithm.iteration : filter;
+import std.getopt;
 
 import io.text,
        io.file;
@@ -20,6 +21,16 @@ import bb.state,
        bb.build,
        bb.vertex;
 
+private struct Options
+{
+    // Path to the build description
+    string path;
+}
+
+immutable usage = q"EOS
+Usage: bb update [-f FILE]
+EOS";
+
 /**
  * Updates the build.
  *
@@ -28,9 +39,23 @@ import bb.state,
  */
 int update(string[] args)
 {
+    Options options;
+
+    auto helpInfo = getopt(args,
+        "file|f",
+            "Path to the build description",
+            &options.path,
+    );
+
+    if (helpInfo.helpWanted)
+    {
+        defaultGetoptPrinter(usage, helpInfo.options);
+        return 0;
+    }
+
     try
     {
-        string path = buildDescriptionPath((args.length > 1) ? args[1] : null);
+        string path = buildDescriptionPath(options.path);
 
         stderr.println(":: Loading build description...");
 
