@@ -42,6 +42,7 @@ int update(string[] args)
 
         auto graph = state.buildGraph;
         graph.checkCycles();
+        graph.checkRaces(state);
 
         stderr.println(":: Constructing minimal subgraph...");
 

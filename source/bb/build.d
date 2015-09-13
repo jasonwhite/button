@@ -406,6 +406,45 @@ void checkCycles(BuildGraph graph)
 }
 
 /**
+ * Checks for race conditions.
+ */
+void checkRaces(BuildGraph graph, BuildState state)
+{
+    import std.format : format;
+    import std.algorithm : filter, map, joiner;
+    import std.array : array;
+    import std.typecons : tuple;
+
+    auto races = graph.vertices!(Index!Resource)
+                      .filter!(v => graph.degreeIn(v) > 1)
+                      .map!(v => tuple(state[v], graph.degreeIn(v)))
+                      .array;
+
+    if (races.length == 0)
+        return;
+
+    if (races.length == 1)
+    {
+        immutable r = races[0];
+        throw new BuildException(
+            "Found a race condition! The resource `%s` is an output of %d tasks."
+            .format(r[0], r[1])
+            );
+    }
+
+    throw new BuildException(
+        "Found %d race conditions:\n"
+        "%s\n"
+        "Use `bb graph` to see which tasks they are."
+        .format(
+            races.length,
+            races.map!(r => " * `%s` is an output of %d tasks".format(r[0], r[1]))
+                 .joiner("\n")
+            )
+        );
+}
+
+/**
  * Finds the path to the build description.
  *
  * Throws BuildException if no path is given and none could be found.
