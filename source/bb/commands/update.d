@@ -38,7 +38,12 @@ int update(string[] args)
         auto build = BuildDescription(path);
         build.sync(state);
 
-        stderr.println(":: Constructing subgraph...");
+        stderr.println(":: Constructing graph...");
+
+        auto graph = state.buildGraph;
+        graph.checkCycles();
+
+        stderr.println(":: Constructing minimal subgraph...");
 
         // Construct the minimal subgraph based on pending vertices
         auto resourceRoots = state.pending!Resource
@@ -49,9 +54,7 @@ int update(string[] args)
             .filter!(v => state.degreeIn(v) == 0)
             .array;
 
-        // TODO: Check for cycles in the graph.
-
-        auto g = state.buildGraph.subgraph(resourceRoots, taskRoots);
+        auto subgraph = graph.subgraph(resourceRoots, taskRoots);
     }
     catch (BuildException e)
     {

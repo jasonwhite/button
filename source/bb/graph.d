@@ -187,8 +187,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Returns a range of vertices of the given type.
      */
-    @property
-    auto vertices(Vertex)() const pure
+    @property auto vertices(Vertex)() const pure
         if (isVertex!Vertex)
     {
         return neighbors!Vertex.byKey;
@@ -309,6 +308,31 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         }
     }
 
+    private struct Visited
+    {
+        bool[A] visitedA;
+        bool[B] visitedB;
+
+        alias visited(V : A) = visitedA;
+        alias visited(V : B) = visitedB;
+    }
+
+    private void subgraphDFS(Vertex)(Vertex v, typeof(this) g, Visited visited)
+    {
+        visited.visited!Vertex[v] = true;
+
+        g.put(v);
+
+        foreach (child; outgoing(v).byKeyValue())
+        {
+            if (v !in visited.visited!Vertex)
+            {
+                subgraphDFS(child.key, g, visited);
+                g.put(v, child.key);
+            }
+        }
+    }
+
     /**
      * Creates a subgraph using the given roots. This is done by traversing the
      * graph and only adding the vertices and edges that we come across.
@@ -319,21 +343,19 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     {
         auto g = new typeof(return)();
 
-        bool visitVertex(Vertex)(Vertex v)
+        Visited visited;
+
+        foreach (v; rootsA)
         {
-            g.put(v);
-            return true;
+            if (v !in visited.visited!A)
+                subgraphDFS(v, g, visited);
         }
 
-        void visitEdge(From, To)(From from, To to)
+        foreach (v; rootsB)
         {
-            g.put(from, to);
+            if (v !in visited.visited!B)
+                subgraphDFS(v, g, visited);
         }
-
-        traverse(rootsA, rootsB,
-            &visitVertex!A, &visitVertex!B,
-            &visitEdge!(A,B), &visitEdge!(B,A)
-            );
 
         return g;
     }
@@ -553,6 +575,27 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     @property auto tarjan()
     {
         return Tarjan(this);
+    }
+
+    /**
+     * Returns an array of cycles in the graph.
+     */
+    @property auto cycles()
+    {
+        import std.array : appender;
+
+        auto arr = appender!(SCC[]);
+
+        foreach (scc; tarjan)
+        {
+            if (scc.vertices!A.length &&
+                scc.vertices!B.length)
+            {
+                arr.put(scc);
+            }
+        }
+
+        return arr.data;
     }
 }
 

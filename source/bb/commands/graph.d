@@ -23,7 +23,8 @@ int graph(string[] args)
     {
         string path = buildDescriptionPath((args.length > 1) ? args[1] : null);
 
-        (new BuildState(path.stateName)).graphviz(stdout);
+        auto state = new BuildState(path.stateName);
+        state.buildGraph.graphviz(state, stdout);
     }
     catch (BuildException e)
     {

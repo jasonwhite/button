@@ -12,6 +12,8 @@ import bb.graph;
 import bb.vertex;
 import bb.state;
 
+alias BuildGraph = Graph!(Index!Resource, Index!Task);
+
 /**
  * An exception relating to the build.
  */
@@ -370,7 +372,7 @@ unittest
 /**
  * Constructs a graph from the build state.
  */
-@property Graph!(Index!Resource, Index!Task) buildGraph(BuildState state)
+@property BuildGraph buildGraph(BuildState state)
 {
     auto g = new typeof(return)();
 
@@ -383,6 +385,24 @@ unittest
     foreach (v; state.edges!(Task, Resource)) g.put(v.from, v.to);
 
     return g;
+}
+
+/**
+ * Checks for cycles.
+ *
+ * Throws: BuildException exception if one or more cycles are found.
+ */
+void checkCycles(BuildGraph graph)
+{
+    import std.format : format;
+
+    if (immutable cycles = graph.cycles.length)
+    {
+        throw new BuildException(
+            "Found %d cycle(s). Use `bb graph` to see them."
+            .format(cycles)
+            );
+    }
 }
 
 /**
