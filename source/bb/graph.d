@@ -315,8 +315,17 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         alias visited(V : A) = visitedA;
         alias visited(V : B) = visitedB;
+
+        bool opBinaryRight(string op, Vertex)(Vertex v) const
+            if (op == "in")
+        {
+            return (v in visited!Vertex) !is null;
+        }
     }
 
+    /**
+     * Helper function for doing a depth-first search to construct a subgraph.
+     */
     private void subgraphDFS(Vertex)(Vertex v, typeof(this) g, Visited visited)
     {
         visited.visited!Vertex[v] = true;
@@ -325,7 +334,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         foreach (child; outgoing(v).byKeyValue())
         {
-            if (v !in visited.visited!Vertex)
+            if (v !in visited)
             {
                 subgraphDFS(child.key, g, visited);
                 g.put(v, child.key);
@@ -347,13 +356,13 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         foreach (v; rootsA)
         {
-            if (v !in visited.visited!A)
+            if (v !in visited)
                 subgraphDFS(v, g, visited);
         }
 
         foreach (v; rootsB)
         {
-            if (v !in visited.visited!B)
+            if (v !in visited)
                 subgraphDFS(v, g, visited);
         }
 
