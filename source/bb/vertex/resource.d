@@ -67,26 +67,26 @@ struct Resource
     }
 
     /**
-     * Returns a new resource with an updated time stamp and checksum.
-     *
-     * If this resource is not equal to the returned resource, then this
-     * resource is has changed (i.e., considered out of date).
+     * Updates the last modified time and checksum of this resource. Returns
+     * true if anything changed.
      *
      * Note that the checksum is not recomputed if the modification time is the
      * same.
      */
-    @property typeof(this) update() const
+    bool update()
     {
         import std.file : timeLastModified, FileException;
 
         immutable lastModified = timeLastModified(path, this.lastModified.init);
 
-        if (lastModified != this.lastModified.init && lastModified != this.lastModified)
+        if (lastModified != this.lastModified)
         {
             // TODO: Compute the checksum.
+            this.lastModified = lastModified;
+            return true;
         }
 
-        return Resource(path, lastModified, checksum);
+        return false;
     }
 
     unittest

@@ -212,10 +212,6 @@ struct BuildDescription
         auto resourceEdgeDiff = diffEdges!(Resource, Task)(state).array;
         auto taskEdgeDiff     = diffEdges!(Task, Resource)(state).array;
 
-        state.begin();
-        scope (success) state.commit();
-        scope (failure) state.rollback();
-
         // Delete output resources that are no longer part of the build. Note
         // that the resource cannot be removed from the database yet. Edges that
         // reference it must first be removed.
@@ -444,6 +440,60 @@ void checkRaces(BuildStateGraph graph, BuildState state)
                  .joiner("\n")
             )
         );
+}
+
+/**
+ * Finds changes resources and adds them to the list of pending resources in the
+ * database.
+ */
+void addChangedResources(BuildStateGraph graph, BuildState state)
+{
+    import std.algorithm : filter;
+
+    auto resources = graph.vertices!(Index!Resource)
+                          .filter!(v => graph.degreeIn(v) == 0);
+
+    // TODO: Do this in parallel
+    foreach (v; resources)
+    {
+        auto r = state[v];
+        if (r.update())
+        {
+            state[v] = r;
+            state.addPending(v);
+        }
+    }
+}
+
+/**
+ * Traverses the graph, executing the tasks.
+ *
+ * This is the heart of the build system. Everything else is just support code.
+ */
+void build(BuildStateGraph graph, BuildState state, Index!Resource[] resources,
+        Index!Task[] tasks, bool dryRun = false)
+{
+    import std.algorithm : filter;
+    import std.array : array;
+
+    import io;
+
+    bool visitResource(Index!Resource v)
+    {
+        state.removePending(v);
+        return true;
+    }
+
+    bool visitTask(Index!Task v)
+    {
+        // TODO: Actually run the task
+        println(" > ", state[v]);
+
+        state.removePending(v);
+        return true;
+    }
+
+    graph.traverse(resources, tasks, &visitResource, &visitTask);
 }
 
 /**

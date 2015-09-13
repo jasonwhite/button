@@ -25,6 +25,9 @@ private struct Options
 {
     // Path to the build description
     string path;
+
+    // True if this is a dry run.
+    bool dryRun;
 }
 
 immutable usage = q"EOS
@@ -45,6 +48,9 @@ int update(string[] args)
         "file|f",
             "Path to the build description",
             &options.path,
+        "dryrun|n",
+            "Don't make any function changes. Just print what might happen.",
+            &options.dryRun,
     );
 
     if (helpInfo.helpWanted)
@@ -57,30 +63,41 @@ int update(string[] args)
     {
         string path = buildDescriptionPath(options.path);
 
-        stderr.println(":: Loading build description...");
-
         auto state = new BuildState(path.stateName);
+        BuildStateGraph graph;
+
         auto build = BuildDescription(path);
-        build.sync(state);
 
-        stderr.println(":: Constructing graph...");
+        {
+            state.begin();
+            scope (failure) state.rollback();
+            scope (success)
+            {
+                if (!options.dryRun)
+                    state.commit();
+            }
 
-        auto graph = state.buildGraph;
-        graph.checkCycles();
-        graph.checkRaces(state);
+            build.sync(state);
 
-        stderr.println(":: Constructing minimal subgraph...");
+            graph = state.buildGraph;
+            graph.checkCycles();
+            graph.checkRaces(state);
+
+            // Add changed resources to the build state.
+            graph.addChangedResources(state);
+        }
 
         // Construct the minimal subgraph based on pending vertices
-        auto resourceRoots = state.pending!Resource
+        auto resources = state.pending!Resource
             .filter!(v => state.degreeIn(v) == 0)
             .array;
 
-        auto taskRoots = state.pending!Task
+        auto tasks = state.pending!Task
             .filter!(v => state.degreeIn(v) == 0)
             .array;
 
-        auto subgraph = graph.subgraph(resourceRoots, taskRoots);
+        auto subgraph = graph.subgraph(resources, tasks);
+        subgraph.build(state, resources, tasks, options.dryRun);
     }
     catch (BuildException e)
     {

@@ -249,9 +249,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
      * TODO: Parallelize this.
      */
     void traverse(const(A)[] rootsA, const(B)[] rootsB,
-         bool delegate(A) visitVertexA, bool delegate(B) visitVertexB,
-         void delegate(A,B) visitEdgeAB, void delegate(B,A) visitEdgeBA
-         )
+         bool delegate(A) visitA, bool delegate(B) visitB)
     {
         import std.container.rbtree : redBlackTree;
 
@@ -276,15 +274,14 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                 auto v = queueA[$-1]; queueA.length -= 1;
 
                 // Visit the vertex
-                if (!visitVertexA(v)) continue;
+                if (!visitA(v)) continue;
 
                 // Queue its children.
-                foreach (child; outgoing(v).byKeyValue())
+                foreach (child; outgoing(v).byKey())
                 {
-                    if (child.key in visitedB) continue;
-                    visitEdgeAB(v, child.key);
-                    visitedB.insert(child.key);
-                    queueB ~= child.key;
+                    if (child in visitedB) continue;
+                    visitedB.insert(child);
+                    queueB ~= child;
                 }
             }
 
@@ -294,15 +291,14 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                 auto v = queueB[$-1]; queueB.length -= 1;
 
                 // Visit the vertex
-                if (!visitVertexB(v)) continue;
+                if (!visitB(v)) continue;
 
                 // Queue its children.
-                foreach (child; outgoing(v).byKeyValue())
+                foreach (child; outgoing(v).byKey())
                 {
-                    if (child.key in visitedA) continue;
-                    visitEdgeBA(v, child.key);
-                    visitedA.insert(child.key);
-                    queueA ~= child.key;
+                    if (child in visitedA) continue;
+                    visitedA.insert(child);
+                    queueA ~= child;
                 }
             }
         }
@@ -316,25 +312,30 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         alias visited(V : A) = visitedA;
         alias visited(V : B) = visitedB;
 
+        void put(Vertex)(Vertex v)
+        {
+            visited!Vertex[v] = true;
+        }
+
         bool opBinaryRight(string op, Vertex)(Vertex v) const
             if (op == "in")
         {
-            return (v in visited!Vertex) !is null;
+            return (v in visited!Vertex) != null;
         }
     }
 
     /**
      * Helper function for doing a depth-first search to construct a subgraph.
      */
-    private void subgraphDFS(Vertex)(Vertex v, typeof(this) g, Visited visited)
+    private void subgraphDFS(Vertex)(Vertex v, typeof(this) g, ref Visited visited)
     {
-        visited.visited!Vertex[v] = true;
+        visited.put(v);
 
         g.put(v);
 
         foreach (child; outgoing(v).byKeyValue())
         {
-            if (v !in visited)
+            if (child.key !in visited)
             {
                 subgraphDFS(child.key, g, visited);
                 g.put(v, child.key);
@@ -355,16 +356,10 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         Visited visited;
 
         foreach (v; rootsA)
-        {
-            if (v !in visited)
-                subgraphDFS(v, g, visited);
-        }
+            subgraphDFS(v, g, visited);
 
         foreach (v; rootsB)
-        {
-            if (v !in visited)
-                subgraphDFS(v, g, visited);
-        }
+            subgraphDFS(v, g, visited);
 
         return g;
     }
@@ -641,7 +636,6 @@ unittest
     }
 
     {
-        import io;
         auto g = new G();
         g.put(X(1));
         g.put(Y(2));
@@ -683,7 +677,6 @@ unittest
 {
     import std.algorithm.comparison : equal;
     import change;
-    import io;
     import bb.edge;
 
     alias C = Change;
