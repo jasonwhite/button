@@ -69,15 +69,19 @@ int graph(string[] args)
     try
     {
         string path = buildDescriptionPath(options.path);
+        auto build = BuildDescription(path);
 
         auto state = new BuildState(path.stateName);
+
+        state.begin();
+        scope (exit) state.rollback();
+
+        build.sync(state);
+
         auto graph = state.buildGraph;
 
         if (options.changes)
         {
-            state.begin();
-            scope (exit) state.rollback();
-
             // Add changed resources to the build state.
             graph.addChangedResources(state);
 
