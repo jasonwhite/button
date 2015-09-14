@@ -44,7 +44,7 @@ A visualization of the above build description can be generated using
 [GraphViz][]:
 
 ```bash
-$ brilliant-build show basic.json | dot -Tpng > basic.png
+$ bb graph | dot -Tpng > basic.png
 ```
 ![Simple Task Graph](/docs/examples/basic/build.png)
 
@@ -56,7 +56,7 @@ Suppose this is our first time running the build. In that case, we will see a
 full build:
 
 ```bash
-$ brilliant-build update basic.json
+$ bb update
  > gcc -c bar.c -o bar.o
  > gcc -c foo.c -o foo.o
  > gcc foo.o bar.o -o foobar
@@ -65,7 +65,7 @@ $ brilliant-build update basic.json
 If we run it again immediately without changing any files, nothing will happen:
 
 ```bash
-$ brilliant-build update basic.json
+$ bb update
 ```
 
 Now suppose we make a change to the file `foo.c` and run the build again. Only
@@ -73,7 +73,7 @@ the necessary tasks to bring the outputs up-to-date are executed:
 
 ```bash
 $ touch foo.c
-$ brilliant-build update basic.json
+$ bb update
  > gcc -c foo.c -o foo.o
  > gcc foo.o bar.o -o foobar
 ```
