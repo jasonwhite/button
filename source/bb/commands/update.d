@@ -36,9 +36,6 @@ EOS";
 
 /**
  * Updates the build.
- *
- * TODO: Add --dryrun option to simulate an update. This would be useful for
- * refactoring the build description.
  */
 int update(string[] args)
 {
