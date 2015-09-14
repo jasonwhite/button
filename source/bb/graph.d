@@ -336,10 +336,8 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         foreach (child; outgoing(v).byKeyValue())
         {
             if (child.key !in visited)
-            {
                 subgraphDFS(child.key, g, visited);
-                g.put(v, child.key);
-            }
+            g.put(v, child.key);
         }
     }
 
