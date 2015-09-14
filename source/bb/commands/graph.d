@@ -75,6 +75,12 @@ int graph(string[] args)
 
         if (options.changes)
         {
+            state.begin();
+            scope (exit) state.rollback();
+
+            // Add changed resources to the build state.
+            graph.addChangedResources(state);
+
             // Construct the minimal subgraph based on pending vertices
             auto resourceRoots = state.pending!Resource
                 .filter!(v => state.degreeIn(v) == 0)
@@ -85,7 +91,7 @@ int graph(string[] args)
                 .array;
 
             auto subgraph = graph.subgraph(resourceRoots, taskRoots);
-            graph.graphviz(state, stdout);
+            subgraph.graphviz(state, stdout);
         }
         else
         {
