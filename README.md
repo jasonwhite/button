@@ -55,8 +55,8 @@ running the commands below.
 
 Note that build descriptions are not intended to be written by hand. For
 projects more complicated than this, one should generate the build description.
-Note that Brilliant Build can be used as a task in a "root" build description to
-help achieve this.
+Note that Brilliant Build can be ran recursively such that it can generate its
+own build description.
 
 ### Visualizing the Build
 
@@ -64,7 +64,7 @@ A visualization of the above build description can be generated using
 [GraphViz][]:
 
 ```bash
-$ bb graph | dot -Tpng > basic.png
+$ bb graph | dot -Tx11
 ```
 ![Simple Task Graph](/docs/examples/basic/build.png)
 
