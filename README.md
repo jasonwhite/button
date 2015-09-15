@@ -50,7 +50,8 @@ Here is a simple example of a build description:
 }
 ```
 
-If this file is named `bb.json`, Brilliant Build will automatically find it.
+If this file is named `bb.json`, Brilliant Build will automatically find it when
+running the commands below.
 
 Note that build descriptions are not intended to be written by hand. For
 projects more complicated than this, one should generate the build description.
