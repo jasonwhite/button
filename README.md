@@ -2,8 +2,9 @@
 
 *This is a work in progress.*
 
-A build system that aims to be scalable, correct, and easy to use. Note that
-this is *not* also a package manager.
+A build system that aims to be correct, scalable, and *elegantly simple*.
+
+Note that this is *not* also a package manager.
 
 ## "Ugh! Another build system? [Why?!][relevant xkcd]"
 
