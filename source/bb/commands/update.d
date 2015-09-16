@@ -63,8 +63,6 @@ int update(string[] args)
         auto state = new BuildState(path.stateName);
         BuildStateGraph graph;
 
-        auto build = BuildDescription(path);
-
         {
             state.begin();
             scope (failure) state.rollback();
@@ -74,6 +72,8 @@ int update(string[] args)
                     state.commit();
             }
 
+            // TODO: Only read in the build description if it changes.
+            auto build = BuildDescription(path);
             build.sync(state);
 
             graph = state.buildGraph;
