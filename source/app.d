@@ -25,6 +25,7 @@ int main(string[] args)
         case "help":
             return displayHelp(commandArgs);
 
+        case "build":
         case "update":
             return update(commandArgs);
 
