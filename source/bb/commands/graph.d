@@ -31,6 +31,9 @@ private struct Options
     // Only display the minimal subgraph?
     bool changes;
 
+    // Display the graph stored in the database.
+    bool cached;
+
     enum Edges
     {
         explicit = 1 << 0,
@@ -60,6 +63,9 @@ int graph(string[] args)
         "edges|e",
             "Type of edges to show",
             &options.edges,
+        "cached",
+            "Display the cached graph from the previous build.",
+            &options.cached,
     );
 
     if (helpInfo.helpWanted)
@@ -78,14 +84,16 @@ int graph(string[] args)
         state.begin();
         scope (exit) state.rollback();
 
-        build.sync(state);
+        if (!options.cached)
+            build.sync(state);
 
         auto graph = state.buildGraph;
 
         if (options.changes)
         {
             // Add changed resources to the build state.
-            graph.addChangedResources(state);
+            if (!options.cached)
+                graph.addChangedResources(state);
 
             // Construct the minimal subgraph based on pending vertices
             auto resourceRoots = state.pending!Resource
