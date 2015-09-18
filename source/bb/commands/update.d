@@ -79,13 +79,9 @@ int update(string[] args)
             graph = state.buildGraph;
             graph.checkCycles();
             graph.checkRaces(state);
-
-            // Add changed resources to the build state.
-            graph.addChangedResources(state);
         }
 
-        // Construct the minimal subgraph based on pending vertices
-        auto resources = state.pending!Resource
+        auto resources = state.indices!Resource
             .filter!(v => state.degreeIn(v) == 0)
             .array;
 
@@ -93,8 +89,7 @@ int update(string[] args)
             .filter!(v => state.degreeIn(v) == 0)
             .array;
 
-        auto subgraph = graph.subgraph(resources, tasks);
-        subgraph.build(state, resources, tasks, options.dryRun);
+        graph.build(state, resources, tasks, options.dryRun);
     }
     catch (BuildException e)
     {

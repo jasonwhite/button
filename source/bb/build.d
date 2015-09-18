@@ -234,10 +234,6 @@ struct BuildDescription
             if (c.type == ChangeType.added)
                 state.addPending(state.put(Task(c.value)));
 
-        foreach (c; resourceDiff)
-            if (c.type == ChangeType.added)
-                state.addPending(state.put(Resource(c.value)));
-
         // Add new edges and remove old edges
         foreach (c; resourceEdgeDiff)
         {
@@ -283,11 +279,7 @@ struct BuildDescription
         foreach (c; resourceDiff)
         {
             if (c.type == ChangeType.removed)
-            {
-                auto id = state.find(c.value);
-                state.removePending(id);
-                state.remove(id);
-            }
+                state.remove(c.value);
         }
     }
 }
@@ -443,29 +435,6 @@ void checkRaces(BuildStateGraph graph, BuildState state)
 }
 
 /**
- * Finds changes resources and adds them to the list of pending resources in the
- * database.
- */
-void addChangedResources(BuildStateGraph graph, BuildState state)
-{
-    import std.algorithm : filter;
-    import std.parallelism : parallel;
-
-    auto resources = graph.vertices!(Index!Resource)
-                          .filter!(v => graph.degreeIn(v) == 0);
-
-    foreach (v; resources.parallel)
-    {
-        auto r = state[v];
-        if (r.update())
-        {
-            state[v] = r;
-            state.addPending(v);
-        }
-    }
-}
-
-/**
  * Traverses the graph, executing the tasks.
  *
  * This is the heart of the build system. Everything else is just support code.
@@ -480,8 +449,15 @@ void build(BuildStateGraph graph, BuildState state, Index!Resource[] resources,
 
     bool visitResource(Index!Resource v)
     {
-        state.removePending(v);
-        return true;
+        auto r = state[v];
+        if (r.update())
+        {
+            state[v] = r;
+            state.removePending(v);
+            return true;
+        }
+
+        return false;
     }
 
     bool visitTask(Index!Task v)

@@ -77,7 +77,6 @@ int graph(string[] args)
     try
     {
         string path = buildDescriptionPath(options.path);
-        auto build = BuildDescription(path);
 
         auto state = new BuildState(path.stateName);
 
@@ -85,19 +84,18 @@ int graph(string[] args)
         scope (exit) state.rollback();
 
         if (!options.cached)
+        {
+            auto build = BuildDescription(path);
             build.sync(state);
+        }
 
         auto graph = state.buildGraph;
 
         if (options.changes)
         {
-            // Add changed resources to the build state.
-            if (!options.cached)
-                graph.addChangedResources(state);
-
             // Construct the minimal subgraph based on pending vertices
-            auto resourceRoots = state.pending!Resource
-                .filter!(v => state.degreeIn(v) == 0)
+            auto resourceRoots = state.indices!Resource
+                .filter!(v => state.degreeIn(v) == 0 && state[v].update())
                 .array;
 
             auto taskRoots = state.pending!Task
