@@ -68,6 +68,9 @@ int status(string[] args)
             displayResourceDiff(build, state);
         }
 
+        printfln("%d total resources", state.length!Resource);
+        printfln("%d total tasks", state.length!Task);
+
         displayPendingResources(state);
         displayPendingTasks(state);
     }
@@ -125,7 +128,7 @@ void displayPendingResources(BuildState state)
     }
     else
     {
-        println("Modified resources:\n");
+        printfln("%d modified resource(s):\n", resources.length);
 
         foreach (v; resources)
             println("    ", v);

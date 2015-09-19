@@ -230,6 +230,26 @@ class BuildState : SQLite3
     }
 
     /**
+     * Returns the number of vertices in the database.
+     */
+    ulong length(Vertex : Resource)()
+    {
+        import std.exception : enforce;
+        auto s = prepare(`SELECT COUNT(*) FROM resource`);
+        enforce(s.step(), "Failed to find number of resources");
+        return s.get!ulong(0);
+    }
+
+    /// Dito
+    ulong length(Vertex : Task)()
+    {
+        import std.exception : enforce;
+        auto s = prepare(`SELECT COUNT(*) FROM task`);
+        enforce(s.step(), "Failed to find number of tasks");
+        return s.get!ulong(0);
+    }
+
+    /**
      * Inserts a vertex into the database. An exception is thrown if the vertex
      * already exists. Otherwise, the vertex's ID is returned.
      */
