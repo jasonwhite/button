@@ -230,6 +230,10 @@ struct BuildDescription
         }
 
         // Add the vertices and mark as pending
+        foreach (c; resourceDiff)
+            if (c.type == ChangeType.added)
+                state.put(Resource(c.value));
+
         foreach (c; taskDiff)
             if (c.type == ChangeType.added)
                 state.addPending(state.put(Task(c.value)));
