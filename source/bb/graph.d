@@ -241,6 +241,54 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         return neighbors!Vertex[v];
     }
 
+    private struct Visited
+    {
+        private import std.range : ElementType, isInputRange;
+
+        bool[A] visitedA;
+        bool[B] visitedB;
+
+        alias visited(V : A) = visitedA;
+        alias visited(V : B) = visitedB;
+
+        /**
+         * Adds a vertex to the list of visited vertices.
+         */
+        void put(Vertex)(Vertex v)
+            if (isVertex!Vertex)
+        {
+            visited!Vertex[v] = true;
+        }
+
+        /**
+         * Adds a range of vertices to the list of visited vertices.
+         */
+        void put(R)(R range)
+            if (isInputRange!R && isVertex!(ElementType!R))
+        {
+            foreach (v; range)
+                put(v);
+        }
+
+        /**
+         * Remove a vertex from the list of visited vertices.
+         */
+        void remove(Vertex)(Vertex v)
+            if (isVertex!Vertex)
+        {
+            visited!Vertex.remove(v);
+        }
+
+        /**
+         * Returns true if the given vertex has been visited.
+         */
+        bool opBinaryRight(string op, Vertex)(Vertex v) const
+            if (op == "in")
+        {
+            return (v in visited!Vertex) != null;
+        }
+    }
+
     /**
      * Traverses the graph calling the given visitor functions for each vertex.
      * Each visitor function should return true to continue visiting the
@@ -254,11 +302,10 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         import std.container.rbtree : redBlackTree;
 
         // Keep track of which vertices have been visited.
-        auto visitedA = redBlackTree!A;
-        auto visitedB = redBlackTree!B;
+        Visited visited;
 
-        visitedA.insert(rootsA);
-        visitedB.insert(rootsB);
+        visited.put(rootsA);
+        visited.put(rootsB);
 
         // List of vertices queued to be visited. Vertices in the queue do not
         // depend on each other, and thus, can be visited in parallel.
@@ -279,8 +326,8 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                 // Queue its children.
                 foreach (child; outgoing(v).byKey())
                 {
-                    if (child in visitedB) continue;
-                    visitedB.insert(child);
+                    if (child in visited) continue;
+                    visited.put(child);
                     queueB ~= child;
                 }
             }
@@ -296,31 +343,11 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                 // Queue its children.
                 foreach (child; outgoing(v).byKey())
                 {
-                    if (child in visitedA) continue;
-                    visitedA.insert(child);
+                    if (child in visited) continue;
+                    visited.put(child);
                     queueA ~= child;
                 }
             }
-        }
-    }
-
-    private struct Visited
-    {
-        bool[A] visitedA;
-        bool[B] visitedB;
-
-        alias visited(V : A) = visitedA;
-        alias visited(V : B) = visitedB;
-
-        void put(Vertex)(Vertex v)
-        {
-            visited!Vertex[v] = true;
-        }
-
-        bool opBinaryRight(string op, Vertex)(Vertex v) const
-            if (op == "in")
-        {
-            return (v in visited!Vertex) != null;
         }
     }
 
