@@ -32,6 +32,9 @@ int main(string[] args)
         case "graph":
             return graph(commandArgs);
 
+        case "status":
+            return status(commandArgs);
+
         default:
             displayHelp(commandArgs);
             return 1;
