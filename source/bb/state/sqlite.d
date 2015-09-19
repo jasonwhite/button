@@ -32,8 +32,9 @@ CREATE TABLE IF NOT EXISTS resource (
  */
 private immutable tasksTable = q"{
 CREATE TABLE IF NOT EXISTS task (
-    id      INTEGER,
-    command TEXT     NOT NULL,
+    id           INTEGER,
+    command      TEXT     NOT NULL,
+    lastExecuted INTEGER  NOT NULL,
     PRIMARY KEY(id),
     UNIQUE(command)
 )}";
@@ -131,7 +132,11 @@ Vertex parse(Vertex : Resource)(SQLite3.Statement s)
 Vertex parse(Vertex : Task)(SQLite3.Statement s)
 {
     import std.conv : to;
-    return Task(s.get!string(0).to!(string[]));
+    import std.datetime : SysTime;
+    return Task(
+        s.get!string(0).to!(string[]),
+        SysTime(s.get!long(1)),
+        );
 }
 
 /**
@@ -270,8 +275,12 @@ class BuildState : SQLite3
     {
         import std.conv : to;
 
-        execute("INSERT INTO task(command) VALUES(?)",
-                task.command.to!string());
+        execute(`INSERT INTO task`
+                ` (command, lastExecuted)`
+                ` VALUES(?, ?)`,
+                task.command.to!string(),
+                task.lastExecuted.stdTime
+                );
 
         return Index!Task(lastInsertId);
     }
@@ -370,7 +379,7 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        auto s = prepare("SELECT command FROM task WHERE id=?", index);
+        auto s = prepare("SELECT command,lastExecuted FROM task WHERE id=?", index);
         enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Task();
@@ -402,7 +411,10 @@ class BuildState : SQLite3
         import std.exception : enforce;
         import std.conv : to;
 
-        auto s = prepare("SELECT command FROM task WHERE command=?", command.to!string);
+        auto s = prepare(
+                `SELECT command,lastExecuted FROM task WHERE command=?`,
+                command.to!string
+                );
         enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Task();
@@ -450,8 +462,11 @@ class BuildState : SQLite3
     void opIndexAssign(in Task v, Index!Task index)
     {
         import std.conv : to;
-        execute(`UPDATE task SET command=? WHERE id=?`,
-                v.command.to!string, index);
+        execute(`UPDATE task`
+                ` SET command=?,lastExecuted=?`
+                ` WHERE id=?`,
+                v.command.to!string, v.lastExecuted.stdTime, index
+                );
     }
 
     /**
@@ -551,7 +566,7 @@ class BuildState : SQLite3
      */
     @property auto vertices(Vertex : Task)()
     {
-        return prepare(`SELECT command FROM task`)
+        return prepare(`SELECT command,lastExecuted FROM task`)
             .rows!(parse!Task);
     }
 

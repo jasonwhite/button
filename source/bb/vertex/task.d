@@ -30,6 +30,13 @@ struct Task
      */
     //string display;
 
+    /**
+     * Time this task was last executed. If this is SysTime.min, then it is
+     * taken to mean that the task has never been executed before. This is
+     * useful for knowing if a task with no dependencies needs to be executed.
+     */
+    SysTime lastExecuted = SysTime.min;
+
     // TODO: Store last execution duration.
 
     /**
