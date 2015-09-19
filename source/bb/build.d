@@ -135,13 +135,13 @@ struct BuildDescription
         foreach (v; r.inputs)
         {
             put(v);
-            put(v, r.task);
+            put(r.task, v);
         }
 
         foreach (v; r.outputs)
         {
             put(v);
-            put(r.task, v);
+            put(v, r.task);
         }
     }
 
@@ -224,7 +224,7 @@ struct BuildDescription
             if (c.type == ChangeType.removed)
             {
                 auto index = state.find(c.value);
-                if (state.degreeIn(index) > 0)
+                if (state.degreeOut(index) > 0)
                     state[index].remove();
             }
         }
@@ -350,12 +350,9 @@ unittest
     assert(equal(build.diffVertices!Task(state), taskResult));
 
     immutable Change!(Edge!(string, TaskId))[] taskEdgeResult = [
-        {{"bar.c", ["gcc", "-c", "bar.c", "-o", "bar.o"]},     ChangeType.added},
-        {{"bar.o", ["gcc", "foo.o", "bar.o", "-o", "barfoo"]}, ChangeType.added},
-        {{"baz.h", ["gcc", "-c", "bar.c", "-o", "bar.o"]},     ChangeType.added},
-        {{"baz.h", ["gcc", "-c", "foo.c", "-o", "foo.o"]},     ChangeType.added},
-        {{"foo.c", ["gcc", "-c", "foo.c", "-o", "foo.o"]},     ChangeType.added},
-        {{"foo.o", ["gcc", "foo.o", "bar.o", "-o", "barfoo"]}, ChangeType.added},
+        {{"bar.o", ["gcc", "-c", "bar.c", "-o", "bar.o"]},      ChangeType.added},
+        {{"foo.o", ["gcc", "-c", "foo.c", "-o", "foo.o"]},      ChangeType.added},
+        {{"foobar", ["gcc", "foo.o", "bar.o", "-o", "barfoo"]}, ChangeType.added},
         ];
 
     assert(equal(build.diffEdges!(Resource, Task)(state), taskEdgeResult));
@@ -410,8 +407,8 @@ void checkRaces(BuildStateGraph graph, BuildState state)
     import std.typecons : tuple;
 
     auto races = graph.vertices!(Index!Resource)
-                      .filter!(v => graph.degreeIn(v) > 1)
-                      .map!(v => tuple(state[v], graph.degreeIn(v)))
+                      .filter!(v => graph.degreeOut(v) > 1)
+                      .map!(v => tuple(state[v], graph.degreeOut(v)))
                       .array;
 
     if (races.length == 0)

@@ -79,6 +79,14 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     }
 
     /**
+     * Returns the number of edges going out of the given vertex.
+     */
+    size_t degreeOut(Vertex)(Vertex v)
+    {
+        return neighbors!Vertex[v].length;
+    }
+
+    /**
      * Adds a vertex.
      */
     void put(Vertex)(Vertex v) pure
