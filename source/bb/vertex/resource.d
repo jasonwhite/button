@@ -44,6 +44,15 @@ struct Resource
     }
 
     /**
+     * Returns a short string representation of the path.
+     */
+    @property string shortString() const pure nothrow
+    {
+        import std.path : baseName;
+        return path.baseName;
+    }
+
+    /**
      * Returns the unique identifier for this vertex.
      */
     @property inout(ResourceId) identifier() inout pure nothrow

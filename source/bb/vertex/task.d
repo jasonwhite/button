@@ -49,6 +49,17 @@ struct Task
     }
 
     /**
+     * Returns a short string representation of the command.
+     */
+    @property string shortString() const pure nothrow
+    {
+        if (command.length > 0)
+            return command[0];
+
+        return "";
+    }
+
+    /**
      * Returns the unique identifier for this vertex.
      */
     @property inout(TaskId) identifier() inout pure nothrow

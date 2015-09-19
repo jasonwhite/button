@@ -142,15 +142,21 @@ void graphviz(Stream)(
     stream.println("    subgraph {\n"
                    "        node [shape=ellipse, fillcolor=lightskyblue2, style=filled];"
             );
-    foreach (v; graph.vertices!A)
-        stream.printfln(`        "r:%s" [label="%s"];`, v, state[v]);
+    foreach (id; graph.vertices!A)
+    {
+        immutable v = state[id];
+        stream.printfln(`        "r:%s" [label="%s", tooltip="%s"];`, id, v.shortString, v);
+    }
     stream.println("    }");
 
     stream.println("    subgraph {\n"
                    "        node [shape=box, fillcolor=gray91, style=filled];"
             );
-    foreach (v; graph.vertices!B)
-        stream.printfln(`        "t:%s" [label="%s"];`, v, state[v]);
+    foreach (id; graph.vertices!B)
+    {
+        immutable v = state[id];
+        stream.printfln(`        "t:%s" [label="%s", tooltip="%s"];`, id, v.shortString, v);
+    }
     stream.println("    }");
 
     // Cluster cycles, if any
