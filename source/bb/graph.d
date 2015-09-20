@@ -311,8 +311,9 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     }
 
     /**
+     * Helper function for starting a traversal from a single vertex.
      */
-    void traverse(alias visitThis, alias visitThat, Context, Vertex)
+    private void traverse(alias visitThis, alias visitThat, Context, Vertex)
         (TaskPool pool, Context ctx, Vertex v, bool parentChanged)
         if (isVertex!Vertex)
     {
@@ -342,8 +343,8 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     }
 
     /**
-     * Traverses the graph depth-first from the given roots. The given roots
-     * must contain all vertices with no incoming edges.
+     * Traverses the entire graph depth-first calling the given visitor
+     * functions.
      */
     void traverse(alias visitA, alias visitB, Context)
         (Context ctx, size_t threads = 0)
@@ -363,68 +364,6 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
             traverse!(visitB, visitA)(pool, ctx, v, true);
 
         pool.finish(true);
-    }
-
-    /**
-     * Traverses the graph calling the given visitor functions for each vertex.
-     * Each visitor function should return true to continue visiting the
-     * vertex's children.
-     *
-     * TODO: Parallelize this.
-     */
-    void traverse(const(A)[] rootsA, const(B)[] rootsB,
-         bool delegate(A) visitA, bool delegate(B) visitB)
-    {
-        import std.container.rbtree : redBlackTree;
-
-        // Keep track of which vertices have been visited.
-        Visited!bool visited;
-
-        foreach (v; rootsA) visited.put(v, true);
-        foreach (v; rootsB) visited.put(v, true);
-
-        // List of vertices queued to be visited. Vertices in the queue do not
-        // depend on each other, and thus, can be visited in parallel.
-        A[] queueA = rootsA.dup;
-        B[] queueB = rootsB.dup;
-
-        // Process both queues until they are empty.
-        while (queueA.length > 0 || queueB.length > 0)
-        {
-            while (queueA.length > 0)
-            {
-                // Pop off a vertex
-                auto v = queueA[$-1]; queueA.length -= 1;
-
-                // Visit the vertex
-                if (!visitA(v)) continue;
-
-                // Queue its children.
-                foreach (child; outgoing(v).byKey())
-                {
-                    if (child in visited) continue;
-                    visited.put(child, true);
-                    queueB ~= child;
-                }
-            }
-
-            while (queueB.length > 0)
-            {
-                // Pop off a vertex
-                auto v = queueB[$-1]; queueB.length -= 1;
-
-                // Visit the vertex
-                if (!visitB(v)) continue;
-
-                // Queue its children.
-                foreach (child; outgoing(v).byKey())
-                {
-                    if (child in visited) continue;
-                    visited.put(child, true);
-                    queueA ~= child;
-                }
-            }
-        }
     }
 
     /**
