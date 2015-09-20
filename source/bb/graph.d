@@ -361,8 +361,6 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         foreach (v; pool.parallel(vertices!B.filter!(v => degreeIn(v) == 0), 1))
             traverse!(visitB, visitA)(pool, ctx, v, true);
-
-        pool.finish(true);
     }
 
     /**
