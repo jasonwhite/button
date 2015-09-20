@@ -8,10 +8,6 @@
  */
 module bb.commands.update;
 
-import std.array : array;
-import std.algorithm.iteration : filter;
-import std.getopt;
-
 import io.text,
        io.file;
 
@@ -42,6 +38,8 @@ EOS";
  */
 int update(string[] args)
 {
+    import std.getopt;
+
     Options options;
 
     auto helpInfo = getopt(args,
@@ -68,20 +66,22 @@ int update(string[] args)
 
         auto state = new BuildState(path.stateName);
 
-        updateBuildState(state, path, options.dryRun);
+        {
+            // Find changed resources and add them to the set of pending resources.
+            state.begin();
+            scope (failure) state.rollback();
+            scope (success)
+            {
+                if (!options.dryRun)
+                    state.commit();
+            }
 
-        // TODO: Filter for "changed" vertices.
-        auto resources = state.indices!Resource
-            .filter!(v => state.degreeIn(v) == 0)
-            .array;
+            syncBuildState(state, path);
 
-        auto tasks = state.indices!Task
-            .filter!(v => state.degreeIn(v) == 0)
-            .array;
+            gatherChanges(state);
+        }
 
-        println(":: Building...");
-        auto subgraph = state.buildGraph(resources, tasks);
-        subgraph.build(state, options.threads, options.dryRun);
+        update(state, options.threads, options.dryRun);
     }
     catch (BuildException e)
     {
@@ -95,28 +95,19 @@ int update(string[] args)
 /**
  * Updates the database with any changes to the build description.
  */
-void updateBuildState(BuildState state, string path, bool dryRun)
+void syncBuildState(BuildState state, string path)
 {
     auto r = state[BuildState.buildDescId];
     r.path = path;
     if (r.update())
     {
         println(":: Syncing database with build description...");
-
-        state.begin();
-        scope (failure) state.rollback();
-        scope (success)
-        {
-            if (!dryRun)
-                state.commit();
-        }
-
         auto build = BuildDescription(path);
         build.sync(state);
 
         // Analyze the new graph. If any errors are detected, the database rolls
         // back to the previous (good) state.
-        println(":: Analyzing graph...");
+        println(":: Analyzing graph for errors...");
         BuildStateGraph graph = state.buildGraph();
         graph.checkCycles();
         graph.checkRaces(state);
@@ -124,4 +115,52 @@ void updateBuildState(BuildState state, string path, bool dryRun)
         // Update the build description resource
         state[BuildState.buildDescId] = r;
     }
+}
+
+/**
+ * Finds changed resources and marks them as pending in the build state.
+ */
+void gatherChanges(BuildState state)
+{
+    println(":: Checking for changes...");
+
+    // TODO: Do this in parallel
+    foreach (v; state.indices!Resource)
+    {
+        if (state.degreeIn(v) != 0)
+            continue;
+
+        auto r = state[v];
+        if (r.update())
+        {
+            state[v] = r;
+            state.addPending(v);
+        }
+    }
+}
+
+/**
+ * Builds pending vertices.
+ */
+void update(BuildState state, size_t threads, bool dryRun)
+{
+    import std.array : array;
+    import std.algorithm.iteration : filter;
+
+    auto resources = state.pending!Resource.array;
+    auto tasks     = state.pending!Task.array;
+
+    if (resources.length == 0 && tasks.length == 0)
+    {
+        println(":: Nothing to do. Everything is up to date.");
+        return;
+    }
+
+    // Print what we found.
+    printfln(" - Found %d modified resource(s)", resources.length);
+    printfln(" - Found %d pending task(s)", tasks.length);
+
+    println(":: Building...");
+    auto subgraph = state.buildGraph(resources, tasks);
+    subgraph.build(state, threads, dryRun);
 }

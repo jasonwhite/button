@@ -336,7 +336,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         // If none of our dependencies changed, then don't do any work.
         // Propagate the change status downward.
-        bool changed = data.changed > 0 && visitThis(ctx, v);
+        bool changed = data.changed > 0 && visitThis(ctx, v, data.degreeIn);
 
         // Reset the counts so that it is safe to traverse the graph again.
         data.changed   = 0;

@@ -435,6 +435,8 @@ void checkCycles(BuildStateGraph graph)
 {
     import std.format : format;
 
+    // TODO: Print out the vertices in the cycles
+
     if (immutable cycles = graph.cycles.length)
     {
         throw new BuildException(
@@ -485,30 +487,73 @@ void checkRaces(BuildStateGraph graph, BuildState state)
         );
 }
 
-bool visitResource(BuildState state, Index!Resource v)
+struct VisitorContext
 {
+    BuildState state;
+
+    bool dryRun;
+}
+
+/**
+ * Called when a resource vertex is visited.
+ *
+ * Returns true if we should continue traversing the graph.
+ */
+bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn)
+{
+    scope (success)
+    {
+        if (!context.dryRun)
+            context.state.removePending(v);
+    }
+
+    // Leaf resources are already checked for changes when discovering roots
+    // from which to construct the subgraph. Thus, there is no need to do it
+    // here as well.
+    if (degreeIn == 0)
+        return true;
+
     // Check for change.
-    auto r = state[v];
+    auto r = context.state[v];
     if (r.update())
     {
-        state[v] = r;
+        context.state[v] = r;
         return true;
     }
 
     return false;
 }
 
-bool visitTask(BuildState state, Index!Task v)
+/**
+ * Called when a task vertex is visited.
+ *
+ * Returns true if we should continue traversing the graph.
+ */
+bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
 {
     import io;
-    import core.thread : Thread;
-    import core.time : dur;
+
+    // We add this as pending just in case the build is interrupted while the
+    // task is running.
+    if (!context.dryRun)
+        context.state.addPending(v);
+
+    // TODO: Don't remove as pending if the task fails. If it fails, it should
+    // get executed again on the next run such that other tasks that depend on
+    // this (if any) can be executed.
+    scope (success)
+    {
+        if (!context.dryRun)
+            context.state.removePending(v);
+    }
+
+    synchronized println(" > ", context.state[v]);
+
+    // Assume the command would succeed in a dryrun
+    if (context.dryRun)
+        return true;
 
     // TODO: Execute the command
-
-    Thread.sleep(1.dur!"seconds");
-
-    synchronized println(" > ", state[v]);
 
     return true;
 }
@@ -524,7 +569,9 @@ void build(BuildStateGraph graph, BuildState state,
     import std.algorithm : filter, map;
     import std.array : array;
 
-    graph.traverse!(visitResource, visitTask)(state, threads);
+    auto ctx = VisitorContext(state, dryRun);
+
+    graph.traverse!(visitResource, visitTask)(&ctx, threads);
 }
 
 /**
