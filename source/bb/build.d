@@ -614,7 +614,7 @@ string findBuildPath(string path)
 
 /**
  * Changes the current working directory to be the parent directory of the build
- * build path. The new path to the build description is returned.
+ * description path. The new path to the build description is returned.
  */
 string changeToBuildPath(string path)
 {
