@@ -5,6 +5,8 @@
  */
 module bb.graph;
 
+import std.parallelism : TaskPool;
+
 version (unittest)
 {
     // Dummy types for testing
@@ -31,11 +33,24 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     alias EdgeData(From : A, To : B) = EdgeDataAB;
     alias EdgeData(From : B, To : A) = EdgeDataBA;
 
+    /**
+     * Bookkeeping data associated with each vertex.
+     */
+    struct Data
+    {
+        // Number of incoming edges for this vertex.
+        size_t degreeIn;
+
+        // Number of incoming edges for vertices who have changed or not
+        // changed. The sum of these two variables will always be <= degreeIn.
+        shared size_t changed, unchanged;
+    }
+
     private
     {
         // Number of incoming edges
-        size_t[A] _degreeInA;
-        size_t[B] _degreeInB;
+        Data[A] _dataA;
+        Data[B] _dataB;
 
         // Edges from A -> B
         EdgeData!(A, B)[B][A] neighborsA;
@@ -46,8 +61,8 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         // Uniform way of accessing data structures for each vertex type.
         alias neighbors(Vertex : A) = neighborsA;
         alias neighbors(Vertex : B) = neighborsB;
-        alias _degreeIn(Vertex : A)  = _degreeInA;
-        alias _degreeIn(Vertex : B)  = _degreeInB;
+        alias _data(Vertex : A)  = _dataA;
+        alias _data(Vertex : B)  = _dataB;
     }
 
     enum isVertex(Vertex) = is(Vertex : A) || is(Vertex : B);
@@ -71,17 +86,25 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     }
 
     /**
+     * Returns data associated with the given vertex.
+     */
+    Data data(Vertex)(Vertex v) const pure
+    {
+        return _data!Vertex[v];
+    }
+
+    /**
      * Returns the number of edges going into the given vertex.
      */
-    size_t degreeIn(Vertex)(Vertex v)
+    size_t degreeIn(Vertex)(Vertex v) const pure
     {
-        return _degreeIn!Vertex[v];
+        return _data!Vertex[v].degreeIn;
     }
 
     /**
      * Returns the number of edges going out of the given vertex.
      */
-    size_t degreeOut(Vertex)(Vertex v)
+    size_t degreeOut(Vertex)(Vertex v) const pure
     {
         return neighbors!Vertex[v].length;
     }
@@ -95,7 +118,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         if (v !in neighbors!Vertex)
         {
             neighbors!Vertex[v] = neighbors!Vertex[v].init;
-            _degreeIn!Vertex[v] = 0;
+            _data!Vertex[v] = Data.init;
         }
     }
 
@@ -107,7 +130,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         if (isVertex!Vertex)
     {
         neighbors!Vertex.remove(v);
-        _degreeIn!Vertex.remove(v);
+        _data!Vertex.remove(v);
     }
 
     unittest
@@ -150,7 +173,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         assert(to !in neighbors!From[from], "Attempted to add duplicate edge");
 
         neighbors!From[from][to] = data;
-        ++_degreeIn!To[to];
+        ++_data!To[to].degreeIn;
     }
 
     unittest
@@ -171,7 +194,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         assert(to in neighbors!From[from], "Attempted to remove non-existent edge");
 
         neighbors!From[from].remove(to);
-        --_degreeIn!To[to];
+        --_data!To[to].degreeIn;
     }
 
     unittest
@@ -249,12 +272,12 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         return neighbors!Vertex[v];
     }
 
-    private struct Visited
+    private struct Visited(Value)
     {
         private import std.range : ElementType, isInputRange;
 
-        bool[A] visitedA;
-        bool[B] visitedB;
+        Value[A] visitedA;
+        Value[B] visitedB;
 
         alias visited(V : A) = visitedA;
         alias visited(V : B) = visitedB;
@@ -262,20 +285,10 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         /**
          * Adds a vertex to the list of visited vertices.
          */
-        void put(Vertex)(Vertex v)
+        void put(Vertex)(Vertex v, Value value)
             if (isVertex!Vertex)
         {
-            visited!Vertex[v] = true;
-        }
-
-        /**
-         * Adds a range of vertices to the list of visited vertices.
-         */
-        void put(R)(R range)
-            if (isInputRange!R && isVertex!(ElementType!R))
-        {
-            foreach (v; range)
-                put(v);
+            visited!Vertex[v] = value;
         }
 
         /**
@@ -290,11 +303,66 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         /**
          * Returns true if the given vertex has been visited.
          */
-        bool opBinaryRight(string op, Vertex)(Vertex v) const
+        inout(Value*) opBinaryRight(string op, Vertex)(Vertex v) inout
             if (op == "in")
         {
-            return (v in visited!Vertex) != null;
+            return v in visited!Vertex;
         }
+    }
+
+    /**
+     */
+    void traverse(alias visitThis, alias visitThat, Context, Vertex)
+        (TaskPool pool, Context ctx, Vertex v, bool parentChanged)
+        if (isVertex!Vertex)
+    {
+        import std.parallelism : parallel;
+        import core.atomic : atomicOp;
+
+        auto data = v in _data!Vertex;
+
+        if (parentChanged)
+            data.changed.atomicOp!"+="(1);
+        else
+            data.unchanged.atomicOp!"+="(1);
+
+        if ((data.changed + data.unchanged) < data.degreeIn)
+            return;
+
+        // If none of our dependencies changed, then don't do any work.
+        // Propagate the change status downward.
+        bool changed = data.changed > 0 && visitThis(ctx, v);
+
+        // Reset the counts so that it is safe to traverse the graph again.
+        data.changed   = 0;
+        data.unchanged = 0;
+
+        foreach (child; pool.parallel(neighbors!Vertex[v].byKey(), 1))
+            traverse!(visitThat, visitThis)(pool, ctx, child, changed);
+    }
+
+    /**
+     * Traverses the graph depth-first from the given roots. The given roots
+     * must contain all vertices with no incoming edges.
+     */
+    void traverse(alias visitA, alias visitB, Context)
+        (Context ctx, size_t threads = 0)
+    {
+        import std.parallelism : parallel, totalCPUs;
+        import std.algorithm.iteration : filter;
+
+        if (threads == 0)
+            threads = totalCPUs;
+
+        auto pool = new TaskPool(threads);
+
+        foreach (v; pool.parallel(vertices!A.filter!(v => degreeIn(v) == 0), 1))
+            traverse!(visitA, visitB)(pool, ctx, v, true);
+
+        foreach (v; pool.parallel(vertices!B.filter!(v => degreeIn(v) == 0), 1))
+            traverse!(visitB, visitA)(pool, ctx, v, true);
+
+        pool.finish(true);
     }
 
     /**
@@ -310,10 +378,10 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         import std.container.rbtree : redBlackTree;
 
         // Keep track of which vertices have been visited.
-        Visited visited;
+        Visited!bool visited;
 
-        visited.put(rootsA);
-        visited.put(rootsB);
+        foreach (v; rootsA) visited.put(v, true);
+        foreach (v; rootsB) visited.put(v, true);
 
         // List of vertices queued to be visited. Vertices in the queue do not
         // depend on each other, and thus, can be visited in parallel.
@@ -335,7 +403,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                 foreach (child; outgoing(v).byKey())
                 {
                     if (child in visited) continue;
-                    visited.put(child);
+                    visited.put(child, true);
                     queueB ~= child;
                 }
             }
@@ -352,7 +420,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                 foreach (child; outgoing(v).byKey())
                 {
                     if (child in visited) continue;
-                    visited.put(child);
+                    visited.put(child, true);
                     queueA ~= child;
                 }
             }
@@ -362,9 +430,9 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Helper function for doing a depth-first search to construct a subgraph.
      */
-    private void subgraphDFS(Vertex)(Vertex v, typeof(this) g, ref Visited visited)
+    private void subgraphDFS(Vertex)(Vertex v, typeof(this) g, ref Visited!bool visited)
     {
-        visited.put(v);
+        visited.put(v, true);
 
         g.put(v);
 
@@ -386,7 +454,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     {
         auto g = new typeof(return)();
 
-        Visited visited;
+        Visited!bool visited;
 
         foreach (v; rootsA)
             subgraphDFS(v, g, visited);

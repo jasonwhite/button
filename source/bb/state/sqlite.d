@@ -81,18 +81,38 @@ CREATE TABLE IF NOT EXISTS pendingTasks (
     UNIQUE (taskid)
 )}";
 
-private immutable tables = [
+/**
+ * Index on edges to speed up finding neighbors.
+ */
+private immutable resourceEdgeIndex = q"{
+CREATE INDEX IF NOT EXISTS resourceEdgeIndex ON resourceEdge("from")
+}";
+
+/// Ditto
+private immutable taskEdgeIndex = q"{
+CREATE INDEX IF NOT EXISTS taskEdgeIndex ON taskEdge("from")
+}";
+
+/**
+ * List of SQL statements to run in order to initialize the database.
+ */
+private immutable initializeStatements = [
+    // Create tables
     resourcesTable,
     tasksTable,
     resourceEdgesTable,
     taskEdgesTable,
     pendingResourcesTable,
     pendingTasksTable,
+
+    // Indiees
+    resourceEdgeIndex,
+    taskEdgeIndex,
 ];
 
 /**
- * Simple type to leverage the type system to differentiate between storage
- * indices.
+ * Simple type to leverage the type system to help to differentiate between
+ * storage indices.
  */
 struct Index(T)
 {
@@ -230,7 +250,7 @@ class BuildState : SQLite3
         scope (success) commit();
         scope (failure) rollback();
 
-        foreach (statement; tables)
+        foreach (statement; initializeStatements)
             execute(statement);
     }
 
@@ -1040,6 +1060,22 @@ class BuildState : SQLite3
             .rows!(parse!(Edge!(From, To)))
             .array
             .sort();
+    }
+
+    /**
+     * Returns the neighbors of the given node.
+     */
+    @property auto neighbors(Index!Resource v)
+    {
+        return prepare(`SELECT "to" FROM resourceEdge WHERE "from"=?`, v)
+            .rows!((SQLite3.Statement s) => Index!Resource(s.get!ulong(0)));
+    }
+
+    /// Ditto
+    @property auto neighbors(Index!Task v)
+    {
+        return prepare(`SELECT "to" FROM taskEdge WHERE "from"=?`, v)
+            .rows!((SQLite3.Statement s) => Index!Task(s.get!ulong(0)));
     }
 
     unittest

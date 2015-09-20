@@ -28,6 +28,9 @@ private struct Options
 
     // True if this is a dry run.
     bool dryRun;
+
+    // Number of threads to use.
+    size_t threads = 0;
 }
 
 immutable usage = q"EOS
@@ -46,8 +49,11 @@ int update(string[] args)
             "Path to the build description",
             &options.path,
         "dryrun|n",
-            "Don't make any function changes. Just print what might happen.",
+            "Don't make any functional changes. Just print what might happen.",
             &options.dryRun,
+        "threads|j",
+            "The number of threads to use. Default is the number of logical cores.",
+            &options.threads,
     );
 
     if (helpInfo.helpWanted)
@@ -81,15 +87,15 @@ int update(string[] args)
             graph.checkRaces(state);
         }
 
-        auto resources = state.indices!Resource
-            .filter!(v => state.degreeIn(v) == 0)
+        auto resources = graph.vertices!(Index!Resource)
+            .filter!(v => graph.degreeIn(v) == 0)
             .array;
 
-        auto tasks = state.pending!Task
-            .filter!(v => state.degreeIn(v) == 0)
+        auto tasks = graph.vertices!(Index!Task)
+            .filter!(v => graph.degreeIn(v) == 0)
             .array;
 
-        graph.build(state, resources, tasks, options.dryRun);
+        graph.build(state, resources, tasks, options.threads, options.dryRun);
     }
     catch (BuildException e)
     {

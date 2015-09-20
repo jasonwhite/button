@@ -135,13 +135,13 @@ struct BuildDescription
         foreach (v; r.inputs)
         {
             put(v);
-            put(r.task, v);
+            put(v, r.task);
         }
 
         foreach (v; r.outputs)
         {
             put(v);
-            put(v, r.task);
+            put(r.task, v);
         }
     }
 
@@ -350,9 +350,15 @@ unittest
     assert(equal(build.diffVertices!Task(state), taskResult));
 
     immutable Change!(Edge!(string, TaskId))[] taskEdgeResult = [
-        {{"bar.o", ["gcc", "-c", "bar.c", "-o", "bar.o"]},      ChangeType.added},
-        {{"foo.o", ["gcc", "-c", "foo.c", "-o", "foo.o"]},      ChangeType.added},
-        {{"foobar", ["gcc", "foo.o", "bar.o", "-o", "barfoo"]}, ChangeType.added},
+        //{{"bar.o", ["gcc", "-c", "bar.c", "-o", "bar.o"]},      ChangeType.added},
+        //{{"foo.o", ["gcc", "-c", "foo.c", "-o", "foo.o"]},      ChangeType.added},
+        //{{"foobar", ["gcc", "foo.o", "bar.o", "-o", "barfoo"]}, ChangeType.added},
+        {{"bar.c", ["gcc", "-c", "bar.c", "-o", "bar.o"]},     ChangeType.added},
+        {{"bar.o", ["gcc", "foo.o", "bar.o", "-o", "barfoo"]}, ChangeType.added},
+        {{"baz.h", ["gcc", "-c", "bar.c", "-o", "bar.o"]},     ChangeType.added},
+        {{"baz.h", ["gcc", "-c", "foo.c", "-o", "foo.o"]},     ChangeType.added},
+        {{"foo.c", ["gcc", "-c", "foo.c", "-o", "foo.o"]},     ChangeType.added},
+        {{"foo.o", ["gcc", "foo.o", "bar.o", "-o", "barfoo"]}, ChangeType.added},
         ];
 
     assert(equal(build.diffEdges!(Resource, Task)(state), taskEdgeResult));
@@ -407,8 +413,8 @@ void checkRaces(BuildStateGraph graph, BuildState state)
     import std.typecons : tuple;
 
     auto races = graph.vertices!(Index!Resource)
-                      .filter!(v => graph.degreeOut(v) > 1)
-                      .map!(v => tuple(state[v], graph.degreeOut(v)))
+                      .filter!(v => graph.degreeIn(v) > 1)
+                      .map!(v => tuple(state[v], graph.degreeIn(v)))
                       .array;
 
     if (races.length == 0)
@@ -435,42 +441,46 @@ void checkRaces(BuildStateGraph graph, BuildState state)
         );
 }
 
+bool visitResource(BuildState state, Index!Resource v)
+{
+    // Check for change.
+    auto r = state[v];
+    if (r.update())
+    {
+        state[v] = r;
+        return true;
+    }
+
+    return false;
+}
+
+bool visitTask(BuildState state, Index!Task v)
+{
+    import io;
+    import core.thread : Thread;
+    import core.time : dur;
+
+    // TODO: Execute the command
+
+    Thread.sleep(1.dur!"seconds");
+
+    synchronized println(" > ", state[v]);
+
+    return true;
+}
+
 /**
  * Traverses the graph, executing the tasks.
  *
  * This is the heart of the build system. Everything else is just support code.
  */
 void build(BuildStateGraph graph, BuildState state, Index!Resource[] resources,
-        Index!Task[] tasks, bool dryRun = false)
+        Index!Task[] tasks, size_t threads = 0, bool dryRun = false)
 {
-    import std.algorithm : filter;
+    import std.algorithm : filter, map;
     import std.array : array;
 
-    import io;
-
-    bool visitResource(Index!Resource v)
-    {
-        auto r = state[v];
-        if (r.update())
-        {
-            state[v] = r;
-            state.removePending(v);
-            return true;
-        }
-
-        return false;
-    }
-
-    bool visitTask(Index!Task v)
-    {
-        // TODO: Actually run the task
-        println(" > ", state[v]);
-
-        state.removePending(v);
-        return true;
-    }
-
-    graph.traverse(resources, tasks, &visitResource, &visitTask);
+    graph.traverse!(visitResource, visitTask)(state, threads);
 }
 
 /**
