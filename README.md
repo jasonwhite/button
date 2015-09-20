@@ -4,14 +4,12 @@
 
 A build system that aims to be correct, scalable, and *elegantly simple*.
 
-Note that this is *not* also a package manager.
-
 ## "Ugh! Another build system? [Why?!][relevant xkcd]"
 
 [relevant xkcd]: https://xkcd.com/927/
 
 Because, of the hundreds of build systems out there, the vast majority of them
-are pretty terrible. They tend to suffer from a set of common ailments:
+are pretty terrible. They tend to suffer from a common set of ailments:
 
  * They don't do correct incremental builds.
  * They don't correctly track changes to the build description.
@@ -21,6 +19,15 @@ are pretty terrible. They tend to suffer from a set of common ailments:
 
 Brilliant Build is designed such that it can solve all of these problems.
 However, time will tell if this is actually true in practice.
+
+## Features
+
+ * Fast and correct incremental builds.
+ * Very general. Does not make any assumptions about the structure of your
+   project.
+ * Detects and displays cyclic dependencies.
+ * Detects race conditions (i.e., when multiple tasks output to the same file).
+ * Deletes output files that no longer get built.
 
 ## Quick Example
 
@@ -51,7 +58,8 @@ Here is a simple example of a build description:
 ```
 
 If this file is named `bb.json`, Brilliant Build will automatically find it when
-running the commands below.
+running the commands below. Otherwise, the path to the file can be specified
+with the `-f` option.
 
 Note that build descriptions are not intended to be written by hand. For
 projects more complicated than this, one should generate the build description.
@@ -64,7 +72,7 @@ A visualization of the above build description can be generated using
 [GraphViz][]:
 
 ```bash
-$ bb graph | dot -Tx11
+$ bb graph --verbose | dot -Tpng > build_graph.png
 ```
 ![Simple Task Graph](/docs/examples/basic/build.png)
 
@@ -95,8 +103,10 @@ the necessary tasks to bring the outputs up-to-date are executed:
 $ touch foo.c
 $ bb update
  > gcc -c foo.c -o foo.o
- > gcc foo.o bar.o -o foobar
 ```
+
+Note that `gcc foo.o bar.o -o foobar` was not executed because its output
+`foo.o` did not change.
 
 ## Planned Features
 
@@ -138,16 +148,8 @@ description from another build system (e.g., Make, MSBuild) could be translated
 automatically.
 
 This would greatly aid in transitioning away from the build system currently in
-use.
-
-### Web interface
-
-A web interface for running and visualizing builds could be extremely useful. In
-such an interface, one should be able to click a button to start and stop a
-build. A graph of the build should be displayed and updated in real time. A
-search function should be available for finding nodes in the graph. One should
-also be able to "walk" the nodes in the graph. Clicking on a node should display
-its `stderr` and `stdout` log.
+use. It would also potentially allow one to glue together many disparate build
+descriptions into one.
 
 ### Thorough documentation
 
@@ -157,6 +159,15 @@ includes:
  * Starting build descriptions for certain types of projects
  * Fundamental concepts of a build system
  * Tutorials on various topics
+
+### Web interface
+
+A web interface for running and visualizing builds could be extremely useful. In
+such an interface, one should be able to click a button to start and stop a
+build. A graph of the build should be displayed and updated in real time. A
+search function should be available for finding nodes in the graph. One should
+also be able to "walk" the nodes in the graph. Clicking on a node should display
+its `stderr` and `stdout` log.
 
 ## License
 
