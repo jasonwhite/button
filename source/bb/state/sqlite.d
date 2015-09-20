@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS taskEdge (
 private immutable pendingResourcesTable = q"{
 CREATE TABLE IF NOT EXISTS pendingResources (
     resid INTEGER NOT NULL REFERENCES resource(id),
+    PRIMARY KEY (resid),
     UNIQUE (resid)
 )}";
 
@@ -80,6 +81,7 @@ CREATE TABLE IF NOT EXISTS pendingResources (
 private immutable pendingTasksTable = q"{
 CREATE TABLE IF NOT EXISTS pendingTasks (
     taskid INTEGER NOT NULL REFERENCES task(id),
+    PRIMARY KEY (taskid),
     UNIQUE (taskid)
 )}";
 
@@ -328,7 +330,6 @@ class BuildState : SQLite3
             immutable vertex = Resource("foo.c", SysTime(9001));
 
             auto id = state.put(vertex);
-            assert(id == 1);
             assert(state[id] == vertex);
         }
 
@@ -336,7 +337,6 @@ class BuildState : SQLite3
             immutable vertex = Task(["foo", "test", "test test"]);
 
             immutable id = state.put(vertex);
-            assert(id == 1);
             assert(state[id] == vertex);
         }
     }
@@ -462,7 +462,6 @@ class BuildState : SQLite3
         immutable vertex = Resource("foo.c", SysTime(9001));
 
         auto id = state.put(vertex);
-        assert(id == 1);
         assert(state["foo.c"] == vertex);
     }
 
@@ -473,7 +472,6 @@ class BuildState : SQLite3
         immutable vertex = Task(["foo", "test", "test test"]);
 
         immutable id = state.put(vertex);
-        assert(id == 1);
         assert(state[["foo", "test", "test test"]] == vertex);
     }
 
@@ -794,10 +792,8 @@ class BuildState : SQLite3
 
         // Create a couple of vertices to link together
         immutable resId = state.put(Resource("foo.c"));
-        assert(resId == 1);
 
         immutable taskId = state.put(Task(["gcc", "foo.c"]));
-        assert(taskId == 1);
 
         immutable edgeId = state.put(Index!(Resource, Task)(resId, taskId), EdgeType.explicit);
         assert(edgeId == 1);
@@ -1239,10 +1235,10 @@ class BuildState : SQLite3
         assert(equal(state.pending!Resource, resourceIds));
         assert(equal(state.pending!Task, taskIds));
 
-        state.removePending(Index!Resource(1));
-        state.removePending(Index!Task(2));
+        state.removePending(resourceIds[0]);
+        state.removePending(taskIds[1]);
 
-        assert(equal(state.pending!Resource, [2, 3].map!(x => Index!Resource(x))));
+        assert(equal(state.pending!Resource, [3, 4].map!(x => Index!Resource(x))));
         assert(equal(state.pending!Task, [Index!Task(1)]));
     }
 }
