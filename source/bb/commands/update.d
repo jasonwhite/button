@@ -67,9 +67,14 @@ int update(string[] args)
         string path = buildDescriptionPath(options.path);
 
         auto state = new BuildState(path.stateName);
-        BuildStateGraph graph;
 
+        // Read in the build description if it changed.
+        auto r = state[BuildState.buildDescId];
+        r.path = path;
+        if (r.update())
         {
+            println(":: Syncing with build description...");
+
             state.begin();
             scope (failure) state.rollback();
             scope (success)
@@ -78,24 +83,29 @@ int update(string[] args)
                     state.commit();
             }
 
-            // TODO: Only read in the build description if it changes.
             auto build = BuildDescription(path);
             build.sync(state);
 
-            graph = state.buildGraph;
+            println(":: Analyzing graph...");
+            BuildStateGraph graph = state.buildGraph;
             graph.checkCycles();
             graph.checkRaces(state);
+
+            state[BuildState.buildDescId] = r;
         }
 
-        auto resources = graph.vertices!(Index!Resource)
-            .filter!(v => graph.degreeIn(v) == 0)
+        auto resources = state.indices!Resource
+            .filter!(v => state.degreeIn(v) == 0)
             .array;
 
-        auto tasks = graph.vertices!(Index!Task)
-            .filter!(v => graph.degreeIn(v) == 0)
+        auto tasks = state.indices!Task
+            .filter!(v => state.degreeIn(v) == 0)
             .array;
 
+        println(":: Generating subgraph...");
         auto subgraph = state.buildGraph(resources, tasks);
+
+        println(":: Building...");
         subgraph.build(state, options.threads, options.dryRun);
     }
     catch (BuildException e)

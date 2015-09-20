@@ -16,6 +16,8 @@ import std.typecons : tuple, Tuple;
 
 /**
  * Table of resource vertices.
+ *
+ * The first entry in this table will always be the build description.
  */
 private immutable resourcesTable = q"{
 CREATE TABLE IF NOT EXISTS resource (
@@ -229,6 +231,9 @@ E parse(E : Edge!(TaskId, ResourceId))(SQLite3.Statement s)
  */
 class BuildState : SQLite3
 {
+    // The build description is always the first entry in the database.
+    static immutable buildDescId = Index!Resource(1);
+
     /**
      * Open or create the build state file.
      */
@@ -238,13 +243,13 @@ class BuildState : SQLite3
 
         execute("PRAGMA foreign_keys = ON");
 
-        createTables();
+        initialize();
     }
 
     /**
      * Creates the tables if they don't already exist.
      */
-    private void createTables()
+    private void initialize()
     {
         begin();
         scope (success) commit();
@@ -252,6 +257,14 @@ class BuildState : SQLite3
 
         foreach (statement; initializeStatements)
             execute(statement);
+
+        // Add the build description resource if it doesn't already exist.
+        execute(
+            `INSERT OR IGNORE INTO resource`
+            `    (id,path,lastModified,checksum)`
+            `    VALUES (?,?,?,?)`
+            , buildDescId, "", 0, 0
+            );
     }
 
     /**
@@ -260,7 +273,7 @@ class BuildState : SQLite3
     ulong length(Vertex : Resource)()
     {
         import std.exception : enforce;
-        auto s = prepare(`SELECT COUNT(*) FROM resource`);
+        auto s = prepare(`SELECT COUNT(*) FROM resource WHERE id > 1`);
         enforce(s.step(), "Failed to find number of resources");
         return s.get!ulong(0);
     }
@@ -495,8 +508,9 @@ class BuildState : SQLite3
      */
     @property auto vertices(Vertex : Resource)()
     {
-        return prepare(`SELECT path,lastModified,checksum FROM resource`)
-            .rows!(parse!Resource);
+        return prepare(
+                `SELECT path,lastModified,checksum FROM resource WHERE id>1`
+                ).rows!(parse!Resource);
     }
 
     unittest
@@ -524,7 +538,7 @@ class BuildState : SQLite3
      */
     @property auto identifiers(Vertex : Resource)()
     {
-        return prepare(`SELECT path FROM resource ORDER BY path`)
+        return prepare(`SELECT path FROM resource WHERE id>1 ORDER BY path`)
             .rows!((SQLite3.Statement s) => s.get!string(0));
     }
 
@@ -555,7 +569,7 @@ class BuildState : SQLite3
     {
         return prepare(
                 `SELECT path,lastModified,checksum`
-                ` FROM resource ORDER BY path`
+                ` FROM resource WHERE id>1 ORDER BY path`
                 )
             .rows!(parse!Resource);
     }
@@ -685,7 +699,7 @@ class BuildState : SQLite3
      */
     @property auto indices(Vertex : Resource)()
     {
-        return prepare(`SELECT id FROM resource`)
+        return prepare(`SELECT id FROM resource WHERE id>1`)
             .rows!((SQLite3.Statement s) => Index!Vertex(s.get!ulong(0)));
     }
 
