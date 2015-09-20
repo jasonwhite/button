@@ -9,6 +9,7 @@
 module bb.build;
 
 import std.range : ElementType;
+import std.parallelism : TaskPool;
 
 import bb.graph;
 import bb.vertex;
@@ -487,6 +488,25 @@ void checkRaces(BuildStateGraph graph, BuildState state)
         );
 }
 
+/**
+ * Finds changed resources and marks them as pending in the build state.
+ */
+void gatherChanges(BuildState state, TaskPool pool)
+{
+    foreach (v; pool.parallel(state.indices!Resource))
+    {
+        if (state.degreeIn(v) != 0)
+            continue;
+
+        auto r = state[v];
+        if (r.update())
+        {
+            state[v] = r;
+            state.addPending(v);
+        }
+    }
+}
+
 struct VisitorContext
 {
     BuildState state;
@@ -563,15 +583,15 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
  *
  * This is the heart of the build system. Everything else is just support code.
  */
-void build(BuildStateGraph graph, BuildState state,
-        size_t threads = 0, bool dryRun = false)
+void build(BuildStateGraph graph, BuildState state, TaskPool pool,
+        bool dryRun = false)
 {
     import std.algorithm : filter, map;
     import std.array : array;
 
     auto ctx = VisitorContext(state, dryRun);
 
-    graph.traverse!(visitResource, visitTask)(&ctx, threads);
+    graph.traverse!(visitResource, visitTask)(&ctx, pool);
 }
 
 /**

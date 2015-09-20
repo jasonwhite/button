@@ -39,6 +39,7 @@ EOS";
 int update(string[] args)
 {
     import std.getopt;
+    import std.parallelism : totalCPUs;
 
     Options options;
 
@@ -53,6 +54,12 @@ int update(string[] args)
             "The number of threads to use. Default is the number of logical cores.",
             &options.threads,
     );
+
+    if (options.threads == 0)
+        options.threads = totalCPUs;
+
+    auto pool = new TaskPool(options.threads);
+    scope (exit) pool.finish(true);
 
     if (helpInfo.helpWanted)
     {
@@ -78,10 +85,11 @@ int update(string[] args)
 
             syncBuildState(state, path);
 
-            gatherChanges(state);
+            println(":: Checking for changes...");
+            gatherChanges(state, pool);
         }
 
-        update(state, options.threads, options.dryRun);
+        update(state, pool, options.dryRun);
     }
     catch (BuildException e)
     {
@@ -118,31 +126,9 @@ void syncBuildState(BuildState state, string path)
 }
 
 /**
- * Finds changed resources and marks them as pending in the build state.
- */
-void gatherChanges(BuildState state)
-{
-    println(":: Checking for changes...");
-
-    // TODO: Do this in parallel
-    foreach (v; state.indices!Resource)
-    {
-        if (state.degreeIn(v) != 0)
-            continue;
-
-        auto r = state[v];
-        if (r.update())
-        {
-            state[v] = r;
-            state.addPending(v);
-        }
-    }
-}
-
-/**
  * Builds pending vertices.
  */
-void update(BuildState state, size_t threads, bool dryRun)
+void update(BuildState state, TaskPool pool, bool dryRun)
 {
     import std.array : array;
     import std.algorithm.iteration : filter;
@@ -162,5 +148,5 @@ void update(BuildState state, size_t threads, bool dryRun)
 
     println(":: Building...");
     auto subgraph = state.buildGraph(resources, tasks);
-    subgraph.build(state, threads, dryRun);
+    subgraph.build(state, pool, dryRun);
 }

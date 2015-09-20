@@ -351,15 +351,10 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
      * functions.
      */
     void traverse(alias visitA, alias visitB, Context)
-        (Context ctx, size_t threads = 0)
+        (Context ctx, TaskPool pool)
     {
-        import std.parallelism : parallel, totalCPUs;
+        import std.parallelism : parallel;
         import std.algorithm.iteration : filter;
-
-        if (threads == 0)
-            threads = totalCPUs;
-
-        auto pool = new TaskPool(threads);
 
         foreach (v; pool.parallel(vertices!A.filter!(v => degreeIn(v) == 0), 1))
             traverse!(visitA, visitB)(pool, ctx, v, true);
