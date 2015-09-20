@@ -164,7 +164,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
      * Adds an edge. Both vertices must be added to the graph first.
      */
     void put(From,To)(From from, To to,
-            EdgeData!(From, To) data = EdgeData!(From,To).init
+            EdgeData!(From, To) data = EdgeData!(From, To).init
             ) pure
         if (isEdge!(From, To))
     {
@@ -272,7 +272,11 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         return neighbors!Vertex[v];
     }
 
-    private struct Visited(Value)
+    /**
+     * Bookkeeping structure for helping keep track of vertices that have been
+     * visited.
+     */
+    struct Visited(Value)
     {
         private import std.range : ElementType, isInputRange;
 
@@ -371,23 +375,23 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
      */
     private void subgraphDFS(Vertex)(Vertex v, typeof(this) g, ref Visited!bool visited)
     {
+        if (v in visited)
+            return;
+
         visited.put(v, true);
 
         g.put(v);
 
-        foreach (child; outgoing(v).byKeyValue())
+        foreach (child; outgoing(v).byKey())
         {
-            if (child.key !in visited)
-                subgraphDFS(child.key, g, visited);
-            g.put(v, child.key);
+            subgraphDFS(child, g, visited);
+            g.put(v, child);
         }
     }
 
     /**
      * Creates a subgraph using the given roots. This is done by traversing the
      * graph and only adding the vertices and edges that we come across.
-     *
-     * TODO: Simplify and parallelize this.
      */
     typeof(this) subgraph(const(A[]) rootsA, const(B[]) rootsB)
     {

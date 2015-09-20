@@ -8,6 +8,8 @@
  */
 module bb.build;
 
+import std.range : ElementType;
+
 import bb.graph;
 import bb.vertex;
 import bb.state;
@@ -367,7 +369,7 @@ unittest
 /**
  * Constructs a graph from the build state.
  */
-@property BuildStateGraph buildGraph(BuildState state)
+BuildStateGraph buildGraph(BuildState state)
 {
     auto g = new typeof(return)();
 
@@ -378,6 +380,48 @@ unittest
     // Add all edges
     foreach (v; state.edges!(Resource, Task)) g.put(v.from, v.to);
     foreach (v; state.edges!(Task, Resource)) g.put(v.from, v.to);
+
+    return g;
+}
+
+/**
+ * Helper function for constructing a subgraph from the build state.
+ */
+private void buildGraph(Vertex, G, Visited)(BuildState state, G graph, Vertex v,
+        ref Visited visited)
+{
+    if (v in visited)
+        return;
+
+    visited.put(v, true);
+
+    graph.put(v);
+
+    foreach (child; state.neighbors(v))
+    {
+        buildGraph(state, graph, child, visited);
+        graph.put(v, child); // TODO: Add the edge data too
+    }
+}
+
+/**
+ * Constructs a subgraph from the build state starting at the given roots.
+ */
+BuildStateGraph buildGraph(Resources, Tasks)
+        (BuildState state, Resources resources, Tasks tasks)
+    if (is(ElementType!Resources : Index!Resource) &&
+        is(ElementType!Tasks : Index!Task))
+{
+    alias G = typeof(return);
+    auto g = new G();
+
+    G.Visited!bool visited;
+
+    foreach (v; resources)
+        buildGraph(state, g, v, visited);
+
+    foreach (v; tasks)
+        buildGraph(state, g, v, visited);
 
     return g;
 }
@@ -474,8 +518,8 @@ bool visitTask(BuildState state, Index!Task v)
  *
  * This is the heart of the build system. Everything else is just support code.
  */
-void build(BuildStateGraph graph, BuildState state, Index!Resource[] resources,
-        Index!Task[] tasks, size_t threads = 0, bool dryRun = false)
+void build(BuildStateGraph graph, BuildState state,
+        size_t threads = 0, bool dryRun = false)
 {
     import std.algorithm : filter, map;
     import std.array : array;

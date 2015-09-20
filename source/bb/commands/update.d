@@ -95,7 +95,8 @@ int update(string[] args)
             .filter!(v => graph.degreeIn(v) == 0)
             .array;
 
-        graph.build(state, resources, tasks, options.threads, options.dryRun);
+        auto subgraph = state.buildGraph(resources, tasks);
+        subgraph.build(state, options.threads, options.dryRun);
     }
     catch (BuildException e)
     {

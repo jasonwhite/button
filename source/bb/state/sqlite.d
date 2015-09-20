@@ -1068,14 +1068,14 @@ class BuildState : SQLite3
     @property auto neighbors(Index!Resource v)
     {
         return prepare(`SELECT "to" FROM resourceEdge WHERE "from"=?`, v)
-            .rows!((SQLite3.Statement s) => Index!Resource(s.get!ulong(0)));
+            .rows!((SQLite3.Statement s) => Index!Task(s.get!ulong(0)));
     }
 
     /// Ditto
     @property auto neighbors(Index!Task v)
     {
         return prepare(`SELECT "to" FROM taskEdge WHERE "from"=?`, v)
-            .rows!((SQLite3.Statement s) => Index!Task(s.get!ulong(0)));
+            .rows!((SQLite3.Statement s) => Index!Resource(s.get!ulong(0)));
     }
 
     unittest
