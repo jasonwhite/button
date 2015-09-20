@@ -68,32 +68,9 @@ int update(string[] args)
 
         auto state = new BuildState(path.stateName);
 
-        // Read in the build description if it changed.
-        auto r = state[BuildState.buildDescId];
-        r.path = path;
-        if (r.update())
-        {
-            println(":: Syncing with build description...");
+        updateBuildState(state, path, options.dryRun);
 
-            state.begin();
-            scope (failure) state.rollback();
-            scope (success)
-            {
-                if (!options.dryRun)
-                    state.commit();
-            }
-
-            auto build = BuildDescription(path);
-            build.sync(state);
-
-            println(":: Analyzing graph...");
-            BuildStateGraph graph = state.buildGraph;
-            graph.checkCycles();
-            graph.checkRaces(state);
-
-            state[BuildState.buildDescId] = r;
-        }
-
+        // TODO: Filter for "changed" vertices.
         auto resources = state.indices!Resource
             .filter!(v => state.degreeIn(v) == 0)
             .array;
@@ -102,10 +79,8 @@ int update(string[] args)
             .filter!(v => state.degreeIn(v) == 0)
             .array;
 
-        println(":: Generating subgraph...");
-        auto subgraph = state.buildGraph(resources, tasks);
-
         println(":: Building...");
+        auto subgraph = state.buildGraph(resources, tasks);
         subgraph.build(state, options.threads, options.dryRun);
     }
     catch (BuildException e)
@@ -115,4 +90,38 @@ int update(string[] args)
     }
 
     return 0;
+}
+
+/**
+ * Updates the database with any changes to the build description.
+ */
+void updateBuildState(BuildState state, string path, bool dryRun)
+{
+    auto r = state[BuildState.buildDescId];
+    r.path = path;
+    if (r.update())
+    {
+        println(":: Syncing database with build description...");
+
+        state.begin();
+        scope (failure) state.rollback();
+        scope (success)
+        {
+            if (!dryRun)
+                state.commit();
+        }
+
+        auto build = BuildDescription(path);
+        build.sync(state);
+
+        // Analyze the new graph. If any errors are detected, the database rolls
+        // back to the previous (good) state.
+        println(":: Analyzing graph...");
+        BuildStateGraph graph = state.buildGraph();
+        graph.checkCycles();
+        graph.checkRaces(state);
+
+        // Update the build description resource
+        state[BuildState.buildDescId] = r;
+    }
 }
