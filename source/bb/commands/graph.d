@@ -34,6 +34,9 @@ private struct Options
     // Display the graph stored in the database.
     bool cached;
 
+    // Generate verbose node names for GraphViz.
+    bool verbose;
+
     enum Edges
     {
         explicit = 1 << 0,
@@ -66,6 +69,9 @@ int graph(string[] args)
         "cached",
             "Display the cached graph from the previous build.",
             &options.cached,
+        "verbose|v",
+            "Display the full name of each vertex.",
+            &options.verbose,
     );
 
     if (helpInfo.helpWanted)
@@ -103,11 +109,11 @@ int graph(string[] args)
                 .array;
 
             auto subgraph = graph.subgraph(resourceRoots, taskRoots);
-            subgraph.graphviz(state, stdout);
+            subgraph.graphviz(state, stdout, options.verbose);
         }
         else
         {
-            graph.graphviz(state, stdout);
+            graph.graphviz(state, stdout, options.verbose);
         }
     }
     catch (BuildException e)
@@ -125,7 +131,8 @@ int graph(string[] args)
 void graphviz(Stream)(
         Graph!(Index!Resource, Index!Task) graph,
         BuildState state,
-        Stream stream
+        Stream stream,
+        bool verbose
         )
     if (isSink!Stream)
 {
@@ -145,7 +152,8 @@ void graphviz(Stream)(
     foreach (id; graph.vertices!A)
     {
         immutable v = state[id];
-        stream.printfln(`        "r:%s" [label="%s", tooltip="%s"];`, id, v.shortString, v);
+        immutable name = verbose ? v.toString : v.shortString;
+        stream.printfln(`        "r:%s" [label="%s", tooltip="%s"];`, id, name, v);
     }
     stream.println("    }");
 
@@ -155,7 +163,8 @@ void graphviz(Stream)(
     foreach (id; graph.vertices!B)
     {
         immutable v = state[id];
-        stream.printfln(`        "t:%s" [label="%s", tooltip="%s"];`, id, v.shortString, v);
+        immutable name = verbose ? v.toString : v.shortString;
+        stream.printfln(`        "t:%s" [label="%s", tooltip="%s"];`, id, name, v);
     }
     stream.println("    }");
 
