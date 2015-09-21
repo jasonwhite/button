@@ -29,6 +29,23 @@ class BuildException : Exception
 }
 
 /**
+ * Thrown if a task fails.
+ */
+class TaskError : Exception
+{
+    Index!Task id;
+    int code;
+
+    this(Index!Task id, int code, string msg = "Task failed")
+    {
+        this.id = id;
+        this.code = code;
+
+        super(msg);
+    }
+}
+
+/**
  * Constructs the name of the build state file based on the build description
  * file name.
  */
@@ -554,26 +571,39 @@ bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn)
 bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
 {
     import io;
+    import std.process : execute;
 
-    // We add this as pending just in case the build is interrupted while the
-    // task is running.
+    // We add this as pending just in case the build is interrupted or if it
+    // fails.
     context.state.addPending(v);
 
-    // TODO: Don't remove as pending if the task fails. If it fails, it should
-    // get executed again on the next run such that other tasks that depend on
-    // this (if any) can be executed.
-    scope (success)
-    {
-        context.state.removePending(v);
-    }
-
-    synchronized println(" > ", context.state[v]);
+    auto task = context.state[v];
 
     // Assume the command would succeed in a dryrun
     if (context.dryRun)
+    {
+        synchronized println(" > ", task);
         return true;
+    }
 
-    // TODO: Execute the command
+    auto cmd = execute(task.command);
+
+    synchronized
+    {
+        println(" > ", task);
+        print(cmd.output);
+
+        if (cmd.status != 0)
+            println(":: Error: Task failed. Process exited with code ", cmd.status);
+    }
+
+    if (cmd.status != 0)
+        throw new TaskError(v, cmd.status);
+
+    // Only remove this from the set of pending tasks if it succeeds completely.
+    // If it fails, it should get executed again on the next run such that other
+    // tasks that depend on this (if any) can be executed.
+    context.state.removePending(v);
 
     return true;
 }

@@ -38,12 +38,23 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
      */
     struct Data
     {
+        import std.typecons : scoped;
+        import core.sync.mutex;
+
         // Number of incoming edges for this vertex.
         size_t degreeIn;
 
         // Number of incoming edges for vertices who have changed or not
         // changed. The sum of these two variables will always be <= degreeIn.
         shared size_t changed, unchanged;
+
+        Mutex mutex;
+
+        void reset()
+        {
+            changed = 0;
+            unchanged = 0;
+        }
     }
 
     private
@@ -326,24 +337,55 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         auto data = v in _data!Vertex;
 
-        if (parentChanged)
-            data.changed.atomicOp!"+="(1);
-        else
-            data.unchanged.atomicOp!"+="(1);
+        final switch (parentChanged)
+        {
+            case false:
+                data.unchanged.atomicOp!"+="(1);
+                break;
+            case true:
+                data.changed.atomicOp!"+="(1);
+                break;
+        }
 
+        // FIXME: Race condition.
+
+        // Unless everyone has arrived at the junction, do not proceed.
         if ((data.changed + data.unchanged) < data.degreeIn)
             return;
 
+        // Reset the counts so that it is safe to traverse the graph again.
+        scope (exit) data.reset();
+
+
         // If none of our dependencies changed, then don't do any work.
         // Propagate the change status downward.
-        bool changed = data.changed > 0 && visitThis(ctx, v, data.degreeIn);
+        immutable changed = data.changed > 0 && visitThis(ctx, v, data.degreeIn);
 
-        // Reset the counts so that it is safe to traverse the graph again.
-        data.changed   = 0;
-        data.unchanged = 0;
+        Throwable head; // The best kind of head
 
         foreach (child; pool.parallel(neighbors!Vertex[v].byKey(), 1))
-            traverse!(visitThat, visitThis)(pool, ctx, child, changed);
+        {
+            try
+            {
+                // Visit all children. If any of them throw an exception, it is
+                // added to the list and propagated upward.
+                traverse!(visitThat, visitThis)(pool, ctx, child, changed);
+            }
+            catch (Exception e)
+            {
+                if (head is null)
+                    head = e;
+                else
+                {
+                    // Add our exception to the front of the chain
+                    e.next = head;
+                    head = e;
+                }
+            }
+        }
+
+        if (head !is null)
+            throw head;
     }
 
     /**

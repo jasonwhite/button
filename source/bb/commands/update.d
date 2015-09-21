@@ -98,6 +98,13 @@ int update(string[] args)
         stderr.println(":: Error: ", e.msg);
         return 1;
     }
+    catch (TaskError e)
+    {
+        // TODO: Loop through the exception chain, enumerating which tasks
+        // failed.
+        stderr.println(":: Build failed. See output above for errors.");
+        return 1;
+    }
 
     return 0;
 }
