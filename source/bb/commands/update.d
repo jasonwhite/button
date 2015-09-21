@@ -74,11 +74,13 @@ int update(string[] args)
         auto state = new BuildState(path.stateName);
 
         {
-            // Find changed resources and add them to the set of pending resources.
             state.begin();
             scope (failure) state.rollback();
             scope (success)
             {
+                // Note that the transaction is not ended if this IS a dry run.
+                // We don't want the database to retain changes introduced
+                // during the build.
                 if (!options.dryRun)
                     state.commit();
             }

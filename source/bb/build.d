@@ -493,11 +493,16 @@ void checkRaces(BuildStateGraph graph, BuildState state)
  */
 void gatherChanges(BuildState state, TaskPool pool)
 {
-    foreach (v; pool.parallel(state.indices!Resource))
-    {
-        if (state.degreeIn(v) != 0)
-            continue;
+    import std.array : array;
+    import std.algorithm.iteration : filter;
 
+    // The parallel foreach fails if this is not an array.
+    auto resources = state.indices!Resource
+        .filter!(v => state.degreeIn(v) == 0)
+        .array;
+
+    foreach (v; pool.parallel(resources))
+    {
         auto r = state[v];
         if (r.update())
         {
@@ -522,10 +527,7 @@ struct VisitorContext
 bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn)
 {
     scope (success)
-    {
-        if (!context.dryRun)
-            context.state.removePending(v);
-    }
+        context.state.removePending(v);
 
     // Leaf resources are already checked for changes when discovering roots
     // from which to construct the subgraph. Thus, there is no need to do it
@@ -555,16 +557,14 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
 
     // We add this as pending just in case the build is interrupted while the
     // task is running.
-    if (!context.dryRun)
-        context.state.addPending(v);
+    context.state.addPending(v);
 
     // TODO: Don't remove as pending if the task fails. If it fails, it should
     // get executed again on the next run such that other tasks that depend on
     // this (if any) can be executed.
     scope (success)
     {
-        if (!context.dryRun)
-            context.state.removePending(v);
+        context.state.removePending(v);
     }
 
     synchronized println(" > ", context.state[v]);
