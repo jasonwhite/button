@@ -78,7 +78,7 @@ int update(string[] args)
             scope (failure) state.rollback();
             scope (success)
             {
-                // Note that the transaction is not ended if this IS a dry run.
+                // Note that the transaction is not ended if this is a dry run.
                 // We don't want the database to retain changes introduced
                 // during the build.
                 if (!options.dryRun)
@@ -100,9 +100,7 @@ int update(string[] args)
     }
     catch (TaskError e)
     {
-        // TODO: Loop through the exception chain, enumerating which tasks
-        // failed.
-        stderr.println(":: Build failed. See output above for errors.");
+        stderr.println(":: Build failed. See the above output log for details.");
         return 1;
     }
 
