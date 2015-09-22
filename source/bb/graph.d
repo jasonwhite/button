@@ -36,19 +36,14 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Bookkeeping data associated with each vertex.
      */
-    struct Data
+    class Data
     {
-        import std.typecons : scoped;
-        import core.sync.mutex;
-
         // Number of incoming edges for this vertex.
         size_t degreeIn;
 
         // Number of incoming edges for vertices who have changed or not
         // changed. The sum of these two variables will always be <= degreeIn.
-        shared size_t changed, unchanged;
-
-        Mutex mutex;
+        size_t changed, unchanged;
 
         void reset()
         {
@@ -129,7 +124,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         if (v !in neighbors!Vertex)
         {
             neighbors!Vertex[v] = neighbors!Vertex[v].init;
-            _data!Vertex[v] = Data.init;
+            _data!Vertex[v] = new Data();
         }
     }
 
@@ -337,25 +332,23 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         auto data = v in _data!Vertex;
 
-        final switch (parentChanged)
+        assert(data && *data !is null, "Vertex does not exist.");
+
+        synchronized (*data)
         {
-            case false:
-                data.unchanged.atomicOp!"+="(1);
-                break;
-            case true:
-                data.changed.atomicOp!"+="(1);
-                break;
+            final switch (parentChanged)
+            {
+                case false: ++data.unchanged; break;
+                case true: ++data.changed; break;
+            }
+
+            // Unless everyone has arrived at the junction, do not proceed.
+            if ((data.changed + data.unchanged) < data.degreeIn)
+                return;
         }
-
-        // FIXME: Race condition.
-
-        // Unless everyone has arrived at the junction, do not proceed.
-        if ((data.changed + data.unchanged) < data.degreeIn)
-            return;
 
         // Reset the counts so that it is safe to traverse the graph again.
         scope (exit) data.reset();
-
 
         // If none of our dependencies changed, then don't do any work.
         // Propagate the change status downward.
@@ -363,14 +356,12 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         Throwable head; // The best kind of head
 
+        // Visit all our children. If any of them throw up, then catch it, put
+        // it in a bag, and save it for later.
         foreach (child; pool.parallel(neighbors!Vertex[v].byKey(), 1))
         {
             try
-            {
-                // Visit all children. If any of them throw an exception, it is
-                // added to the list and propagated upward.
                 traverse!(visitThat, visitThis)(pool, ctx, child, changed);
-            }
             catch (Exception e)
             {
                 if (head is null)
