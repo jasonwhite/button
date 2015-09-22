@@ -14,6 +14,7 @@ import std.parallelism : TaskPool;
 import bb.graph;
 import bb.vertex;
 import bb.state;
+import bb.textcolor;
 
 alias BuildStateGraph = Graph!(Index!Resource, Index!Task);
 
@@ -582,7 +583,7 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
     // Assume the command would succeed in a dryrun
     if (context.dryRun)
     {
-        synchronized println(" > ", task);
+        synchronized println(" > ", successColor, task, resetColor);
         return true;
     }
 
@@ -590,11 +591,20 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
 
     synchronized
     {
-        println(" > ", task);
+        immutable failed = cmd.status != 0;
+
+        if (failed)
+            println(" > ", errorColor, task, resetColor,
+                    bold, " (exit code: ", cmd.status, ")", resetColor);
+        else
+            println(" > ", successColor, task, resetColor);
+
         print(cmd.output);
 
-        if (cmd.status != 0)
-            println(":: Error: Task failed. Process exited with code ", cmd.status);
+        if (failed)
+            println(statusColor, " ➥ ", errorColor, "Error", resetColor,
+                    ": Task failed. Process exited with code ", cmd.status
+                    );
     }
 
     if (cmd.status != 0)

@@ -15,7 +15,8 @@ import bb.state,
        bb.rule,
        bb.graph,
        bb.build,
-       bb.vertex;
+       bb.vertex,
+       bb.textcolor;
 
 private struct Options
 {
@@ -87,7 +88,7 @@ int update(string[] args)
 
             syncBuildState(state, path);
 
-            println(":: Checking for changes...");
+            println(statusColor, ":: Checking for changes...", resetColor);
             gatherChanges(state, pool);
         }
 
@@ -95,12 +96,13 @@ int update(string[] args)
     }
     catch (BuildException e)
     {
-        stderr.println(":: Error: ", e.msg);
+        stderr.println(statusColor, ":: ", errorColor, "Error", resetColor, ": ", e.msg);
         return 1;
     }
     catch (TaskError e)
     {
-        stderr.println(":: Build failed. See the above output log for details.");
+        stderr.println(statusColor, ":: ", errorColor, "Build failed!",
+                resetColor, " See the output above for details.");
         return 1;
     }
 
@@ -116,13 +118,14 @@ void syncBuildState(BuildState state, string path)
     r.path = path;
     if (r.update())
     {
-        println(":: Syncing database with build description...");
+        println(statusColor, ":: Syncing database with build description...",
+                resetColor);
         auto build = BuildDescription(path);
         build.sync(state);
 
         // Analyze the new graph. If any errors are detected, the database rolls
         // back to the previous (good) state.
-        println(":: Analyzing graph for errors...");
+        println(statusColor, ":: Analyzing graph for errors...", resetColor);
         BuildStateGraph graph = state.buildGraph();
         graph.checkCycles();
         graph.checkRaces(state);
@@ -145,7 +148,8 @@ void update(BuildState state, TaskPool pool, bool dryRun)
 
     if (resources.length == 0 && tasks.length == 0)
     {
-        println(":: Nothing to do. Everything is up to date.");
+        println(statusColor, ":: ", successColor,
+                "Nothing to do. Everything is up to date.", resetColor);
         return;
     }
 
@@ -153,7 +157,9 @@ void update(BuildState state, TaskPool pool, bool dryRun)
     printfln(" - Found %d modified resource(s)", resources.length);
     printfln(" - Found %d pending task(s)", tasks.length);
 
-    println(":: Building...");
+    println(statusColor, ":: Building...", resetColor);
     auto subgraph = state.buildGraph(resources, tasks);
     subgraph.build(state, pool, dryRun);
+
+    println(statusColor, ":: ", successColor, "Build succeeded", resetColor);
 }
