@@ -100,13 +100,13 @@ Now suppose we make a change to the file `foo.c` and run the build again. Only
 the necessary tasks to bring the outputs up-to-date are executed:
 
 ```bash
-$ touch foo.c
+$ echo "// Another comment" >> foo.c
 $ bb update
  > gcc -c foo.c -o foo.o
 ```
 
 Note that `gcc foo.o bar.o -o foobar` was not executed because its output
-`foo.o` did not change.
+`foo.o` did not change (all we did was add a comment).
 
 ## Planned Features
 
