@@ -329,6 +329,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     {
         import std.parallelism : parallel;
         import core.atomic : atomicOp;
+        import core.sync.mutex : Mutex;
 
         auto data = v in _data!Vertex;
 
@@ -365,20 +366,22 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                 traverse!(visitThat, visitThis)(pool, ctx, child, changed);
             catch (Exception e)
             {
-                // FIXME: This is not thread safe.
-                if (head is null)
+                synchronized (*data)
                 {
-                    head = e;
-                    tail = head;
-                }
-                else
-                {
-                    // Add our (potential) exception chain to the end of the
-                    // linked list
-                    while (tail.next !is null)
-                        tail = tail.next;
+                    if (head is null)
+                    {
+                        head = e;
+                        tail = head;
+                    }
+                    else
+                    {
+                        // Add our (potential) exception chain to the end of the
+                        // linked list
+                        while (tail.next !is null)
+                            tail = tail.next;
 
-                    tail.next = e;
+                        tail.next = e;
+                    }
                 }
             }
         }
