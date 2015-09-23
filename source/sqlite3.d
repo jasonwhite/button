@@ -272,10 +272,10 @@ class SQLite3
         }
 
         /// Ditto
-        void opIndexAssign(T : const(void[]))(T v, uint i)
+        void opIndexAssign(const(void[]) v, uint i)
         {
             import std.conv : to;
-            sqliteEnforce(sqlite3_bind_blob(_stmt, i+1, v,
+            sqliteEnforce(sqlite3_bind_blob(_stmt, i+1, v.ptr,
                 v.length.to!int, SQLITE_TRANSIENT) == SQLITE_OK, db);
         }
 
@@ -389,11 +389,11 @@ class SQLite3
         }
 
         /// Ditto
-        T get(T)(uint i) if (is(T == void*))
+        const(void)[] get(T)(uint i) if (is(T == void[]))
         {
             auto v = sqlite3_column_blob(_stmt, cast(int)i);
             int l = sqlite3_column_bytes(_stmt, cast(int)i);
-            return v[0 .. l].dup;
+            return v[0 .. l];
         }
 
         /**

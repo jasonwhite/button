@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS resource (
     id              INTEGER NOT NULL,
     path            TEXT    NOT NULL,
     lastModified    INTEGER NOT NULL,
-    checksum        INTEGER NOT NULL,
+    checksum        BLOB NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (path)
 )}";
@@ -148,7 +148,7 @@ Vertex parse(Vertex : Resource)(SQLite3.Statement s)
     return Resource(
             s.get!string(0),        // Path
             SysTime(s.get!long(1)), // Last modified
-            s.get!ulong(2)          // Checksum
+            cast(ubyte[])s.get!(void[])(2) // Checksum
             );
 }
 

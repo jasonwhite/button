@@ -4,6 +4,7 @@
  * Authors:   Jason White
  */
 module bb.vertex.resource;
+import std.digest.digest : DigestType, isDigest;
 
 /**
  * A resource identifier.
@@ -11,11 +12,34 @@ module bb.vertex.resource;
 alias ResourceId = string;
 
 /**
+ * Compute the checksum of a file.
+ */
+private DigestType!Hash digestFile(Hash)(string path)
+    if (isDigest!Hash)
+{
+    import std.digest.digest : digest;
+    import io.file : File, FileFlags;
+    import io.range : byChunk;
+
+    ubyte[4096] buf;
+
+    return digest!Hash(File(path, FileFlags.readExisting).byChunk(buf));
+}
+
+/**
  * A representation of a file on the disk.
  */
 struct Resource
 {
     import std.datetime : SysTime;
+    import std.digest.digest : DigestType;
+    import std.digest.md : MD5;
+
+    enum Status
+    {
+        unknown  = SysTime.max,
+        notFound = SysTime.min,
+    }
 
     /**
      * File path to the resource. To ensure uniqueness, this should never be
@@ -24,15 +48,36 @@ struct Resource
     ResourceId path;
 
     /**
-     * Last time the file was modified, according to the database. If this is
-     * SysTime.min, then it is taken to mean that the file does not exist.
+     * Last time the file was modified.
      */
-    SysTime lastModified = SysTime.min;
+    SysTime lastModified = Status.unknown;
 
     /**
      * Checksum of the file.
      */
-    ulong checksum = 0;
+    DigestType!MD5 checksum;
+
+    this(ResourceId path)
+    {
+        this.path = path;
+    }
+
+    this(ResourceId path, SysTime lastModified, const(ubyte[]) checksum)
+    {
+        import std.algorithm.comparison : min;
+
+        this.path = path;
+        this.lastModified = lastModified;
+
+        // The only times the length will be different are:
+        //  - The database is corrupt
+        //  - The digest length changed
+        // In either case, it doesn't matter. If the checksum changes it will
+        // simply be recomputed and order will once again be restored in the
+        // realm.
+        immutable bytes = min(this.checksum.length, checksum.length);
+        this.checksum[0 .. bytes] = checksum[0 .. bytes];
+    }
 
     /**
      * Returns a string representation of this resource. This is just the path
@@ -86,12 +131,26 @@ struct Resource
     {
         import std.file : timeLastModified, FileException;
 
-        immutable lastModified = timeLastModified(path, this.lastModified.init);
+        immutable lastModified = timeLastModified(path, Status.notFound);
 
         if (lastModified != this.lastModified)
         {
-            // TODO: Compute the checksum.
+            import std.digest.md;
             this.lastModified = lastModified;
+
+            if (lastModified != Status.notFound)
+            {
+                auto checksum = digestFile!MD5(path);
+                if (checksum != this.checksum)
+                {
+                    this.checksum = checksum;
+                    return true;
+                }
+
+                // Checksum didn't change.
+                return false;
+            }
+
             return true;
         }
 
