@@ -354,7 +354,8 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         // Propagate the change status downward.
         immutable changed = data.changed > 0 && visitThis(ctx, v, data.degreeIn);
 
-        Throwable head; // The best kind of head
+        Throwable head;
+        Throwable tail;
 
         // Visit all our children. If any of them throw up, then catch it, put
         // it in a bag, and save it for later.
@@ -364,13 +365,20 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                 traverse!(visitThat, visitThis)(pool, ctx, child, changed);
             catch (Exception e)
             {
+                // FIXME: This is not thread safe.
                 if (head is null)
+                {
                     head = e;
+                    tail = head;
+                }
                 else
                 {
-                    // Add our exception to the front of the chain
-                    e.next = head;
-                    head = e;
+                    // Add our (potential) exception chain to the end of the
+                    // linked list
+                    while (tail.next !is null)
+                        tail = tail.next;
+
+                    tail.next = e;
                 }
             }
         }
