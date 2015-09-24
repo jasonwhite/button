@@ -57,12 +57,7 @@ struct Resource
      */
     DigestType!MD5 checksum;
 
-    this(ResourceId path)
-    {
-        this.path = path;
-    }
-
-    this(ResourceId path, SysTime lastModified, const(ubyte[]) checksum)
+    this(ResourceId path, SysTime lastModified = Status.unknown, const(ubyte[]) checksum = [])
     {
         import std.algorithm.comparison : min;
 
@@ -159,8 +154,8 @@ struct Resource
 
     unittest
     {
-        assert(Resource("test", SysTime(1), 1) == Resource("test", SysTime(1), 1));
-        assert(Resource("test", SysTime(1), 1) != Resource("test", SysTime(2), 2));
+        assert(Resource("test", SysTime(1)) == Resource("test", SysTime(1)));
+        assert(Resource("test", SysTime(1)) != Resource("test", SysTime(2)));
     }
 
     /**
