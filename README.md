@@ -67,19 +67,19 @@ with the `-f` option.
 
 A build description like the one above is not intended to be written by hand.
 Think of the above file as the fundamental machine language of the build system.
-You almost never want to write your build description in JSON by hand. It is
+You almost never want to write your fundamental build description by hand. It is
 simply far too verbose and unmanageable. Instead, as part of the build process,
-the build description is generated and then built. In this recursive fashion,
-the script(s) that generate the build description have their own dependencies
-just as a build task does. If those dependencies change, the build description
-is regenerated and compared with the old build description to see what changed.
+the build description is generated. In this recursive fashion, the script(s)
+that generate the build description have their own dependencies just as a build
+task does. If those dependencies change, the build description is regenerated
+and compared with the old build description to see what was added or removed.
 
 Generating the build description has the added benefit of being able to write
 your generator in any language you please. It is even possible to write tools to
 automatically translate the build descriptions of other build systems to this
-one. Theoretically, even a `Makefile` could be automatically converted. This can
-greatly aid in migrating away from another (inferior) build system used in a
-massive project.
+one. Theoretically, even a `Makefile` or Visual Studio project file could be
+automatically converted. This can greatly aid in migrating away from another
+(inferior) build system used in large, complex projects.
 
 ### Visualizing the Build
 
@@ -125,9 +125,11 @@ $ bb update
 ```
 
 Note that `gcc foo.o bar.o -o foobar` was not executed because its output
-`foo.o` did not change (all we did was add a comment). Changes are determined by
-the checksum of a file's contents, not just its last modified time. Thus, one
-source of overbuilding is eliminated in comparison to other build systems.
+`foo.o` did not change. Indeed, all we did was add a comment. In such a case
+`gcc`, will produce an identical object file.
+
+Changes are determined by the checksum of a file's contents, not just its last
+modification time. Thus, one source of overbuilding is eliminated.
 
 ## Planned Features
 
