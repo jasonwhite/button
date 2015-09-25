@@ -28,6 +28,7 @@ However, time will tell if this is actually true in practice.
  * Detects and displays cyclic dependencies.
  * Detects race conditions (i.e., when multiple tasks output to the same file).
  * Deletes output files that no longer get built.
+ * Can generate a build description as part of the build.
 
 ## Quick Example
 
@@ -61,10 +62,23 @@ If this file is named `bb.json`, Brilliant Build will automatically find it when
 running the commands below. Otherwise, the path to the file can be specified
 with the `-f` option.
 
-Note that build descriptions are not intended to be written by hand. For
-projects more complicated than this, one should generate the build description.
-Note that Brilliant Build can be ran recursively such that it can generate its
-own build description.
+### "Ugh! JSON is a terrible language for a build description!"
+
+A build description like the one above is not intended to be written by hand.
+Think of the above file as the fundamental machine language of the build system.
+You almost never want to write your build description in JSON by hand. It is
+simply far too verbose and unmanageable. Instead, as part of the build process,
+the build description is generated and then built. In this recursive fashion,
+the script(s) that generate the build description have their own dependencies
+just as a build task does. If those dependencies change, the build description
+is regenerated and compared with the old build description to see what changed.
+
+Generating the build description has the added benefit of being able to write
+your generator in any language you please. It is even possible to write tools to
+automatically translate the build descriptions of other build systems to this
+one. Theoretically, even a `Makefile` could be automatically converted. This can
+greatly aid in migrating away from another (inferior) build system used in a
+massive project.
 
 ### Visualizing the Build
 
@@ -77,6 +91,10 @@ $ bb graph --verbose | dot -Tpng > build_graph.png
 ![Simple Task Graph](/docs/examples/basic/build.png)
 
 [GraphViz]: http://www.graphviz.org/
+
+*Note*: If the above file was named `bb.json`, there is no need to specify its
+path on the command line. Otherwise, the path to the file can be specified with
+the `-f` option.
 
 ### Running the Build
 
@@ -106,7 +124,9 @@ $ bb update
 ```
 
 Note that `gcc foo.o bar.o -o foobar` was not executed because its output
-`foo.o` did not change (all we did was add a comment).
+`foo.o` did not change (all we did was add a comment). Changes are determined by
+the checksum of a file's contents, not just its last modified time. Thus, one
+source of overbuilding is eliminated in comparison to other build systems.
 
 ## Planned Features
 
@@ -171,7 +191,8 @@ its `stderr` and `stdout` log.
 
 ## Inspiration
 
-Brilliant Build draws inspiration from several other build systems:
+The design of Brilliant Build learns from and draws inspiration from several
+other build systems:
 
  * [Tup](http://gittup.org/tup/)
  * [Ninja](https://martine.github.io/ninja/)
