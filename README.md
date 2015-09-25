@@ -2,7 +2,8 @@
 
 *This is a work in progress.*
 
-A build system that aims to be correct, scalable, and *elegantly simple*.
+A build system that aims to be correct, scalable, and *elegantly simple yet
+robust*.
 
 ## "Ugh! Another build system? [Why?!][relevant xkcd]"
 
