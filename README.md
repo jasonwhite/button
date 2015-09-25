@@ -169,6 +169,17 @@ search function should be available for finding nodes in the graph. One should
 also be able to "walk" the nodes in the graph. Clicking on a node should display
 its `stderr` and `stdout` log.
 
+## Inspiration
+
+Brilliant Build draws inspiration from several other build systems:
+
+ * [Tup](http://gittup.org/tup/)
+ * [Ninja](https://martine.github.io/ninja/)
+ * [Redo](https://github.com/apenwarr/redo)
+ * [Shake](http://shakebuild.com/)
+ * [Bazel](http://bazel.io/)
+ * [Buck](https://buckbuild.com/)
+
 ## License
 
 [MIT License](/LICENSE.md)
