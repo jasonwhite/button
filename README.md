@@ -2,8 +2,7 @@
 
 *This is a work in progress.*
 
-A build system that aims to be correct, scalable, and *elegantly simple yet
-robust*.
+A build system that aims to be correct, scalable, elegantly simple, and robust.
 
 ## "Ugh! Another build system? [Why?!][relevant xkcd]"
 
@@ -59,10 +58,6 @@ Here is a simple example of a build description:
 }
 ```
 
-If this file is named `bb.json`, Brilliant Build will automatically find it when
-running the commands below. Otherwise, the path to the file can be specified
-with the `-f` option.
-
 ### "Ugh! JSON is a terrible language for a build description!"
 
 A build description like the one above is not intended to be written by hand.
@@ -93,9 +88,9 @@ $ bb graph --verbose | dot -Tpng > build_graph.png
 
 [GraphViz]: http://www.graphviz.org/
 
-*Note*: If the above file was named `bb.json`, there is no need to specify its
-path on the command line. Otherwise, the path to the file can be specified with
-the `-f` option.
+*Note*: If the build description above was named `bb.json`, there is no need to
+specify its path on the command line. Otherwise, the path to the file can be
+specified with the `-f` option.
 
 ### Running the Build
 
