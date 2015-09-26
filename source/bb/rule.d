@@ -100,7 +100,7 @@ struct Rules
     if (isInputRange!R)
 {
     import std.json : parseJSON;
-    return Rules(parseJSON(json)["rules"]);
+    return Rules(parseJSON(json));
 }
 
 unittest
@@ -108,26 +108,24 @@ unittest
     import std.algorithm : equal;
 
     immutable json = q{
-        {
-            "rules": [
-                {
-                    "inputs": ["foo.c", "baz.h"],
-                    "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
-                    "display": "cc foo.c",
-                    "outputs": ["foo.o"]
-                },
-                {
-                    "inputs": ["bar.c", "baz.h"],
-                    "task": ["gcc", "-c", "bar.c", "-o", "bar.o"],
-                    "outputs": ["bar.o"]
-                },
-                {
-                    "inputs": ["foo.o", "bar.o"],
-                    "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
-                    "outputs": ["foobar"]
-                }
-            ]
-        }
+        [
+            {
+                "inputs": ["foo.c", "baz.h"],
+                "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
+                "display": "cc foo.c",
+                "outputs": ["foo.o"]
+            },
+            {
+                "inputs": ["bar.c", "baz.h"],
+                "task": ["gcc", "-c", "bar.c", "-o", "bar.o"],
+                "outputs": ["bar.o"]
+            },
+            {
+                "inputs": ["foo.o", "bar.o"],
+                "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
+                "outputs": ["foobar"]
+            }
+        ]
     };
 
     immutable Rule[] rules = [
@@ -156,15 +154,13 @@ unittest
     import std.algorithm : equal;
 
     immutable json = q{
-        {
-            "rules": [
-                {
-                    "inputs": ["./test/../foo.c", "./baz.h"],
-                    "task": ["ls", "foo.c", "baz.h"],
-                    "outputs": ["this/../path/../is/../normalized"]
-                }
-            ]
-        }
+        [
+            {
+                "inputs": ["./test/../foo.c", "./baz.h"],
+                "task": ["ls", "foo.c", "baz.h"],
+                "outputs": ["this/../path/../is/../normalized"]
+            }
+        ]
     };
 
     immutable Rule[] rules = [

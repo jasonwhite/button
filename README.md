@@ -37,25 +37,23 @@ However, time will tell if this is actually true in practice.
 Here is a simple example of a build description:
 
 ```json
-{
-    "rules": [
-        {
-            "inputs": ["foo.c", "baz.h"],
-            "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
-            "outputs": ["foo.o"]
-        },
-        {
-            "inputs": ["bar.c", "baz.h"],
-            "task": ["gcc", "-c", "bar.c", "-o", "bar.o"],
-            "outputs": ["bar.o"]
-        },
-        {
-            "inputs": ["foo.o", "bar.o"],
-            "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
-            "outputs": ["foobar"]
-        }
-    ]
-}
+[
+    {
+        "inputs": ["foo.c", "baz.h"],
+        "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
+        "outputs": ["foo.o"]
+    },
+    {
+        "inputs": ["bar.c", "baz.h"],
+        "task": ["gcc", "-c", "bar.c", "-o", "bar.o"],
+        "outputs": ["bar.o"]
+    },
+    {
+        "inputs": ["foo.o", "bar.o"],
+        "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
+        "outputs": ["foobar"]
+    }
+]
 ```
 
 ### "Ugh! JSON is a terrible language for a build description!"
