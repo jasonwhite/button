@@ -130,13 +130,34 @@ struct Index(T)
 alias Index(A, B) = Edge!(Index!A, Index!B);
 
 /**
+ * Convenience type for an index of the edge itself.
+ */
+alias EdgeIndex(A, B) = Index!(Edge!(A, B));
+
+/**
  * An edge row in the database.
  */
-struct EdgeRow(A, B, EdgeData=EdgeType)
+alias EdgeRow(A, B, Data=EdgeType) = Edge!(Index!A, Index!B, Data);
+
+/**
+ * A vertex paired with some data. This is useful for representing a neighbor.
+ */
+struct Neighbor(Vertex, Data)
 {
-    Index!(A, B) edge;
-    EdgeData data;
+    Vertex vertex;
+    Data data;
 }
+
+/**
+ * Convenience templates to get the other type of vertex from the given vertex.
+ */
+alias Other(A : Resource) = Task;
+alias Other(A : Task) = Resource; /// Ditto
+
+/**
+ * Convenience template to construct an edge from the starting vertex.
+ */
+alias NeighborIndex(V : Index!V) = EdgeIndex!(V, Other!V);
 
 /**
  * Deserializes a vertex from a SQLite statement. This assumes that the
@@ -167,26 +188,42 @@ Vertex parse(Vertex : Task)(SQLite3.Statement s)
  * Deserializes an edge from a SQLite statement. This assumes that the
  * statement has every column of the vertex except the row ID.
  */
-E parse(E : EdgeRow!(Resource, Task))(SQLite3.Statement s)
+E parse(E : EdgeRow!(Resource, Task, EdgeType))(SQLite3.Statement s)
 {
     return E(
-        Index!(Resource, Task)(
-            Index!Resource(s.get!ulong(0)),
-            Index!Task(s.get!ulong(1))
-        ),
+        Index!Resource(s.get!ulong(0)),
+        Index!Task(s.get!ulong(1)),
         cast(EdgeType)s.get!int(2)
         );
 }
 
 /// Ditto
-E parse(E : EdgeRow!(Task, Resource))(SQLite3.Statement s)
+E parse(E : EdgeRow!(Task, Resource, EdgeType))(SQLite3.Statement s)
 {
     return E(
-        Index!(Task, Resource)(
-            Index!Task(s.get!ulong(0)),
-            Index!Resource(s.get!ulong(1))
-        ),
+        Index!Task(s.get!ulong(0)),
+        Index!Resource(s.get!ulong(1)),
         cast(EdgeType)s.get!int(2)
+        );
+}
+
+/// Ditto
+E parse(E : EdgeRow!(Resource, Task, EdgeIndex!(Resource, Task)))(SQLite3.Statement s)
+{
+    return E(
+        Index!Resource(s.get!ulong(0)),
+        Index!Task(s.get!ulong(1)),
+        cast(EdgeIndex!(Resource, Task))s.get!int(2)
+        );
+}
+
+/// Ditto
+E parse(E : EdgeRow!(Task, Resource, EdgeIndex!(Task, Resource)))(SQLite3.Statement s)
+{
+    return E(
+        Index!Task(s.get!ulong(0)),
+        Index!Resource(s.get!ulong(1)),
+        cast(EdgeIndex!(Task, Resource))s.get!int(2)
         );
 }
 
@@ -226,6 +263,44 @@ E parse(E : Edge!(TaskId, ResourceId))(SQLite3.Statement s)
 {
     import std.conv : to;
     return E(s.get!string(0).to!(string[]), s.get!string(1));
+}
+
+/**
+ * Deserializes a neighbor.
+ */
+E parse(E : Neighbor!(Index!Resource, EdgeType))(SQLite3.Statement s)
+{
+    return E(
+        Index!Resource(s.get!ulong(0)),
+        cast(EdgeType)s.get!int(1)
+        );
+}
+
+/// Ditto
+E parse(E : Neighbor!(Index!Task, EdgeType))(SQLite3.Statement s)
+{
+    return E(
+        Index!Task(s.get!ulong(0)),
+        cast(EdgeType)s.get!int(1)
+        );
+}
+
+/// Ditto
+E parse(E : Neighbor!(Index!Resource, EdgeIndex!(Task, Resource)))(SQLite3.Statement s)
+{
+    return E(
+        Index!Resource(s.get!ulong(0)),
+        EdgeIndex!(Task, Resource)(s.get!ulong(1))
+        );
+}
+
+/// Ditto
+E parse(E : Neighbor!(Index!Task, EdgeIndex!(Resource, Task)))(SQLite3.Statement s)
+{
+    return E(
+        Index!Task(s.get!ulong(0)),
+        EdgeIndex!(Resource, Task)(s.get!ulong(1))
+        );
 }
 
 /**
@@ -713,7 +788,7 @@ class BuildState : SQLite3
      * index of the edge.
      */
     Index!(Edge!(Task, Resource)) put(Index!Task from, Index!Resource to,
-            EdgeType type = EdgeType.explicit)
+            EdgeType type)
     {
         execute(`INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`,
                 from, to, type);
@@ -722,7 +797,7 @@ class BuildState : SQLite3
 
     /// Ditto
     Index!(Edge!(Resource, Task)) put(Index!Resource from, Index!Task to,
-            EdgeType type = EdgeType.explicit)
+            EdgeType type)
     {
         execute(`INSERT INTO resourceEdge("from", "to", type) VALUES(?, ?, ?)`,
                 from, to, type);
@@ -736,14 +811,13 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    auto put(Index!(Task, Resource) edge, EdgeType type = EdgeType.explicit)
+    auto put(Index!(Task, Resource) edge, EdgeType type)
     {
         return put(edge.from, edge.to, type);
     }
 
     /// Ditto
-    Index!(Edge!(Resource, Task)) put(ResourceId a, TaskId b,
-            EdgeType type = EdgeType.explicit)
+    Index!(Edge!(Resource, Task)) put(ResourceId a, TaskId b, EdgeType type)
     {
         import std.conv : to;
         import std.exception : enforce;
@@ -758,8 +832,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Index!(Edge!(Task, Resource)) put(TaskId a, ResourceId b,
-            EdgeType type = EdgeType.explicit)
+    Index!(Edge!(Task, Resource)) put(TaskId a, ResourceId b, EdgeType type)
     {
         import std.conv : to;
         import std.exception : enforce;
@@ -807,7 +880,8 @@ class BuildState : SQLite3
         immutable resId = state.put(Resource("foo.c"));
         immutable taskId = state.put(Task(["gcc", "foo.c"]));
 
-        immutable edgeId = state.put("foo.c", ["gcc", "foo.c"]);
+        immutable edgeId = state.put("foo.c", ["gcc", "foo.c"],
+                EdgeType.explicit);
         assert(edgeId == 1);
     }
 
@@ -917,11 +991,11 @@ class BuildState : SQLite3
             state.put(Task(["foobar", "foo", "bar"])),
             ];
 
-        state.put(tasks[0], resources[0]);
-        state.put(tasks[0], resources[1]);
+        state.put(tasks[0], resources[0], EdgeType.explicit);
+        state.put(tasks[0], resources[1], EdgeType.explicit);
 
-        state.put(resources[0], tasks[1]);
-        state.put(resources[1], tasks[1]);
+        state.put(resources[0], tasks[1], EdgeType.explicit);
+        state.put(resources[1], tasks[1], EdgeType.explicit);
 
         assert(state.degreeIn(tasks[0])     == 0);
         assert(state.degreeIn(tasks[1])     == 2);
@@ -1000,19 +1074,33 @@ class BuildState : SQLite3
     /**
      * Lists all outgoing task edges.
      */
-    @property auto edges(From : Task, To : Resource)()
+    @property auto edges(From : Task, To : Resource, Data : EdgeType)()
     {
-        return prepare(`SELECT "from","to" FROM taskEdge`)
-            .rows!(parse!(Index!(From, To)));
+        return prepare(`SELECT "from","to","type" FROM taskEdge`)
+            .rows!(parse!(EdgeRow!(From, To, Data)));
+    }
+
+    /// Ditto
+    @property auto edges(From : Task, To : Resource, Data : EdgeIndex!(Task, Resource))()
+    {
+        return prepare(`SELECT "from","to",id FROM taskEdge`)
+            .rows!(parse!(EdgeRow!(From, To, Data)));
     }
 
     /**
      * Lists all outgoing resource edges.
      */
-    @property auto edges(From : Resource, To : Task)()
+    @property auto edges(From : Resource, To : Task, Data : EdgeType)()
     {
-        return prepare(`SELECT "from","to" FROM resourceEdge`)
-            .rows!(parse!(Index!(From, To)));
+        return prepare(`SELECT "from","to",id FROM resourceEdge`)
+            .rows!(parse!(EdgeRow!(From, To, Data)));
+    }
+
+    /// Ditto
+    @property auto edges(From : Resource, To : Task, Data : EdgeIndex!(Resource, Task))()
+    {
+        return prepare(`SELECT "from","to",id FROM resourceEdge`)
+            .rows!(parse!(EdgeRow!(From, To, Data)));
     }
 
     /**
@@ -1075,17 +1163,31 @@ class BuildState : SQLite3
     /**
      * Returns the neighbors of the given node.
      */
-    @property auto neighbors(Index!Resource v)
+    @property auto neighbors(Data : EdgeType)(Index!Resource v)
     {
-        return prepare(`SELECT "to" FROM resourceEdge WHERE "from"=?`, v)
-            .rows!((SQLite3.Statement s) => Index!Task(s.get!ulong(0)));
+        return prepare(`SELECT "to",type FROM resourceEdge WHERE "from"=?`, v)
+            .rows!(parse!(Neighbor!(Index!Task, Data)));
     }
 
     /// Ditto
-    @property auto neighbors(Index!Task v)
+    @property auto neighbors(Data : EdgeType)(Index!Task v)
     {
         return prepare(`SELECT "to" FROM taskEdge WHERE "from"=?`, v)
-            .rows!((SQLite3.Statement s) => Index!Resource(s.get!ulong(0)));
+            .rows!(parse!(Neighbor!(Index!Resource, Data)));
+    }
+
+    /// Ditto
+    @property auto neighbors(Data : EdgeIndex!(Resource, Task))(Index!Resource v)
+    {
+        return prepare(`SELECT "to",id FROM resourceEdge WHERE "from"=?`, v)
+            .rows!(parse!(Neighbor!(Index!Task, Data)));
+    }
+
+    /// Ditto
+    @property auto neighbors(Data : EdgeIndex!(Task, Resource))(Index!Task v)
+    {
+        return prepare(`SELECT "to",id FROM taskEdge WHERE "from"=?`, v)
+            .rows!(parse!(Neighbor!(Index!Resource, Data)));
     }
 
     unittest

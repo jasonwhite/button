@@ -12,11 +12,16 @@ import std.range : ElementType;
 import std.parallelism : TaskPool;
 
 import bb.graph;
-import bb.vertex;
+import bb.vertex, bb.edge, bb.edgedata;
 import bb.state;
 import bb.textcolor;
 
-alias BuildStateGraph = Graph!(Index!Resource, Index!Task);
+alias BuildStateGraph = Graph!(
+        Index!Resource,
+        Index!Task,
+        EdgeIndex!(Resource, Task),
+        EdgeIndex!(Task, Resource)
+        );
 
 /**
  * An exception relating to the build.
@@ -265,7 +270,7 @@ struct BuildDescription
             final switch (c.type)
             {
             case ChangeType.added:
-                state.put(c.value.from, c.value.to);
+                state.put(c.value.from, c.value.to, EdgeType.explicit);
                 break;
             case ChangeType.removed:
                 state.remove(c.value.from, c.value.to);
@@ -280,7 +285,7 @@ struct BuildDescription
             final switch (c.type)
             {
             case ChangeType.added:
-                state.put(c.value.from, c.value.to);
+                state.put(c.value.from, c.value.to, EdgeType.explicit);
                 break;
             case ChangeType.removed:
                 state.remove(c.value.from, c.value.to);
@@ -393,12 +398,18 @@ BuildStateGraph buildGraph(BuildState state)
     auto g = new typeof(return)();
 
     // Add all vertices
-    foreach (v; state.indices!Resource) g.put(v);
-    foreach (v; state.indices!Task)     g.put(v);
+    foreach (v; state.indices!Resource)
+        g.put(v);
+
+    foreach (v; state.indices!Task)
+        g.put(v);
 
     // Add all edges
-    foreach (v; state.edges!(Resource, Task)) g.put(v.from, v.to);
-    foreach (v; state.edges!(Task, Resource)) g.put(v.from, v.to);
+    foreach (v; state.edges!(Resource, Task, EdgeIndex!(Resource, Task)))
+        g.put(v.from, v.to, v.data);
+
+    foreach (v; state.edges!(Task, Resource, EdgeIndex!(Task, Resource)))
+        g.put(v.from, v.to, v.data);
 
     return g;
 }
@@ -416,10 +427,10 @@ private void buildGraph(Vertex, G, Visited)(BuildState state, G graph, Vertex v,
 
     graph.put(v);
 
-    foreach (child; state.neighbors(v))
+    foreach (neighbor; state.neighbors!(NeighborIndex!Vertex)(v))
     {
-        buildGraph(state, graph, child, visited);
-        graph.put(v, child); // TODO: Add the edge data too
+        buildGraph(state, graph, neighbor.vertex, visited);
+        graph.put(v, neighbor.vertex, neighbor.data);
     }
 }
 

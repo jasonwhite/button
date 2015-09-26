@@ -169,17 +169,24 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Adds an edge. Both vertices must be added to the graph first.
      */
-    void put(From,To)(From from, To to,
-            EdgeData!(From, To) data = EdgeData!(From, To).init
-            ) pure
-        if (isEdge!(From, To))
+    void put(A from, B to, EdgeDataAB data = EdgeDataAB.init)
     {
-        assert(from in neighbors!From, "Attempted to add edge from non-existent vertex");
-        assert(to in neighbors!To, "Attempted to add edge to non-existent vertex");
-        assert(to !in neighbors!From[from], "Attempted to add duplicate edge");
+        assert(from in neighbors!A, "Attempted to add edge from non-existent vertex");
+        assert(to in neighbors!B, "Attempted to add edge to non-existent vertex");
+        assert(to !in neighbors!A[from], "Attempted to add duplicate edge");
 
-        neighbors!From[from][to] = data;
-        ++_data!To[to].degreeIn;
+        neighbors!A[from][to] = data;
+        ++_data!B[to].degreeIn;
+    }
+
+    void put(B from, A to, EdgeDataBA data = EdgeDataBA.init)
+    {
+        assert(from in neighbors!B, "Attempted to add edge from non-existent vertex");
+        assert(to in neighbors!A, "Attempted to add edge to non-existent vertex");
+        assert(to !in neighbors!B[from], "Attempted to add duplicate edge");
+
+        neighbors!B[from][to] = data;
+        ++_data!A[to].degreeIn;
     }
 
     unittest
@@ -419,10 +426,10 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         g.put(v);
 
-        foreach (child; outgoing(v).byKey())
+        foreach (child; outgoing(v).byKeyValue())
         {
-            subgraphDFS(child, g, visited);
-            g.put(v, child);
+            subgraphDFS(child.key, g, visited);
+            g.put(v, child.key, child.value);
         }
     }
 

@@ -129,7 +129,7 @@ int graph(string[] args)
  * Generates input suitable for GraphViz.
  */
 void graphviz(Stream)(
-        Graph!(Index!Resource, Index!Task) graph,
+        BuildStateGraph graph,
         BuildState state,
         Stream stream,
         bool verbose
