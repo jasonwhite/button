@@ -1161,32 +1161,62 @@ class BuildState : SQLite3
     }
 
     /**
-     * Returns the neighbors of the given node.
+     * Returns the outgoing neighbors of the given node.
      */
-    @property auto neighbors(Data : EdgeType)(Index!Resource v)
+    @property auto outgoing(Data : EdgeType)(Index!Resource v)
     {
         return prepare(`SELECT "to",type FROM resourceEdge WHERE "from"=?`, v)
             .rows!(parse!(Neighbor!(Index!Task, Data)));
     }
 
     /// Ditto
-    @property auto neighbors(Data : EdgeType)(Index!Task v)
+    @property auto outgoing(Data : EdgeType)(Index!Task v)
     {
         return prepare(`SELECT "to" FROM taskEdge WHERE "from"=?`, v)
             .rows!(parse!(Neighbor!(Index!Resource, Data)));
     }
 
     /// Ditto
-    @property auto neighbors(Data : EdgeIndex!(Resource, Task))(Index!Resource v)
+    @property auto outgoing(Data : EdgeIndex!(Resource, Task))(Index!Resource v)
     {
         return prepare(`SELECT "to",id FROM resourceEdge WHERE "from"=?`, v)
             .rows!(parse!(Neighbor!(Index!Task, Data)));
     }
 
     /// Ditto
-    @property auto neighbors(Data : EdgeIndex!(Task, Resource))(Index!Task v)
+    @property auto outgoing(Data : EdgeIndex!(Task, Resource))(Index!Task v)
     {
         return prepare(`SELECT "to",id FROM taskEdge WHERE "from"=?`, v)
+            .rows!(parse!(Neighbor!(Index!Resource, Data)));
+    }
+
+    /**
+     * Returns the incoming neighbors of the given node.
+     */
+    @property auto incoming(Data : EdgeType)(Index!Resource v)
+    {
+        return prepare(`SELECT "from",type FROM taskEdge WHERE "to"=?`, v)
+            .rows!(parse!(Neighbor!(Index!Task, Data)));
+    }
+
+    /// Ditto
+    @property auto incoming(Data : EdgeType)(Index!Task v)
+    {
+        return prepare(`SELECT "from" FROM resourceEdge WHERE "to"=?`, v)
+            .rows!(parse!(Neighbor!(Index!Resource, Data)));
+    }
+
+    /// Ditto
+    @property auto incoming(Data : EdgeIndex!(Resource, Task))(Index!Resource v)
+    {
+        return prepare(`SELECT "from",id FROM taskEdge WHERE "to"=?`, v)
+            .rows!(parse!(Neighbor!(Index!Task, Data)));
+    }
+
+    /// Ditto
+    @property auto incoming(Data : EdgeIndex!(Task, Resource))(Index!Task v)
+    {
+        return prepare(`SELECT "from",id FROM resourceEdge WHERE "to"=?`, v)
             .rows!(parse!(Neighbor!(Index!Resource, Data)));
     }
 

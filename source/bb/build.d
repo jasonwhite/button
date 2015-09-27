@@ -427,7 +427,7 @@ private void buildGraph(Vertex, G, Visited)(BuildState state, G graph, Vertex v,
 
     graph.put(v);
 
-    foreach (neighbor; state.neighbors!(NeighborIndex!Vertex)(v))
+    foreach (neighbor; state.outgoing!(NeighborIndex!Vertex)(v))
     {
         buildGraph(state, graph, neighbor.vertex, visited);
         graph.put(v, neighbor.vertex, neighbor.data);
@@ -519,24 +519,54 @@ void checkRaces(BuildStateGraph graph, BuildState state)
 
 /**
  * Finds changed resources and marks them as pending in the build state.
+ *
+ * TODO: If an output resource is changed, add its task to the list of pending
+ * tasks.
  */
 void gatherChanges(BuildState state, TaskPool pool)
 {
     import std.array : array;
     import std.algorithm.iteration : filter;
+    import std.range : takeOne;
+    import io.text : println;
 
     // The parallel foreach fails if this is not an array.
     auto resources = state.indices!Resource
-        .filter!(v => state.degreeIn(v) == 0)
         .array;
 
     foreach (v; pool.parallel(resources))
     {
         auto r = state[v];
-        if (r.update())
+
+        if (state.degreeIn(v) == 0)
         {
-            state[v] = r;
-            state.addPending(v);
+            if (r.update())
+            {
+                // An input changed
+                state[v] = r;
+                state.addPending(v);
+            }
+        }
+        else if (r.statusKnown)
+        {
+            if (r.update())
+            {
+                // An output changed. In this case, it must be regenerated. So, we
+                // add its task to the queue.
+                synchronized println(
+                        " - ", warningColor, "Warning", resetColor,
+                        ": Output file `", purple, r, resetColor,
+                        "` was changed externally and will be regenerated.");
+
+                // A resource should only ever have one incoming edge. If that
+                // is not the case, then we've got bigger problems.
+                auto incoming = state
+                    .incoming!(NeighborIndex!(Index!Resource))(v)
+                    .takeOne;
+                assert(incoming.length == 1,
+                        "Output resource has does not have 1 incoming edge!");
+                state.addPending(incoming[0].vertex);
+            }
         }
     }
 }
