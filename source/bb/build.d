@@ -519,9 +519,6 @@ void checkRaces(BuildStateGraph graph, BuildState state)
 
 /**
  * Finds changed resources and marks them as pending in the build state.
- *
- * TODO: If an output resource is changed, add its task to the list of pending
- * tasks.
  */
 void gatherChanges(BuildState state, TaskPool pool)
 {
@@ -530,7 +527,7 @@ void gatherChanges(BuildState state, TaskPool pool)
     import std.range : takeOne;
     import io.text : println;
 
-    // The parallel foreach fails if this is not an array.
+    // FIXME: The parallel foreach fails if this is not an array.
     auto resources = state.indices!Resource
         .array;
 
