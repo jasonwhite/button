@@ -118,8 +118,8 @@ $ bb update
 ```
 
 Note that `gcc foo.o bar.o -o foobar` was not executed because its output
-`foo.o` did not change. Indeed, all we did was add a comment. In such a case
-`gcc`, will produce an identical object file.
+`foo.o` did not change. Indeed, all we did was add a comment. In such a case,
+`gcc` will produce an identical object file.
 
 Changes are determined by the checksum of a file's contents, not just its last
 modification time. Thus, one source of overbuilding is eliminated.
