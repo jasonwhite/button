@@ -520,7 +520,7 @@ void checkRaces(BuildStateGraph graph, BuildState state)
 /**
  * Finds changed resources and marks them as pending in the build state.
  */
-void gatherChanges(BuildState state, TaskPool pool)
+void gatherChanges(BuildState state, TaskPool pool, TextColor color)
 {
     import std.array : array;
     import std.algorithm.iteration : filter;
@@ -551,8 +551,8 @@ void gatherChanges(BuildState state, TaskPool pool)
                 // An output changed. In this case, it must be regenerated. So, we
                 // add its task to the queue.
                 synchronized println(
-                        " - ", warningColor, "Warning", resetColor,
-                        ": Output file `", purple, r, resetColor,
+                        " - ", color.warning, "Warning", color.reset,
+                        ": Output file `", color.purple, r, color.reset,
                         "` was changed externally and will be regenerated.");
 
                 // A resource should only ever have one incoming edge. If that
@@ -573,6 +573,8 @@ struct VisitorContext
     BuildState state;
 
     bool dryRun;
+
+    TextColor color;
 }
 
 /**
@@ -612,6 +614,8 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
     import io;
     import std.process : execute;
 
+    immutable color = context.color;
+
     // We add this as pending just in case the build is interrupted or if it
     // fails.
     context.state.addPending(v);
@@ -621,7 +625,7 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
     // Assume the command would succeed in a dryrun
     if (context.dryRun)
     {
-        synchronized println(" > ", successColor, task, resetColor);
+        synchronized println(" > ", color.success, task, color.reset);
         return true;
     }
 
@@ -632,15 +636,15 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
         immutable failed = cmd.status != 0;
 
         if (failed)
-            println(" > ", errorColor, task, resetColor,
-                    bold, " (exit code: ", cmd.status, ")", resetColor);
+            println(" > ", color.error, task, color.reset,
+                    color.bold, " (exit code: ", cmd.status, ")", color.reset);
         else
-            println(" > ", successColor, task, resetColor);
+            println(" > ", color.success, task, color.reset);
 
         print(cmd.output);
 
         if (failed)
-            println(statusColor, " ➥ ", errorColor, "Error", resetColor,
+            println(color.status, " ➥ ", color.error, "Error", color.reset,
                     ": Task failed. Process exited with code ", cmd.status
                     );
     }
@@ -662,12 +666,12 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
  * This is the heart of the build system. Everything else is just support code.
  */
 void build(BuildStateGraph graph, BuildState state, TaskPool pool,
-        bool dryRun = false)
+        bool dryRun, TextColor color)
 {
     import std.algorithm : filter, map;
     import std.array : array;
 
-    auto ctx = VisitorContext(state, dryRun);
+    auto ctx = VisitorContext(state, dryRun, color);
 
     graph.traverse!(visitResource, visitTask)(&ctx, pool);
 }

@@ -28,6 +28,9 @@ private struct Options
 
     // Number of threads to use.
     size_t threads = 0;
+
+    // When to colorize the output.
+    string color = "auto";
 }
 
 immutable usage = q"EOS
@@ -54,6 +57,9 @@ int update(string[] args)
         "threads|j",
             "The number of threads to use. Default is the number of logical cores.",
             &options.threads,
+        "color",
+            "When to colorize the output.",
+            &options.color,
     );
 
     if (options.threads == 0)
@@ -67,6 +73,8 @@ int update(string[] args)
         defaultGetoptPrinter(usage, helpInfo.options);
         return 0;
     }
+
+    immutable color = TextColor(colorOutput(options.color));
 
     try
     {
@@ -86,23 +94,26 @@ int update(string[] args)
                     state.commit();
             }
 
-            syncBuildState(state, path);
+            syncBuildState(state, path, color);
 
-            println(statusColor, ":: Checking for changes...", resetColor);
-            gatherChanges(state, pool);
+            println(":: ", color.status, "Checking for changes...",
+                    color.reset);
+            gatherChanges(state, pool, color);
         }
 
-        update(state, pool, options.dryRun);
+        update(state, pool, options.dryRun, color);
     }
     catch (BuildException e)
     {
-        stderr.println(statusColor, ":: ", errorColor, "Error", resetColor, ": ", e.msg);
+        stderr.println(color.status, ":: ", color.error,
+                "Error", color.reset, ": ", e.msg);
         return 1;
     }
     catch (TaskError e)
     {
-        stderr.println(statusColor, ":: ", errorColor, "Build failed!",
-                resetColor, " See the output above for details.");
+        stderr.println(color.status, ":: ", color.error,
+                "Build failed!", color.reset,
+                " See the output above for details.");
         return 1;
     }
 
@@ -112,20 +123,20 @@ int update(string[] args)
 /**
  * Updates the database with any changes to the build description.
  */
-void syncBuildState(BuildState state, string path)
+void syncBuildState(BuildState state, string path, TextColor color)
 {
     auto r = state[BuildState.buildDescId];
     r.path = path;
     if (r.update())
     {
-        println(statusColor, ":: Syncing database with build description...",
-                resetColor);
+        println(color.status, ":: Syncing database with build description...",
+                color.reset);
         auto build = BuildDescription(path);
         build.sync(state);
 
         // Analyze the new graph. If any errors are detected, the database rolls
         // back to the previous (good) state.
-        println(statusColor, ":: Analyzing graph for errors...", resetColor);
+        println(color.status, ":: Analyzing graph for errors...", color.reset);
         BuildStateGraph graph = state.buildGraph();
         graph.checkCycles();
         graph.checkRaces(state);
@@ -138,7 +149,7 @@ void syncBuildState(BuildState state, string path)
 /**
  * Builds pending vertices.
  */
-void update(BuildState state, TaskPool pool, bool dryRun)
+void update(BuildState state, TaskPool pool, bool dryRun, TextColor color)
 {
     import std.array : array;
     import std.algorithm.iteration : filter;
@@ -148,18 +159,20 @@ void update(BuildState state, TaskPool pool, bool dryRun)
 
     if (resources.length == 0 && tasks.length == 0)
     {
-        println(statusColor, ":: ", successColor,
-                "Nothing to do. Everything is up to date.", resetColor);
+        println(color.status, ":: ", color.success,
+                "Nothing to do. Everything is up to date.", color.reset);
         return;
     }
 
     // Print what we found.
-    printfln(" - Found %d modified resource(s)", resources.length);
-    printfln(" - Found %d pending task(s)", tasks.length);
+    printfln(" - Found %s%d%s modified resource(s)",
+            color.boldBlue, resources.length, color.reset);
+    printfln(" - Found %s%d%s pending task(s)",
+            color.boldBlue, tasks.length, color.reset);
 
-    println(statusColor, ":: Building...", resetColor);
+    println(color.status, ":: Building...", color.reset);
     auto subgraph = state.buildGraph(resources, tasks);
-    subgraph.build(state, pool, dryRun);
+    subgraph.build(state, pool, dryRun, color);
 
-    println(statusColor, ":: ", successColor, "Build succeeded", resetColor);
+    println(color.status, ":: ", color.success, "Build succeeded", color.reset);
 }
