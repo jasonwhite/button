@@ -1327,6 +1327,36 @@ class BuildState : SQLite3
     }
 
     /**
+     * Returns true if a given vertex is pending.
+     */
+    bool isPending(Vertex : Resource)(Index!Vertex v)
+    {
+        import std.exception : enforce;
+
+        auto s = prepare(
+                `SELECT EXISTS(`
+                    `SELECT 1 FROM pendingResources WHERE resid=? LIMIT 1`
+                `)`, v);
+        enforce(s.step(), "Failed to check if resource is pending");
+
+        return s.get!uint(0) == 1;
+    }
+
+    /// Ditto
+    bool isPending(Vertex : Task)(Index!Vertex v)
+    {
+        import std.exception : enforce;
+
+        auto s = prepare(
+                `SELECT EXISTS(`
+                    `SELECT 1 FROM pendingTasks WHERE taskid=? LIMIT 1`
+                `)`, v);
+        enforce(s.step(), "Failed to check if task is pending");
+
+        return s.get!uint(0) == 1;
+    }
+
+    /**
      * Lists the pending vertices.
      */
     @property auto pending(Vertex : Resource)()

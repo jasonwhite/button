@@ -360,7 +360,8 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         // If none of our dependencies changed, then don't do any work.
         // Propagate the change status downward.
-        immutable changed = data.changed > 0 && visitThis(ctx, v, data.degreeIn);
+        //immutable changed = data.changed > 0 && visitThis(ctx, v, data.degreeIn);
+        immutable changed = visitThis(ctx, v, data.degreeIn, data.changed);
 
         Throwable head;
         Throwable tail;

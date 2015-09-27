@@ -582,10 +582,15 @@ struct VisitorContext
  *
  * Returns true if we should continue traversing the graph.
  */
-bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn)
+bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn,
+        size_t degreeChanged)
 {
     scope (success)
         context.state.removePending(v);
+
+    // Do not consider ourselves changed if none of our dependencies changed.
+    if (degreeChanged == 0)
+        return false;
 
     // Leaf resources are already checked for changes when discovering roots
     // from which to construct the subgraph. Thus, there is no need to do it
@@ -609,16 +614,22 @@ bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn)
  *
  * Returns true if we should continue traversing the graph.
  */
-bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn)
+bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
+        size_t degreeChanged)
 {
     import io;
     import std.process : execute;
 
+    immutable pending = context.state.isPending(v);
+
+    if (degreeChanged == 0 && !pending)
+        return false;
+
     immutable color = context.color;
 
-    // We add this as pending just in case the build is interrupted or if it
-    // fails.
-    context.state.addPending(v);
+    // We add this as pending if it isn't already just in case the build is
+    // interrupted or if it fails.
+    if (!pending) context.state.addPending(v);
 
     auto task = context.state[v];
 
