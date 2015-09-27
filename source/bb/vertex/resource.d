@@ -159,6 +159,14 @@ struct Resource
     }
 
     /**
+     * Returns true if the status of this resource is known.
+     */
+    @property bool statusKnown() const pure nothrow
+    {
+        return lastModified != Status.unknown;
+    }
+
+    /**
      * Deletes the resource from disk, but only if it is an output resource.
      */
     void remove() const
