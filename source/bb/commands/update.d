@@ -65,7 +65,7 @@ int update(string[] args)
     if (options.threads == 0)
         options.threads = totalCPUs;
 
-    auto pool = new TaskPool(options.threads);
+    auto pool = new TaskPool(options.threads - 1);
     scope (exit) pool.finish(true);
 
     if (helpInfo.helpWanted)

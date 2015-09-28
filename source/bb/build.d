@@ -598,7 +598,8 @@ bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn,
     if (degreeIn == 0)
         return true;
 
-    // Check for change.
+    // This is an output resource. Its parent task may have changed it. Thus,
+    // check for any change.
     auto r = context.state[v];
     if (r.update())
     {
@@ -618,7 +619,6 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         size_t degreeChanged)
 {
     import io;
-    import std.process : execute;
 
     immutable pending = context.state.isPending(v);
 
@@ -640,28 +640,28 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         return true;
     }
 
-    auto cmd = execute(task.command);
+    auto result = task.execute();
 
     synchronized
     {
-        immutable failed = cmd.status != 0;
+        immutable failed = result.status != 0;
 
         if (failed)
             println(" > ", color.error, task, color.reset,
-                    color.bold, " (exit code: ", cmd.status, ")", color.reset);
+                    color.bold, " (exit code: ", result.status, ")", color.reset);
         else
             println(" > ", color.success, task, color.reset);
 
-        print(cmd.output);
+        stdout.write(result.output);
 
         if (failed)
             println(color.status, " ➥ ", color.error, "Error", color.reset,
-                    ": Task failed. Process exited with code ", cmd.status
+                    ": Task failed. Process exited with code ", result.status
                     );
     }
 
-    if (cmd.status != 0)
-        throw new TaskError(v, cmd.status);
+    if (result.status != 0)
+        throw new TaskError(v, result.status);
 
     // Only remove this from the set of pending tasks if it succeeds completely.
     // If it fails, it should get executed again on the next run such that other
