@@ -128,7 +128,8 @@ struct Task
     version (Posix) TaskResult execute() const
     {
         import core.sys.posix.unistd;
-        import core.sys.posix.sys.wait : waitpid;
+        import core.sys.posix.sys.wait;
+        import core.stdc.errno;
 
         import io.file.pipe : pipe;
         import io.file.stream : sysEnforce, SysException;
@@ -161,14 +162,43 @@ struct Task
         ubyte[4096] buf;
         auto output = appender!(ubyte[]);
 
+        synchronized println("");
+
         foreach (chunk; std.readEnd.byChunk(buf))
             output.put(chunk);
 
         // TODO: Read dependencies from pipe
 
         // Wait for the child to exit
-        if (waitpid(pid, &result.status, 0) == -1)
-            throw new SysException("Failed waiting for child process");
+        while (true)
+        {
+            int status;
+            immutable check = waitpid(pid, &status, 0) == -1;
+            if (check == -1)
+            {
+                if (errno == ECHILD)
+                {
+                    throw new SysException("Child process does not exist");
+                }
+                else
+                {
+                    // Keep waiting
+                    assert(errno == EINTR);
+                    continue;
+                }
+            }
+
+            if (WIFEXITED(status))
+            {
+                result.status = WEXITSTATUS(status);
+                break;
+            }
+            else if (WIFSIGNALED(status))
+            {
+                result.status = -WTERMSIG(status);
+                break;
+            }
+        }
 
         std.readEnd.close();
         deps.readEnd.close();
