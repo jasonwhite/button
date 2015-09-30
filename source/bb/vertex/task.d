@@ -19,7 +19,7 @@ struct TaskResult
     int status;
 
     // The standard output and standard error of the task.
-    ubyte[] output;
+    const(ubyte)[] output;
 
     // The list of implicit dependencies sent back
     string[] inputs, outputs;
@@ -216,7 +216,7 @@ struct Task
 
         auto cmd = execute(command);
 
-        return TaskResult(cmd.status, cast(string)cmd.output);
+        return TaskResult(cmd.status, cast(const(ubyte)[])cmd.output);
     }
 }
 
