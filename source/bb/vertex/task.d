@@ -162,12 +162,13 @@ struct Task
         ubyte[4096] buf;
         auto output = appender!(ubyte[]);
 
-        synchronized println("");
-
         foreach (chunk; std.readEnd.byChunk(buf))
             output.put(chunk);
 
         // TODO: Read dependencies from pipe
+
+        std.readEnd.close();
+        deps.readEnd.close();
 
         // Wait for the child to exit
         while (true)
@@ -200,9 +201,6 @@ struct Task
             }
         }
 
-        std.readEnd.close();
-        deps.readEnd.close();
-
         // TODO: Time how long the process takes to execute
         result.output = output.data;
         return result;
@@ -234,11 +232,9 @@ private void executeChild(in char[][] command, int stdfd, int depsfd)
 
     import io.file.stream : SysException;
 
-    import std.stdio;
-
     // Close standard input because it won't be possible to write to it when
     // multiple tasks are running simultaneously.
-    close(STDIN_FILENO);
+    //close(STDIN_FILENO);
 
     // Convert D command argument list to a null-terminated argument list
     auto argv = cast(const(char)**)malloc(
