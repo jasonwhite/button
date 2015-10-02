@@ -128,15 +128,9 @@ struct Task
     version (Posix) TaskResult execute() const
     {
         import core.sys.posix.unistd;
-        import core.sys.posix.sys.wait;
-        import core.stdc.errno;
 
         import io.file.pipe : pipe;
-        import io.file.stream : sysEnforce, SysException;
-
-        import std.array : appender;
-
-        import io;
+        import io.file.stream : sysEnforce;
 
         TaskResult result;
 
@@ -158,19 +152,53 @@ struct Task
         std.writeEnd.close();
         deps.writeEnd.close();
 
-        // Read output
-        ubyte[4096] buf;
-        auto output = appender!(ubyte[]);
-
-        foreach (chunk; std.readEnd.byChunk(buf))
-            output.put(chunk);
+        result.output = readOutput(std.readEnd);
 
         // TODO: Read dependencies from pipe
 
         std.readEnd.close();
         deps.readEnd.close();
 
-        // Wait for the child to exit
+        result.status = waitFor(pid);
+
+        // TODO: Time how long the process takes to execute
+        return result;
+    }
+
+    version (Windows)
+    TaskResult execute() const
+    {
+        // TODO: Implement implicit dependencies
+        import std.process : execute;
+
+        auto cmd = execute(command);
+
+        return TaskResult(cmd.status, cast(const(ubyte)[])cmd.output);
+    }
+}
+
+private version (Posix)
+{
+    ubyte[] readOutput(Stream)(Stream f)
+    {
+        import std.array : appender;
+        import io.range : byChunk;
+
+        ubyte[4096] buf;
+        auto output = appender!(ubyte[]);
+
+        foreach (chunk; f.byChunk(buf))
+            output.put(chunk);
+
+        return output.data;
+    }
+
+    int waitFor(int pid)
+    {
+        import core.sys.posix.sys.wait;
+        import core.stdc.errno;
+        import io.file.stream : SysException;
+
         while (true)
         {
             int status;
@@ -190,73 +218,51 @@ struct Task
             }
 
             if (WIFEXITED(status))
-            {
-                result.status = WEXITSTATUS(status);
-                break;
-            }
+                return WEXITSTATUS(status);
             else if (WIFSIGNALED(status))
-            {
-                result.status = -WTERMSIG(status);
-                break;
-            }
+                return -WTERMSIG(status);
         }
-
-        // TODO: Time how long the process takes to execute
-        result.output = output.data;
-        return result;
     }
 
-    version (Windows)
-    TaskResult execute() const
+    void executeChild(in char[][] command, int stdfd, int depsfd)
     {
-        // TODO: Implement implicit dependencies
-        import std.process : execute;
+        import std.format : format;
+        import std.conv : to;
+        import std.string : toStringz;
 
-        auto cmd = execute(command);
+        import core.sys.posix.unistd;
+        import core.stdc.stdlib : malloc, free;
+        import core.sys.posix.stdlib : setenv;
+        import core.sys.posix.stdio : perror;
 
-        return TaskResult(cmd.status, cast(const(ubyte)[])cmd.output);
+        import io.file.stream : SysException;
+
+        // Close standard input because it won't be possible to write to it when
+        // multiple tasks are running simultaneously.
+        close(STDIN_FILENO);
+
+        // Convert D command argument list to a null-terminated argument list
+        auto argv = cast(const(char)**)malloc(
+                (command.length + 1) * (char*).sizeof
+                );
+        scope (exit) free(argv); // Probably doesn't matter if this gets freed
+
+        size_t i;
+        for (i = 0; i < command.length; i++)
+            argv[i] = command[i].toStringz;
+        argv[i] = null;
+
+        // Give the child process the capability to send back dependencies.
+        setenv("BRILLIANT_BUILD", "%d\0".format(depsfd).ptr, 1);
+
+        // Redirect stdout/stderr to the pipe the parent reads from
+        dup2(stdfd, STDOUT_FILENO);
+        dup2(stdfd, STDERR_FILENO);
+
+        execvp(argv[0], argv);
+
+        // If we get this far, something went wrong. Most likely, the command does
+        // not exist.
+        perror("execvp");
     }
-}
-
-version (Posix)
-private void executeChild(in char[][] command, int stdfd, int depsfd)
-{
-    import std.format : format;
-    import std.conv : to;
-    import std.string : toStringz;
-
-    import core.sys.posix.unistd;
-    import core.stdc.stdlib : malloc, free;
-    import core.sys.posix.stdlib : setenv;
-    import core.sys.posix.stdio : perror;
-
-    import io.file.stream : SysException;
-
-    // Close standard input because it won't be possible to write to it when
-    // multiple tasks are running simultaneously.
-    //close(STDIN_FILENO);
-
-    // Convert D command argument list to a null-terminated argument list
-    auto argv = cast(const(char)**)malloc(
-            (command.length + 1) * (char*).sizeof
-            );
-    scope (exit) free(argv); // Probably doesn't matter if this gets freed
-
-    size_t i;
-    for (i = 0; i < command.length; i++)
-        argv[i] = command[i].toStringz;
-    argv[i] = null;
-
-    // Give the child process the capability to send back dependencies.
-    setenv("BRILLIANT_BUILD", "%d\0".format(depsfd).ptr, 1);
-
-    // Redirect stdout/stderr to the pipe the parent reads from
-    dup2(stdfd, STDOUT_FILENO);
-    dup2(stdfd, STDERR_FILENO);
-
-    execvp(argv[0], argv);
-
-    // If we get this far, something went wrong. Most likely, the command does
-    // not exist.
-    perror("execvp");
 }
