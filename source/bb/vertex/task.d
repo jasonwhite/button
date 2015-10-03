@@ -123,7 +123,7 @@ struct Task
     }
 
     /**
-     * Executes a task.
+     * Executes the task.
      */
     version (Posix) TaskResult execute() const
     {
@@ -132,10 +132,21 @@ struct Task
         import io.file.pipe : pipe;
         import io.file.stream : sysEnforce;
 
+        import std.string : toStringz;
+        import std.format : format;
+
         TaskResult result;
 
         auto std = pipe(); // Standard output
         auto deps = pipe(); // Implicit dependencies
+
+        // Convert D command argument list to a null-terminated argument list
+        auto argv = new const(char)*[command.length+1];
+        foreach (i; 0 .. command.length)
+            argv[i] = toStringz(command[i]);
+        argv[$-1] = null;
+
+        auto envvar = "%d\0".format(deps.writeEnd.handle);
 
         immutable pid = fork();
         sysEnforce(pid >= 0, "Failed to fork current process");
@@ -145,19 +156,20 @@ struct Task
         {
             std.readEnd.close();
             deps.readEnd.close();
-            executeChild(command, std.writeEnd.handle, deps.writeEnd.handle);
+            executeChild(argv, std.writeEnd.handle, deps.writeEnd.handle,
+                    envvar.ptr);
         }
 
-        // In the parent process
         std.writeEnd.close();
         deps.writeEnd.close();
 
+        // In the parent process
         result.output = readOutput(std.readEnd);
 
-        // TODO: Read dependencies from pipe
+        // TODO: Read dependencies
 
-        std.readEnd.close();
         deps.readEnd.close();
+        std.readEnd.close();
 
         result.status = waitFor(pid);
 
@@ -224,45 +236,51 @@ private version (Posix)
         }
     }
 
-    void executeChild(in char[][] command, int stdfd, int depsfd)
+    /**
+     * Executes the child process. This is called after the fork().
+     *
+     * NOTE: Memory should not be allocated here. It can cause the child process
+     * to hang.
+     */
+    void executeChild(const(char*)[] argv, int stdfd, int depsfd, in char* envvar)
     {
-        import std.format : format;
-        import std.conv : to;
-        import std.string : toStringz;
-
         import core.sys.posix.unistd;
-        import core.stdc.stdlib : malloc, free;
         import core.sys.posix.stdlib : setenv;
         import core.sys.posix.stdio : perror;
 
         import io.file.stream : SysException;
+        import io.text;
 
         // Close standard input because it won't be possible to write to it when
         // multiple tasks are running simultaneously.
         close(STDIN_FILENO);
 
-        // Convert D command argument list to a null-terminated argument list
-        auto argv = cast(const(char)**)malloc(
-                (command.length + 1) * (char*).sizeof
-                );
-        scope (exit) free(argv); // Probably doesn't matter if this gets freed
+        // Let the child know two bits of information: (1) that it is being run
+        // under this build system and (2) which file descriptor to send back
+        // dependencies on.
+        setenv("BRILLIANT_BUILD", envvar, 1);
 
-        size_t i;
-        for (i = 0; i < command.length; i++)
-            argv[i] = command[i].toStringz;
-        argv[i] = null;
+        // Redirect stdout/stderr to the pipe the parent reads from. There is no
+        // differentiation between stdout and stderr.
+        if (dup2(stdfd, STDOUT_FILENO) == -1)
+        {
+            perror("dup2");
+            _exit(1);
+        }
 
-        // Give the child process the capability to send back dependencies.
-        setenv("BRILLIANT_BUILD", "%d\0".format(depsfd).ptr, 1);
+        if (dup2(stdfd, STDERR_FILENO) == -1)
+        {
+            perror("dup2");
+            _exit(1);
+        }
 
-        // Redirect stdout/stderr to the pipe the parent reads from
-        dup2(stdfd, STDOUT_FILENO);
-        dup2(stdfd, STDERR_FILENO);
+        close(stdfd);
 
-        execvp(argv[0], argv);
+        execvp(argv[0], argv.ptr);
 
         // If we get this far, something went wrong. Most likely, the command does
         // not exist.
         perror("execvp");
+        _exit(1);
     }
 }
