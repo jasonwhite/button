@@ -36,7 +36,7 @@ private
     immutable bold  = "\033[1m";
     immutable reset = "\033[0m";
 
-    immutable success = green;
+    immutable success = boldGreen;
     immutable error   = boldRed;
     immutable warning = boldOrange;
     immutable status  = blue;

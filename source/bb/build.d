@@ -651,7 +651,7 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
                     color.reset, color.bold, " (exit code: ", result.status,
                     ")", color.reset);
         else
-            println(" > ", color.success, task, color.reset);
+            println(color.status, " > ", color.reset, task);
 
         stdout.write(result.output);
 

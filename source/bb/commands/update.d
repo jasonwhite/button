@@ -96,8 +96,7 @@ int update(string[] args)
 
             syncBuildState(state, path, color);
 
-            println(":: ", color.status, "Checking for changes...",
-                    color.reset);
+            println(color.status, ":: Checking for changes...", color.reset);
             gatherChanges(state, pool, color);
         }
 
