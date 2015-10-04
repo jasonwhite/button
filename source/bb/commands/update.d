@@ -44,7 +44,9 @@ int update(string[] args)
 {
     import std.getopt;
     import std.parallelism : totalCPUs;
+    import std.datetime : StopWatch;
 
+    StopWatch sw;
     Options options;
 
     auto helpInfo = getopt(args,
@@ -65,9 +67,6 @@ int update(string[] args)
     if (options.threads == 0)
         options.threads = totalCPUs;
 
-    auto pool = new TaskPool(options.threads - 1);
-    scope (exit) pool.finish(true);
-
     if (helpInfo.helpWanted)
     {
         defaultGetoptPrinter(usage, helpInfo.options);
@@ -75,6 +74,20 @@ int update(string[] args)
     }
 
     immutable color = TextColor(colorOutput(options.color));
+
+    sw.start();
+
+    scope (exit)
+    {
+        import std.conv : to;
+        import core.time : Duration;
+        sw.stop();
+        println(color.status, ":: Total time taken: ", color.reset,
+                sw.peek().to!Duration);
+    }
+
+    auto pool = new TaskPool(options.threads - 1);
+    scope (exit) pool.finish(true);
 
     try
     {

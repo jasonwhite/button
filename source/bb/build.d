@@ -658,8 +658,8 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
 
         if (failed)
-            println(color.status, "   ➥ ", color.error, "Error", color.reset,
-                    ": Task failed. Process exited with code ", result.status
+            println(color.status, "   ➥ ", color.error, "Error: ", color.reset,
+                    "Task failed. Process exited with code ", result.status
                     );
     }
 
