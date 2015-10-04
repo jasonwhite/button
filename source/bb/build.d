@@ -647,15 +647,18 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         immutable failed = result.status != 0;
 
         if (failed)
-            println(" > ", color.error, task, color.reset,
-                    color.bold, " (exit code: ", result.status, ")", color.reset);
+            println(" > ", color.error, task,
+                    color.reset, color.bold, " (exit code: ", result.status,
+                    ")", color.reset);
         else
             println(" > ", color.success, task, color.reset);
 
         stdout.write(result.output);
 
+        println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
+
         if (failed)
-            println(color.status, " ➥ ", color.error, "Error", color.reset,
+            println(color.status, "   ➥ ", color.error, "Error", color.reset,
                     ": Task failed. Process exited with code ", result.status
                     );
     }

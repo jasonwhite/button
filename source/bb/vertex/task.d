@@ -15,6 +15,8 @@ alias TaskId = immutable(string)[];
  */
 struct TaskResult
 {
+    import core.time : Duration;
+
     // The task exit status code
     int status;
 
@@ -23,6 +25,9 @@ struct TaskResult
 
     // The list of implicit dependencies sent back
     string[] inputs, outputs;
+
+    // How long it took the task to run from start to finish.
+    Duration duration;
 }
 
 /**
@@ -134,8 +139,13 @@ struct Task
 
         import std.string : toStringz;
         import std.format : format;
+        import std.datetime : StopWatch;
+        import std.conv : to;
 
+        StopWatch sw;
         TaskResult result;
+
+        sw.start();
 
         auto std = pipe(); // Standard output
         auto deps = pipe(); // Implicit dependencies
@@ -172,6 +182,10 @@ struct Task
         std.readEnd.close();
 
         result.status = waitFor(pid);
+
+        sw.stop();
+
+        result.duration = sw.peek().to!(typeof(result.duration));
 
         // TODO: Time how long the process takes to execute
         return result;
