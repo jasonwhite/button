@@ -21,10 +21,10 @@ struct TaskResult
     int status;
 
     // The standard output and standard error of the task.
-    const(ubyte)[] stdout;
+    immutable(ubyte)[] stdout;
 
     // Null-delimited list of implicit dependencies.
-    const(ubyte)[] inputs, outputs;
+    immutable(ubyte)[] inputs, outputs;
 
     // How long it took the task to run from start to finish.
     Duration duration;
@@ -232,6 +232,7 @@ private version (Posix)
         import std.array : appender;
         import std.algorithm : max;
         import std.typecons : tuple;
+        import std.exception : assumeUnique;
 
         import core.stdc.errno;
         import core.sys.posix.unistd;
@@ -298,8 +299,11 @@ private version (Posix)
                 readFromChild(outputsfd, outputs, buf);
         }
 
-        return tuple!("stdout", "inputs", "outputs")
-            (stdout.data, inputs.data, outputs.data);
+        return tuple!("stdout", "inputs", "outputs")(
+                assumeUnique(stdout.data),
+                assumeUnique(inputs.data),
+                assumeUnique(outputs.data)
+                );
     }
 
     void readFromChild(ref int fd, ref Appender!(ubyte[]) a, ubyte[] buf)
@@ -375,7 +379,7 @@ private version (Posix)
         close(STDIN_FILENO);
 
         // Let the child know two bits of information: (1) that it is being run
-        // under this build system and (2) which file descriptors to use send
+        // under this build system and (2) which file descriptors to use to send
         // back dependency information.
         setenv("BRILLIANT_BUILD_INPUTS", inputsenv, 1);
         setenv("BRILLIANT_BUILD_OUTPUTS", outputsenv, 1);

@@ -653,7 +653,6 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         else
             println(color.status, " > ", color.reset, task);
 
-        // TODO: Add a new line if it does not end with one.
         stdout.write(result.stdout);
 
         println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
