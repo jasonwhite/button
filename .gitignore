@@ -5,4 +5,5 @@ docs.json
 /bb
 dub.selections.json
 __test__library__
+__pycache__/
 .state
