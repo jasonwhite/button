@@ -655,6 +655,10 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
 
         stdout.write(result.stdout);
 
+        // Ensure there is always a line separator after the output
+        if (result.stdout.length > 0 && result.stdout[$-1] != '\n')
+            stdout.write("\n");
+
         println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
 
         if (failed)
