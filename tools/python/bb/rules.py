@@ -24,5 +24,5 @@ def dump(rules, f=stdout, **kwargs):
                 'task': r.task,
                 'outputs': r.outputs
             } for r in rules
-        ], f, **kwargs
+        ], f, sort_keys=True, **kwargs
         )

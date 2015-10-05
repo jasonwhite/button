@@ -24,6 +24,22 @@ def objects(files, flags=[]):
                 outputs = [output]
                 )
 
+def link(path, files, flags=[]):
+    """
+    Returns the rule needed to link the list of files.
+
+    Parameters:
+        - files: List of source files or object files.
+        - flags: Extra flags to pass to the linker.
+    """
+    args = ['dmd'] + flags
+
+    return Rule(
+            inputs = files,
+            task    = args + ['-of' + path] + files,
+            outputs = [path]
+            )
+
 def binary(path, sources, compiler_flags=[], linker_flags=[]):
     """
     Generates the rules needed to create a binary executable with the given path.
@@ -39,9 +55,5 @@ def binary(path, sources, compiler_flags=[], linker_flags=[]):
     yield from objects(zip(sources, outputs), flags=compiler_flags)
 
     # Link
-    yield Rule(
-            inputs  = outputs,
-            task    = ['dmd', '-of' + path] + outputs,
-            outputs = [path]
-            )
+    yield link(path, outputs, flags=linker_flags)
 
