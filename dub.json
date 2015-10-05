@@ -1,6 +1,6 @@
 {
     "name": "bb",
-    "description": "A scalable and accurate build system.",
+    "description": "A correct, scalable, and elegant build system.",
     "copyright": "Copyright © 2015, Jason White",
     "authors": ["Jason White"],
     "dependencies": {
