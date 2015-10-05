@@ -21,10 +21,10 @@ struct TaskResult
     int status;
 
     // The standard output and standard error of the task.
-    const(ubyte)[] output;
+    const(ubyte)[] stdout;
 
-    // The list of implicit dependencies sent back
-    string[] inputs, outputs;
+    // Null-delimited list of implicit dependencies.
+    const(ubyte)[] inputs, outputs;
 
     // How long it took the task to run from start to finish.
     Duration duration;
@@ -134,11 +134,10 @@ struct Task
     {
         import core.sys.posix.unistd;
 
-        import io.file.pipe : pipe;
         import io.file.stream : sysEnforce;
 
         import std.string : toStringz;
-        import std.format : format;
+        import std.format : sformat;
         import std.datetime : StopWatch;
         import std.conv : to;
 
@@ -147,8 +146,11 @@ struct Task
 
         sw.start();
 
-        auto std = pipe(); // Standard output
-        auto deps = pipe(); // Implicit dependencies
+        int[2] stdfds, inputfds, outputfds;
+
+        sysEnforce(pipe(stdfds) != -1); // Standard output
+        sysEnforce(pipe(inputfds) != -1); // Implicit inputs
+        sysEnforce(pipe(outputfds) != -1); // Implicit outputs
 
         // Convert D command argument list to a null-terminated argument list
         auto argv = new const(char)*[command.length+1];
@@ -156,7 +158,9 @@ struct Task
             argv[i] = toStringz(command[i]);
         argv[$-1] = null;
 
-        auto envvar = "%d\0".format(deps.writeEnd.handle);
+        char[16] inputsenv, outputsenv;
+        sformat(inputsenv, "%d\0", inputfds[1]);
+        sformat(outputsenv, "%d\0", outputfds[1]);
 
         immutable pid = fork();
         sysEnforce(pid >= 0, "Failed to fork current process");
@@ -164,23 +168,25 @@ struct Task
         // Child process
         if (pid == 0)
         {
-            std.readEnd.close();
-            deps.readEnd.close();
-            executeChild(argv, std.writeEnd.handle, deps.writeEnd.handle,
-                    envvar.ptr);
+            close(stdfds[0]);
+            close(inputfds[0]);
+            close(outputfds[0]);
+
+            executeChild(argv, stdfds[1], inputfds[1], outputfds[1],
+                    inputsenv.ptr, outputsenv.ptr);
         }
 
-        std.writeEnd.close();
-        deps.writeEnd.close();
+        close(stdfds[1]);
+        close(inputfds[1]);
+        close(outputfds[1]);
 
         // In the parent process
-        result.output = readOutput(std.readEnd);
+        auto output = readOutput(stdfds[0], inputfds[0], outputfds[0]);
+        result.stdout  = output.stdout;
+        result.inputs  = output.inputs;
+        result.outputs = output.outputs;
 
-        // TODO: Read dependencies
-
-        deps.readEnd.close();
-        std.readEnd.close();
-
+        // Wait for the child to exit
         result.status = waitFor(pid);
 
         sw.stop();
@@ -197,26 +203,123 @@ struct Task
         // TODO: Implement implicit dependencies
         import std.process : execute;
 
+        import std.datetime : StopWatch;
+        import std.conv : to;
+
+        TaskResult result;
+
+        StopWatch sw;
+        sw.start();
+
         auto cmd = execute(command);
 
-        return TaskResult(cmd.status, cast(const(ubyte)[])cmd.output);
+        sw.stop();
+
+        result.status = cmd.status;
+        result.stdout = cast(const(ubyte)[])cmd.output;
+        result.duration = sw.peek().to!(typeof(result.duration));
+
+        return result;
     }
 }
 
 private version (Posix)
 {
-    ubyte[] readOutput(Stream)(Stream f)
+    import std.array : Appender;
+
+    auto readOutput(int stdfd, int inputsfd, int outputsfd)
     {
         import std.array : appender;
-        import io.range : byChunk;
+        import std.algorithm : max;
+        import std.typecons : tuple;
+
+        import core.stdc.errno;
+        import core.sys.posix.unistd;
+        import core.sys.posix.sys.select;
+
+        import io.file.stream : SysException;
 
         ubyte[4096] buf;
-        auto output = appender!(ubyte[]);
+        fd_set readfds = void;
 
-        foreach (chunk; f.byChunk(buf))
-            output.put(chunk);
+        auto stdout  = appender!(ubyte[]);
+        auto inputs  = appender!(ubyte[]);
+        auto outputs = appender!(ubyte[]);
 
-        return output.data;
+        while (true)
+        {
+            FD_ZERO(&readfds);
+
+            int nfds = 0;
+
+            if (stdfd != -1)
+            {
+                FD_SET(stdfd, &readfds);
+                nfds = max(nfds, stdfd);
+            }
+
+            if (inputsfd != -1)
+            {
+                FD_SET(inputsfd, &readfds);
+                nfds = max(nfds, inputsfd);
+            }
+
+            if (outputsfd != -1)
+            {
+                FD_SET(outputsfd, &readfds);
+                nfds = max(nfds,outputsfd);
+            }
+
+            if (nfds == 0)
+                break;
+
+            immutable r = select(nfds + 1, &readfds, null, null, null);
+
+            if (r == -1)
+            {
+                if (errno == EINTR)
+                    continue;
+
+                throw new SysException("select() failed");
+            }
+
+            if (r == 0) break; // Nothing in the set
+
+            // Read stdout/stderr from child
+            if (FD_ISSET(stdfd, &readfds))
+                readFromChild(stdfd, stdout, buf);
+
+            // Read inputs from child
+            if (FD_ISSET(inputsfd, &readfds))
+                readFromChild(inputsfd, inputs, buf);
+
+            // Read inputs from child
+            if (FD_ISSET(outputsfd, &readfds))
+                readFromChild(outputsfd, outputs, buf);
+        }
+
+        return tuple!("stdout", "inputs", "outputs")
+            (stdout.data, inputs.data, outputs.data);
+    }
+
+    void readFromChild(ref int fd, ref Appender!(ubyte[]) a, ubyte[] buf)
+    {
+        import core.sys.posix.unistd : read, close;
+        import io.file.stream : sysEnforce, SysException;
+
+        immutable len = read(fd, buf.ptr, buf.length);
+        sysEnforce(len >= 0, "read() failed");
+
+        if (len == 0)
+        {
+            // End of file. Don't wait on it again.
+            close(fd);
+            fd = -1;
+        }
+        else
+        {
+            a.put(buf[0 .. len]);
+        }
     }
 
     int waitFor(int pid)
@@ -224,6 +327,7 @@ private version (Posix)
         import core.sys.posix.sys.wait;
         import core.stdc.errno;
         import io.file.stream : SysException;
+        import core.sys.posix.stdio : perror;
 
         while (true)
         {
@@ -256,7 +360,8 @@ private version (Posix)
      * NOTE: Memory should not be allocated here. It can cause the child process
      * to hang.
      */
-    void executeChild(const(char*)[] argv, int stdfd, int depsfd, in char* envvar)
+    void executeChild(const(char*)[] argv, int stdfd, int inputsfd,
+            int outputsfd, const(char)* inputsenv, const(char)* outputsenv)
     {
         import core.sys.posix.unistd;
         import core.sys.posix.stdlib : setenv;
@@ -270,9 +375,10 @@ private version (Posix)
         close(STDIN_FILENO);
 
         // Let the child know two bits of information: (1) that it is being run
-        // under this build system and (2) which file descriptor to send back
-        // dependencies on.
-        setenv("BRILLIANT_BUILD", envvar, 1);
+        // under this build system and (2) which file descriptors to use send
+        // back dependency information.
+        setenv("BRILLIANT_BUILD_INPUTS", inputsenv, 1);
+        setenv("BRILLIANT_BUILD_OUTPUTS", outputsenv, 1);
 
         // Redirect stdout/stderr to the pipe the parent reads from. There is no
         // differentiation between stdout and stderr.
