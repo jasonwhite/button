@@ -24,7 +24,7 @@ def objects(files, flags=[]):
                 outputs = [output]
                 )
 
-def link(path, files, flags=[]):
+def link(path, files, flags=[], static=False):
     """
     Returns the rule needed to link the list of files.
 
@@ -34,13 +34,16 @@ def link(path, files, flags=[]):
     """
     args = ['dmd'] + flags
 
+    if static:
+        args.append('-lib')
+
     return Rule(
             inputs = files,
             task    = args + ['-of' + path] + files,
             outputs = [path]
             )
 
-def binary(path, sources, compiler_flags=[], linker_flags=[]):
+def binary(path, sources, libraries=[], compiler_flags=[], linker_flags=[]):
     """
     Generates the rules needed to create a binary executable with the given path.
 
@@ -54,6 +57,27 @@ def binary(path, sources, compiler_flags=[], linker_flags=[]):
     # Compile
     yield from objects(zip(sources, outputs), flags=compiler_flags)
 
-    # Link
-    yield link(path, outputs, flags=linker_flags)
+    # TODO: Make this more generic
+    link_inputs = outputs + ['lib%s.a' % lib for lib in libraries]
 
+    # Link
+    yield link(path, link_inputs, flags=linker_flags)
+
+def static_library(path, sources, compiler_flags=[], linker_flags=[]):
+    """
+    Generates the rules needed to create a static library with the given path.
+
+    Parameters:
+        - path: Name of the static library without the extension.
+        - sources: List of source files to be included in the library.
+    """
+
+    outputs = [s + '.o' for s in sources]
+
+    # Compile
+    yield from objects(zip(sources, outputs), flags=compiler_flags)
+
+    path = 'lib' + path + '.a'
+
+    # Link
+    yield link(path, outputs, flags=linker_flags, static=True)
