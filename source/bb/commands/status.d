@@ -18,7 +18,8 @@ import io.text,
 
 import bb.vertex,
        bb.state,
-       bb.build;
+       bb.build,
+       bb.textcolor;
 
 private struct Options
 {
@@ -27,6 +28,9 @@ private struct Options
 
     // Display the cached list of changes.
     bool cached;
+
+    // When to colorize the output.
+    string color = "auto";
 }
 
 immutable usage = q"EOS
@@ -44,7 +48,12 @@ int status(string[] args)
         "cached",
             "Display the cached graph from the previous build.",
             &options.cached,
+        "color",
+            "When to colorize the output.",
+            &options.color,
     );
+
+    immutable color = TextColor(colorOutput(options.color));
 
     if (helpInfo.helpWanted)
     {
@@ -65,14 +74,14 @@ int status(string[] args)
             auto build = BuildDescription(path);
             build.sync(state);
 
-            displayResourceDiff(build, state);
+            displayResourceDiff(build, state, color);
         }
 
         printfln("%d total resources", state.length!Resource);
         printfln("%d total tasks", state.length!Task);
 
-        displayPendingResources(state);
-        displayPendingTasks(state);
+        displayPendingResources(state, color);
+        displayPendingTasks(state, color);
     }
     catch (BuildException e)
     {
@@ -83,11 +92,10 @@ int status(string[] args)
     return 0;
 }
 
-void displayResourceDiff(ref BuildDescription build, BuildState state)
+void displayResourceDiff(ref BuildDescription build, BuildState state,
+        TextColor color)
 {
     import change;
-
-    // TODO: Colorize this output.
 
     auto resourceDiff = build.diffVertices!Resource(state)
                              .filter!(c => c.type != ChangeType.none);
@@ -102,10 +110,10 @@ void displayResourceDiff(ref BuildDescription build, BuildState state)
         final switch (c.type)
         {
         case ChangeType.added:
-            println("    new:     ", Resource(c.value));
+            println("    new:     ", color.green, Resource(c.value), color.reset);
             break;
         case ChangeType.removed:
-            println("    removed: ", Resource(c.value));
+            println("    removed: ", color.red, Resource(c.value), color.reset);
             break;
         case ChangeType.none:
             break;
@@ -115,7 +123,7 @@ void displayResourceDiff(ref BuildDescription build, BuildState state)
     println();
 }
 
-void displayPendingResources(BuildState state)
+void displayPendingResources(BuildState state, TextColor color)
 {
     auto resources = state.vertices!Resource
                           .filter!(v => v.update())
@@ -131,13 +139,13 @@ void displayPendingResources(BuildState state)
         printfln("%d modified resource(s):\n", resources.length);
 
         foreach (v; resources)
-            println("    ", v);
+            println("    ", color.blue, v, color.reset);
 
         println();
     }
 }
 
-void displayPendingTasks(BuildState state)
+void displayPendingTasks(BuildState state, TextColor color)
 {
     auto tasks = state.pending!Task;
 
@@ -150,7 +158,7 @@ void displayPendingTasks(BuildState state)
         println("Pending tasks:\n");
 
         foreach (v; tasks)
-            println("    ", state[v]);
+            println("    ", color.blue, state[v], color.reset);
 
         println();
     }
