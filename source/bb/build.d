@@ -250,7 +250,7 @@ struct BuildDescription
             if (c.type == ChangeType.removed)
             {
                 auto index = state.find(c.value);
-                if (state.degreeOut(index) > 0)
+                if (state.degreeIn(index) > 0)
                     state[index].remove();
             }
         }
