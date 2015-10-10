@@ -1163,6 +1163,20 @@ class BuildState : SQLite3
     /**
      * Returns the outgoing neighbors of the given node.
      */
+    @property auto outgoing(Index!Resource v)
+    {
+        return prepare(`SELECT "to",type FROM resourceEdge WHERE "from"=?`, v)
+            .rows!((SQLite3.Statement s) => Index!Task(s.get!ulong(0)));
+    }
+
+    /// Ditto
+    @property auto outgoing(Index!Task v)
+    {
+        return prepare(`SELECT "to",type FROM taskEdge WHERE "from"=?`, v)
+            .rows!((SQLite3.Statement s) => Index!Resource(s.get!ulong(0)));
+    }
+
+    /// Ditto
     @property auto outgoing(Data : EdgeType)(Index!Resource v)
     {
         return prepare(`SELECT "to",type FROM resourceEdge WHERE "from"=?`, v)
@@ -1172,7 +1186,7 @@ class BuildState : SQLite3
     /// Ditto
     @property auto outgoing(Data : EdgeType)(Index!Task v)
     {
-        return prepare(`SELECT "to" FROM taskEdge WHERE "from"=?`, v)
+        return prepare(`SELECT "to",type FROM taskEdge WHERE "from"=?`, v)
             .rows!(parse!(Neighbor!(Index!Resource, Data)));
     }
 
@@ -1202,7 +1216,7 @@ class BuildState : SQLite3
     /// Ditto
     @property auto incoming(Data : EdgeType)(Index!Task v)
     {
-        return prepare(`SELECT "from" FROM resourceEdge WHERE "to"=?`, v)
+        return prepare(`SELECT "from",type FROM resourceEdge WHERE "to"=?`, v)
             .rows!(parse!(Neighbor!(Index!Resource, Data)));
     }
 

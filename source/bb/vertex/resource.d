@@ -28,6 +28,8 @@ private DigestType!Hash digestFile(Hash)(string path)
 
 /**
  * A representation of a file on the disk.
+ *
+ * TODO: Support directories as well as files.
  */
 struct Resource
 {
@@ -54,6 +56,8 @@ struct Resource
 
     /**
      * Checksum of the file.
+     *
+     * TODO: If this is a directory, checksum the sorted list of its contents.
      */
     DigestType!MD5 checksum;
 
@@ -169,15 +173,28 @@ struct Resource
     /**
      * Deletes the resource from disk, but only if it is an output resource.
      */
-    void remove() const
+    void remove() const nothrow
     {
         import std.file : unlink = remove, isFile;
         import io;
 
-        println(":: Deleting `", path, "`");
+        // Only delete this file if we know about it. This helps prevent the
+        // build system from haphazardly deleting files that were added to the
+        // build description but never output by a task.
+        if (!statusKnown)
+            return;
 
-        // TODO: Delete for real when this is verified to be safe
-        //if (lastModified != lastModified.init)
-            //unlink(path);
+        // TODO: Use rmdir instead if this is a directory.
+
+        try
+        {
+            unlink(path);
+
+            // TODO: Don't print this from here.
+            println(":: Deleting `", path, "`");
+        }
+        catch (Exception e)
+        {
+        }
     }
 }

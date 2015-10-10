@@ -238,13 +238,24 @@ struct BuildDescription
         auto resourceEdgeDiff = diffEdges!(Resource, Task)(state).array;
         auto taskEdgeDiff     = diffEdges!(Task, Resource)(state).array;
 
+        // If a task is removed from the build, all of its outputs should be
+        // deleted from storage. Otherwise, other tasks that consume its input
+        // might happily build with outdated inputs.
+        foreach (c; taskDiff)
+        {
+            if (c.type == ChangeType.removed)
+            {
+                foreach (index; state.outgoing(state.find(c.value)))
+                {
+                    auto r = state[index];
+                    r.remove();
+                }
+            }
+        }
+
         // Delete output resources that are no longer part of the build. Note
         // that the resource cannot be removed from the database yet. Edges that
         // reference it must first be removed.
-        //
-        // FIXME: This assumes only explicit edges are referencing this
-        // resource. When implicit edges are introduced, resources should be
-        // garbage collected instead.
         foreach (c; resourceDiff)
         {
             if (c.type == ChangeType.removed)
