@@ -238,44 +238,20 @@ struct BuildDescription
         auto resourceEdgeDiff = diffEdges!(Resource, Task)(state).array;
         auto taskEdgeDiff     = diffEdges!(Task, Resource)(state).array;
 
-        // If a task is removed from the build, all of its outputs should be
-        // deleted from storage. Otherwise, other tasks that consume its input
-        // might happily build with outdated inputs.
-        foreach (c; taskDiff)
-        {
-            if (c.type == ChangeType.removed)
-            {
-                foreach (index; state.outgoing(state.find(c.value)))
-                {
-                    auto r = state[index];
-                    r.remove();
-                }
-            }
-        }
-
-        // Delete output resources that are no longer part of the build. Note
-        // that the resource cannot be removed from the database yet. Edges that
-        // reference it must first be removed.
         foreach (c; resourceDiff)
         {
-            if (c.type == ChangeType.removed)
-            {
-                auto index = state.find(c.value);
-                if (state.degreeIn(index) > 0)
-                    state[index].remove();
-            }
-        }
-
-        // Add the vertices and mark as pending
-        foreach (c; resourceDiff)
             if (c.type == ChangeType.added)
                 state.put(Resource(c.value));
+        }
 
         foreach (c; taskDiff)
+        {
+            // Any new tasks must be executed.
             if (c.type == ChangeType.added)
                 state.addPending(state.put(Task(c.value)));
+        }
 
-        // Add new edges and remove old edges
+        // Add new edges and remove old edges.
         foreach (c; resourceEdgeDiff)
         {
             final switch (c.type)
@@ -296,9 +272,13 @@ struct BuildDescription
             final switch (c.type)
             {
             case ChangeType.added:
+                state.addPending(state.find(c.value.from));
                 state.put(c.value.from, c.value.to, EdgeType.explicit);
                 break;
             case ChangeType.removed:
+                // When an edge from a task to a resource is removed, the
+                // resource should be deleted.
+                state[c.value.to].remove();
                 state.remove(c.value.from, c.value.to);
                 break;
             case ChangeType.none:
