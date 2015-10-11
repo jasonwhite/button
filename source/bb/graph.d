@@ -401,6 +401,9 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Traverses the entire graph depth-first calling the given visitor
      * functions.
+     *
+     * TODO: Use a queue and randomize the build order instead. This should give
+     * better performance on average and help catch race conditions.
      */
     void traverse(alias visitA, alias visitB, Context)
         (Context ctx, TaskPool pool)
