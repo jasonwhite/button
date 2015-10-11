@@ -23,6 +23,7 @@ import bb.vertex,
        bb.build;
 
 
+// TODO: Allow graphing of just the build description.
 private struct Options
 {
     // Path to the build description

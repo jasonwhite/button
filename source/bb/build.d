@@ -83,7 +83,12 @@ unittest
 
 /**
  * A build description is the set of resources, tasks, and the edges between
- * them. It is constructed from a list of rules.
+ * them. It is constructed from a list of rules. A build description is a
+ * subgraph of the graph stored in the build state. Only explicit edges are in
+ * the build description, while the build state contains both explicit and
+ * implicit edges. Furthermore, there may be resources in the build state that
+ * are not in the build description. However, the set of tasks are the same
+ * because tasks are not implicitly created.
  */
 struct BuildDescription
 {

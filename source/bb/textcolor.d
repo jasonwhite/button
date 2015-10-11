@@ -69,6 +69,8 @@ else
 {
     bool colorizable()
     {
+        // FIXME: Check on a stream-by-stream basis. If stderr is a terminal,
+        // but stdout isn't, then this fails to do the correct thing.
         import io.file.stdio : stdout;
         return stdout.isTerminal;
     }
