@@ -11,7 +11,6 @@ module bb.rule;
 import std.range.primitives : isInputRange, ElementType;
 
 import bb.vertex, bb.edge;
-import bb.graph;
 
 struct Rule
 {
@@ -172,57 +171,4 @@ unittest
     ];
 
     assert(parseRules(json).equal(rules));
-}
-
-/**
- * Generates a graph from a set of rules.
- */
-Graph!(Resource, Task) graph(R)(auto ref R rules)
-    if (is(ElementType!R : const(Rule)))
-{
-    auto g = new typeof(return)();
-
-    foreach (r; rules)
-    {
-        g.put(r.task);
-
-        foreach (v; r.inputs)
-        {
-            g.put(v);
-            g.put(v, r.task);
-        }
-
-        foreach (v; r.outputs)
-        {
-            g.put(v);
-            g.put(r.task, v);
-        }
-    }
-
-    return g;
-}
-
-unittest
-{
-    immutable Rule[] rules = [
-        {
-            inputs: [Resource("foo.c"), Resource("baz.h")],
-            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"]),
-            outputs: [Resource("foo.o")]
-        },
-        {
-            inputs: [Resource("bar.c"), Resource("baz.h")],
-            task: Task(["gcc", "-c", "bar.c", "-o", "bar.o"]),
-            outputs: [Resource("bar.o")]
-        },
-        {
-            inputs: [Resource("foo.o"), Resource("bar.o")],
-            task: Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]),
-            outputs: [Resource("foobar")]
-        }
-    ];
-
-    auto g = graph(rules);
-    assert(g.length!Task == 3);
-    assert(g.length!Resource == 6);
 }
