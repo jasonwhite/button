@@ -8,9 +8,6 @@
  */
 module bb.textcolor;
 
-// TODO: Make all of these empty strings if the terminal doesn't support it or
-// if we don't want colorized output.
-
 /*
  * Black        0;30     Dark Gray     1;30
  * Red          0;31     Light Red     1;31

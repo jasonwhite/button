@@ -193,7 +193,6 @@ struct Task
 
         result.duration = sw.peek().to!(typeof(result.duration));
 
-        // TODO: Time how long the process takes to execute
         return result;
     }
 

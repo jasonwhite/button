@@ -231,8 +231,6 @@ struct BuildDescription
         import change;
         import std.array : array;
 
-        // TODO: Delete removed resources
-
         auto resourceDiff     = diffVertices!Resource(state).array;
         auto taskDiff         = diffVertices!Task(state).array;
         auto resourceEdgeDiff = diffEdges!(Resource, Task)(state).array;
