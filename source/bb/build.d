@@ -630,33 +630,39 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
     }
 
     auto result = task.execute();
+    immutable failed = result.status != 0;
 
     synchronized
     {
-        immutable failed = result.status != 0;
+        // Print to stderr or stdout depending on if it failed or not.
+        auto stream = failed ? stderr : stdout;
 
         if (failed)
-            println(" > ", color.error, task,
+            stream.println(" > ", color.error, task,
                     color.reset, color.bold, " (exit code: ", result.status,
                     ")", color.reset);
         else
-            println(color.status, " > ", color.reset, task);
+            stream.println(color.status, " > ", color.reset, task);
 
-        stdout.write(result.stdout);
+        stream.write(result.stdout);
 
         // Ensure there is always a line separator after the output
         if (result.stdout.length > 0 && result.stdout[$-1] != '\n')
-            stdout.write("\n");
+            stream.write("\n");
 
-        println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
+        stream.println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
 
         if (failed)
-            println(color.status, "   ➥ ", color.error, "Error: ", color.reset,
+            stream.println(color.status, "   ➥ ", color.error, "Error: ", color.reset,
                     "Task failed. Process exited with code ", result.status
                     );
+
+        // TODO: Sync the build state with the list of inputs and outputs.
+        // We diff the list of inputs and outputs of this task. If an output
+        // resource is removed, it should be deleted.
     }
 
-    if (result.status != 0)
+    if (failed)
         throw new TaskError(v, result.status);
 
     // Only remove this from the set of pending tasks if it succeeds completely.
