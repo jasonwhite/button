@@ -137,6 +137,42 @@ unittest
 }
 
 /**
+ * Generates an explicit subgraph from the build state.
+ */
+Graph!(Resource, Task) graph(BuildState state)
+{
+    auto g = new typeof(return)();
+
+    // Add all tasks.
+    foreach (v; state.vertices!Task)
+        g.put(v);
+
+    // Add all explicit edges.
+    // FIXME: This isn't very efficient.
+    foreach (e; state.edges!(Task, Resource, EdgeType)())
+    {
+        if (e.data != EdgeType.explicit)
+            continue;
+
+        auto r = state[e.to];
+        g.put(r);
+        g.put(state[e.from], r);
+    }
+
+    foreach (e; state.edges!(Resource, Task, EdgeType)())
+    {
+        if (e.data != EdgeType.explicit)
+            continue;
+
+        auto r = state[e.from];
+        g.put(r);
+        g.put(r, state[e.to]);
+    }
+
+    return g;
+}
+
+/**
  * A build description is the set of resources, tasks, and the edges between
  * them. It is constructed from a list of rules. A build description is a
  * subgraph of the graph stored in the build state. Only explicit edges are in
@@ -286,15 +322,15 @@ struct BuildDescription
     /**
      * Synchronizes the build state with the build description.
      */
-    void sync(BuildState state)
+    void sync(BuildState state, bool dryRun = false)
     {
         import change;
         import std.array : array;
 
         auto resourceDiff     = diffVertices!Resource(state).array;
         auto taskDiff         = diffVertices!Task(state).array;
-        auto resourceEdgeDiff = diffEdges!(Resource, Task)(state).array;
-        auto taskEdgeDiff     = diffEdges!(Task, Resource)(state).array;
+        auto resourceEdgeDiff = diffEdges!(Resource, Task)(state);
+        auto taskEdgeDiff     = diffEdges!(Task, Resource)(state);
 
         foreach (c; resourceDiff)
         {
@@ -336,7 +372,9 @@ struct BuildDescription
             case ChangeType.removed:
                 // When an edge from a task to a resource is removed, the
                 // resource should be deleted.
-                state[c.value.to].remove();
+                if (!dryRun)
+                    state[c.value.to].remove();
+
                 state.remove(c.value.from, c.value.to);
                 break;
             case ChangeType.none:
@@ -345,20 +383,40 @@ struct BuildDescription
         }
 
         // Remove old vertices
+        // FIXME: What to do about implicit dependencies when a task is removed?
         foreach (c; taskDiff)
         {
             if (c.type == ChangeType.removed)
             {
-                auto id = state.find(c.value);
-                state.removePending(id);
-                state.remove(id);
+                // TODO: Remove all implicit edges to/from this task.
+                auto taskid = state.find(c.value);
+
+                // Delete all implicit outputs from this task. Note that any
+                // edges associated with this task are automatically removed
+                // when the task is removed from the database (because of "ON
+                // CASCADE DELETE").
+                if (!dryRun)
+                {
+                    foreach (e; state.outgoing!(EdgeIndex!(Task, Resource))(taskid))
+                        state[e.vertex].remove();
+                }
+
+                state.removePending(taskid);
+                state.remove(taskid);
             }
         }
 
         foreach (c; resourceDiff)
         {
+            // Only remove iff this resource has no outgoing implicit edges.
+            // Note that, at this point, there can be no explicit edges left.
             if (c.type == ChangeType.removed)
-                state.remove(c.value);
+            {
+                // TODO: Optimize the check for outgoing edges.
+                auto id = state.find(c.value);
+                if (state.outgoing(id).empty)
+                    state.remove(id);
+            }
         }
     }
 }

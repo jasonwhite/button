@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS task (
 private immutable resourceEdgesTable = q"{
 CREATE TABLE IF NOT EXISTS resourceEdge (
     id      INTEGER PRIMARY KEY,
-    "from"  INTEGER NOT NULL REFERENCES resource(id),
-    "to"    INTEGER NOT NULL REFERENCES task(id),
+    "from"  INTEGER NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
+    "to"    INTEGER NOT NULL REFERENCES task(id) ON DELETE CASCADE,
     type    INTEGER NOT NULL,
     UNIQUE("from", "to")
 )}";
@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS resourceEdge (
 private immutable taskEdgesTable = q"{
 CREATE TABLE IF NOT EXISTS taskEdge (
     id      INTEGER PRIMARY KEY,
-    "from"  INTEGER NOT NULL REFERENCES task(id),
-    "to"    INTEGER NOT NULL REFERENCES resource(id),
+    "from"  INTEGER NOT NULL REFERENCES task(id) ON DELETE CASCADE,
+    "to"    INTEGER NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
     type    INTEGER NOT NULL,
     UNIQUE ("from", "to")
 )}";
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS taskEdge (
  */
 private immutable pendingResourcesTable = q"{
 CREATE TABLE IF NOT EXISTS pendingResources (
-    resid INTEGER NOT NULL REFERENCES resource(id),
+    resid INTEGER NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
     PRIMARY KEY (resid),
     UNIQUE (resid)
 )}";
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS pendingResources (
  */
 private immutable pendingTasksTable = q"{
 CREATE TABLE IF NOT EXISTS pendingTasks (
-    taskid INTEGER NOT NULL REFERENCES task(id),
+    taskid INTEGER NOT NULL REFERENCES task(id) ON DELETE CASCADE,
     PRIMARY KEY (taskid),
     UNIQUE (taskid)
 )}";
@@ -1165,14 +1165,14 @@ class BuildState : SQLite3
      */
     @property auto outgoing(Index!Resource v)
     {
-        return prepare(`SELECT "to",type FROM resourceEdge WHERE "from"=?`, v)
+        return prepare(`SELECT "to" FROM resourceEdge WHERE "from"=?`, v)
             .rows!((SQLite3.Statement s) => Index!Task(s.get!ulong(0)));
     }
 
     /// Ditto
     @property auto outgoing(Index!Task v)
     {
-        return prepare(`SELECT "to",type FROM taskEdge WHERE "from"=?`, v)
+        return prepare(`SELECT "to" FROM taskEdge WHERE "from"=?`, v)
             .rows!((SQLite3.Statement s) => Index!Resource(s.get!ulong(0)));
     }
 

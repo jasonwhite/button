@@ -116,7 +116,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     }
 
     /**
-     * Adds a vertex.
+     * Adds a vertex if it does not already exist.
      */
     void put(Vertex)(Vertex v) pure
         if (isVertex!Vertex)
