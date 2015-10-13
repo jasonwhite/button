@@ -143,8 +143,7 @@ void syncBuildState(BuildState state, string path, TextColor color)
     {
         println(color.status, ":: Syncing database with build description...",
                 color.reset);
-        auto build = BuildDescription(path);
-        build.sync(state);
+        path.syncState(state);
 
         // Analyze the new graph. If any errors are detected, the database rolls
         // back to the previous (good) state.

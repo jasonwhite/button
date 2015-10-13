@@ -1092,7 +1092,7 @@ class BuildState : SQLite3
      */
     @property auto edges(From : Resource, To : Task, Data : EdgeType)()
     {
-        return prepare(`SELECT "from","to",id FROM resourceEdge`)
+        return prepare(`SELECT "from","to","type" FROM resourceEdge`)
             .rows!(parse!(EdgeRow!(From, To, Data)));
     }
 

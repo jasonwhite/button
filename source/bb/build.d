@@ -137,7 +137,7 @@ unittest
 }
 
 /**
- * Generates an explicit subgraph from the build state.
+ * Generates the explicit subgraph from the build state.
  */
 Graph!(Resource, Task) graph(BuildState state)
 {
@@ -173,255 +173,141 @@ Graph!(Resource, Task) graph(BuildState state)
 }
 
 /**
- * A build description is the set of resources, tasks, and the edges between
- * them. It is constructed from a list of rules. A build description is a
- * subgraph of the graph stored in the build state. Only explicit edges are in
- * the build description, while the build state contains both explicit and
- * implicit edges. Furthermore, there may be resources in the build state that
- * are not in the build description. However, the set of tasks are the same
- * because tasks are not implicitly created.
+ * Parses the build description.
+ *
+ * Returns: A range of rules.
+ *
+ * Throws: BuildException if the build description could not be opened.
  */
-struct BuildDescription
+Rules parseBuildDescription(string path)
 {
-    import bb.edge;
+    import io.file;
+    import io.range : byBlock;
     import bb.rule;
-    import std.container.rbtree;
-    import std.range.primitives : ElementType;
 
-    private
+    try
     {
-        // Vertices
-        RedBlackTree!Resource _resources;
-        RedBlackTree!Task     _tasks;
+        auto r = File(path).byBlock!char;
+        return parseRules(&r);
+    }
+    catch (ErrnoException e)
+    {
+        throw new BuildException("Failed to open build description: " ~ e.msg);
+    }
+}
 
-        // Edges
-        RedBlackTree!(Edge!(Resource, Task)) _edgesRT;
-        RedBlackTree!(Edge!(Task, Resource)) _edgesTR;
+/**
+ * Synchronizes the build state with the given set of rules.
+ *
+ * After the synchronization, the graph created from the set of rules will be a
+ * subgraph of the graph created from the build state.
+ */
+void syncState(R)(R rules, BuildState state, bool dryRun = false)
+    if (is(ElementType!R : const(Rule)))
+{
+    import change;
+    import std.array : array;
 
-        alias vertices(Vertex : Resource) = _resources;
-        alias vertices(Vertex : Task) = _tasks;
-        alias edges(From : Resource, To : Task) = _edgesRT;
-        alias edges(From : Task, To : Resource) = _edgesTR;
+    auto g1 = graph(state);
+    auto g2 = graph(rules);
 
-        enum isVertex(Vertex) = is(Vertex : Resource) || is(Vertex : Task);
-        enum isEdge(From, To) = isVertex!From && isVertex!To;
+    auto resourceDiff     = g1.diffVertices!Resource(g2).array;
+    auto taskDiff         = g1.diffVertices!Task(g2).array;
+    auto resourceEdgeDiff = g1.diffEdges!(Resource, Task)(g2);
+    auto taskEdgeDiff     = g1.diffEdges!(Task, Resource)(g2);
 
-        alias VertexId(Vertex : Resource) = ResourceId;
-        alias VertexId(Vertex : Task) = TaskId;
+    foreach (c; resourceDiff)
+    {
+        if (c.type == ChangeType.added)
+            state.put(c.value);
     }
 
-    /**
-     * Reads the rules from the given build description file.
-     */
-    this(string path)
+    foreach (c; taskDiff)
     {
-        import io.file;
-        import io.range : byBlock;
-        import bb.rule;
-
-        try
-        {
-            auto r = File(path).byBlock!char;
-            this(parseRules(&r));
-        }
-        catch (ErrnoException e)
-        {
-            throw new BuildException("Failed to open build description: " ~ e.msg);
-        }
+        // Any new tasks must be executed.
+        if (c.type == ChangeType.added)
+            state.addPending(state.put(c.value));
     }
 
-    /**
-     * Constructs the build description from a list of rules.
-     */
-    this(R)(auto ref R rules)
-        if (is(ElementType!R : const(Rule)))
+    // Add new edges and remove old edges.
+    foreach (c; resourceEdgeDiff)
     {
-        _resources = redBlackTree!(Resource)();
-        _tasks     = redBlackTree!(Task)();
-        _edgesRT   = redBlackTree!(Edge!(Resource, Task))();
-        _edgesTR   = redBlackTree!(Edge!(Task, Resource))();
-
-        foreach (r; rules)
-            put(r);
-    }
-
-    /**
-     * Adds a rule.
-     */
-    void put()(auto ref Rule r)
-    {
-        // TODO: Throw exception if task already exists.
-
-        _tasks.insert(r.task);
-
-        foreach (v; r.inputs)
+        final switch (c.type)
         {
-            put(v);
-            put(v, r.task);
-        }
-
-        foreach (v; r.outputs)
-        {
-            put(v);
-            put(r.task, v);
+        case ChangeType.added:
+            state.put(c.value.from.identifier, c.value.to.identifier, EdgeType.explicit);
+            break;
+        case ChangeType.removed:
+            state.remove(c.value.from.identifier, c.value.to.identifier);
+            break;
+        case ChangeType.none:
+            break;
         }
     }
 
-    /**
-     * Adds a vertex.
-     */
-    void put(Vertex)(Vertex v)
-        if (isVertex!Vertex)
+    foreach (c; taskEdgeDiff)
     {
-        vertices!Vertex.insert(v);
-    }
-
-    /**
-     * Adds an edge.
-     */
-    void put(From, To)(From from, To to)
-        if (isEdge!(From, To))
-    {
-        edges!(From, To).insert(Edge!(From, To)(from, to));
-    }
-
-    /**
-     * Determines the changes between the list of vertices in the build
-     * description and that in the build state.
-     */
-    auto diffVertices(Vertex)(BuildState state)
-        if (isVertex!Vertex)
-    {
-        import change;
-        import std.algorithm : map;
-
-        return changes(
-            state.identifiers!Vertex,
-            vertices!Vertex[].map!(v => v.identifier)
-            );
-    }
-
-    /**
-     * Determines the changes between the list of edges in the build description
-     * and that in the build state.
-     */
-    auto diffEdges(From, To)(BuildState state)
-        if (isEdge!(From, To))
-    {
-        import change;
-        import std.algorithm : map;
-
-        return changes(
-            state.edgeIdentifiersSorted!(VertexId!From, VertexId!To),
-            edges!(From, To)[].map!(
-                e => Edge!(VertexId!From, VertexId!To)(e.from.identifier, e.to.identifier)
-                )
-            );
-    }
-
-    /**
-     * Synchronizes the build state with the build description.
-     */
-    void sync(BuildState state, bool dryRun = false)
-    {
-        import change;
-        import std.array : array;
-
-        auto resourceDiff     = diffVertices!Resource(state).array;
-        auto taskDiff         = diffVertices!Task(state).array;
-        auto resourceEdgeDiff = diffEdges!(Resource, Task)(state);
-        auto taskEdgeDiff     = diffEdges!(Task, Resource)(state);
-
-        foreach (c; resourceDiff)
+        final switch (c.type)
         {
-            if (c.type == ChangeType.added)
-                state.put(Resource(c.value));
+        case ChangeType.added:
+            state.addPending(state.find(c.value.from.identifier));
+            state.put(c.value.from.identifier, c.value.to.identifier, EdgeType.explicit);
+            break;
+        case ChangeType.removed:
+            // When an edge from a task to a resource is removed, the
+            // resource should be deleted.
+            if (!dryRun)
+                state[c.value.to.identifier].remove();
+
+            state.remove(c.value.from.identifier, c.value.to.identifier);
+            break;
+        case ChangeType.none:
+            break;
         }
+    }
 
-        foreach (c; taskDiff)
+    // Remove old vertices
+    foreach (c; taskDiff)
+    {
+        if (c.type == ChangeType.removed)
         {
-            // Any new tasks must be executed.
-            if (c.type == ChangeType.added)
-                state.addPending(state.put(Task(c.value)));
-        }
+            auto taskid = state.find(c.value.identifier);
 
-        // Add new edges and remove old edges.
-        foreach (c; resourceEdgeDiff)
-        {
-            final switch (c.type)
+            // Delete all implicit outputs from this task. Note that any
+            // edges associated with this task are automatically removed
+            // when the task is removed from the database (because of "ON
+            // CASCADE DELETE").
+            if (!dryRun)
             {
-            case ChangeType.added:
-                state.put(c.value.from, c.value.to, EdgeType.explicit);
-                break;
-            case ChangeType.removed:
-                state.remove(c.value.from, c.value.to);
-                break;
-            case ChangeType.none:
-                break;
+                foreach (e; state.outgoing!(EdgeIndex!(Task, Resource))(taskid))
+                    state[e.vertex].remove();
             }
+
+            state.remove(taskid);
         }
+    }
 
-        foreach (c; taskEdgeDiff)
+    foreach (c; resourceDiff)
+    {
+        // Only remove iff this resource has no outgoing implicit edges.
+        // Note that, at this point, there can be no explicit edges left.
+        if (c.type == ChangeType.removed)
         {
-            final switch (c.type)
-            {
-            case ChangeType.added:
-                state.addPending(state.find(c.value.from));
-                state.put(c.value.from, c.value.to, EdgeType.explicit);
-                break;
-            case ChangeType.removed:
-                // When an edge from a task to a resource is removed, the
-                // resource should be deleted.
-                if (!dryRun)
-                    state[c.value.to].remove();
-
-                state.remove(c.value.from, c.value.to);
-                break;
-            case ChangeType.none:
-                break;
-            }
-        }
-
-        // Remove old vertices
-        // FIXME: What to do about implicit dependencies when a task is removed?
-        foreach (c; taskDiff)
-        {
-            if (c.type == ChangeType.removed)
-            {
-                // TODO: Remove all implicit edges to/from this task.
-                auto taskid = state.find(c.value);
-
-                // Delete all implicit outputs from this task. Note that any
-                // edges associated with this task are automatically removed
-                // when the task is removed from the database (because of "ON
-                // CASCADE DELETE").
-                if (!dryRun)
-                {
-                    foreach (e; state.outgoing!(EdgeIndex!(Task, Resource))(taskid))
-                        state[e.vertex].remove();
-                }
-
-                state.removePending(taskid);
-                state.remove(taskid);
-            }
-        }
-
-        foreach (c; resourceDiff)
-        {
-            // Only remove iff this resource has no outgoing implicit edges.
-            // Note that, at this point, there can be no explicit edges left.
-            if (c.type == ChangeType.removed)
-            {
-                // TODO: Optimize the check for outgoing edges.
-                auto id = state.find(c.value);
-                if (state.outgoing(id).empty)
-                    state.remove(id);
-            }
+            // TODO: Optimize the check for outgoing edges.
+            auto id = state.find(c.value.identifier);
+            if (state.outgoing(id).empty)
+                state.remove(id);
         }
     }
 }
 
-unittest
+/// Ditto
+void syncState(string path, BuildState state, bool dryRun = false)
+{
+    syncState(parseBuildDescription(path), state, dryRun);
+}
+
+version (none) unittest
 {
     import std.algorithm : equal;
     import bb.vertex, bb.edge, bb.rule, bb.state;

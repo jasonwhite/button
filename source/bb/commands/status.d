@@ -71,10 +71,9 @@ int status(string[] args)
 
         if (!options.cached)
         {
-            auto build = BuildDescription(path);
-            build.sync(state);
+            path.syncState(state);
 
-            displayResourceDiff(build, state, color);
+            //displayResourceDiff(build, state, color);
         }
 
         printfln("%d total resources", state.length!Resource);
@@ -92,7 +91,7 @@ int status(string[] args)
     return 0;
 }
 
-void displayResourceDiff(ref BuildDescription build, BuildState state,
+version (none) void displayResourceDiff(ref BuildDescription build, BuildState state,
         TextColor color)
 {
     import change;

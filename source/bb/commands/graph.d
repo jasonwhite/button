@@ -92,8 +92,7 @@ int graph(string[] args)
 
         if (!options.cached)
         {
-            auto build = BuildDescription(path);
-            build.sync(state);
+            path.syncState(state, true);
         }
 
         auto graph = state.buildGraph;
@@ -189,5 +188,60 @@ void graphviz(Stream)(
         stream.printfln(`    "r:%s" -> "t:%s";`, edge.from, edge.to);
 
     foreach (edge; graph.edges!(B, A))
+        stream.printfln(`    "t:%s" -> "r:%s";`, edge.from, edge.to);
+}
+
+/// Ditto
+void graphviz(Stream)(Graph!(Resource, Task) graph, Stream stream)
+    if (isSink!Stream)
+{
+    import io.text;
+    import std.range : enumerate;
+
+    alias A = Resource;
+    alias B = Task;
+
+    stream.println("digraph G {");
+    scope (success) stream.println("}");
+
+    // Vertices
+    stream.println("    subgraph {\n"
+                   "        node [shape=ellipse, fillcolor=lightskyblue2, style=filled];"
+            );
+    foreach (v; graph.vertices!Resource)
+    {
+        stream.printfln(`        "r:%s"`, v);
+    }
+    stream.println("    }");
+
+    stream.println("    subgraph {\n"
+                   "        node [shape=box, fillcolor=gray91, style=filled];"
+            );
+    foreach (v; graph.vertices!Task)
+    {
+        stream.printfln(`        "t:%s"`, v);
+    }
+    stream.println("    }");
+
+    // Cluster cycles, if any
+    foreach (i, scc; enumerate(graph.cycles))
+    {
+        stream.printfln("    subgraph cluster_%d {", i++);
+
+        foreach (v; scc.vertices!Resource)
+            stream.printfln(`        "r:%s";`, v);
+
+        foreach (v; scc.vertices!Task)
+            stream.printfln(`        "t:%s";`, v);
+
+        stream.println("    }");
+    }
+
+    // Edges
+    // TODO: Style as dashed edge if implicit edge
+    foreach (edge; graph.edges!(Resource, Task))
+        stream.printfln(`    "r:%s" -> "t:%s";`, edge.from, edge.to);
+
+    foreach (edge; graph.edges!(Task, Resource))
         stream.printfln(`    "t:%s" -> "r:%s";`, edge.from, edge.to);
 }
