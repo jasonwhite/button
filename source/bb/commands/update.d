@@ -110,7 +110,7 @@ int update(string[] args)
             syncBuildState(state, path, color);
 
             println(color.status, ":: Checking for changes...", color.reset);
-            gatherChanges(state, pool, color);
+            queueChanges(state, pool, color);
         }
 
         update(state, pool, options.dryRun, color);

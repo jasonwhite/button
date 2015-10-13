@@ -299,6 +299,10 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
                 state.remove(id);
         }
     }
+
+    // TODO: Find resources with no associated edges and remove them. These
+    // resources won't cause any issues, but can slow things down if too many
+    // accumulate.
 }
 
 /// Ditto
@@ -513,7 +517,7 @@ void checkRaces(BuildStateGraph graph, BuildState state)
 /**
  * Finds changed resources and marks them as pending in the build state.
  */
-void gatherChanges(BuildState state, TaskPool pool, TextColor color)
+void queueChanges(BuildState state, TaskPool pool, TextColor color)
 {
     import std.array : array;
     import std.algorithm.iteration : filter;
