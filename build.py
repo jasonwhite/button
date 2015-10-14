@@ -24,10 +24,7 @@ def parse_args():
 
 compiler_flags=['-Isource/io/source', '-release', '-O', '-w']
 
-io_sources = glob('source/io/source/io/*.d') + \
-             glob('source/io/source/io/buffer/*.d') + \
-             glob('source/io/source/io/file/*.d') + \
-             glob('source/io/source/io/stream/*.d')
+io_sources = glob('source/io/source/io/**/*.d', recursive=True)
 
 io_rules = bb.dmd.static_library(
         path = 'io',
@@ -36,10 +33,7 @@ io_rules = bb.dmd.static_library(
         )
 
 bb_sources = glob('source/*.d') + \
-             glob('source/bb/*.d') + \
-             glob('source/bb/commands/*.d') + \
-             glob('source/bb/state/*.d') + \
-             glob('source/bb/vertex/*.d')
+             glob('source/bb/**/*.d', recursive=True)
 
 bb_rules = bb.dmd.binary(
         path = 'bb',
