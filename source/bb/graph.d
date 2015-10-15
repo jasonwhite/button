@@ -676,9 +676,10 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Returns an array of cycles in the graph.
      */
-    @property auto cycles()
+    @property immutable(SCC)[] cycles()
     {
         import std.array : appender;
+        import std.exception : assumeUnique;
 
         auto arr = appender!(SCC[]);
 
@@ -691,7 +692,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
             }
         }
 
-        return arr.data;
+        return assumeUnique(arr.data);
     }
 }
 
