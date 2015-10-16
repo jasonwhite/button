@@ -458,19 +458,45 @@ BuildStateGraph buildGraph(Resources, Tasks)
  *
  * Throws: BuildException exception if one or more cycles are found.
  */
-void checkCycles(BuildStateGraph graph)
+void checkCycles(BuildStateGraph graph, BuildState state)
 {
     import std.format : format;
+    import std.algorithm.iteration : map;
+    import std.algorithm.comparison : min;
 
-    // TODO: Print out the vertices in the cycles
+    // TODO: Construct the string instead of printing them.
+    import io;
 
-    if (immutable cycles = graph.cycles.length)
+    immutable cycles = graph.cycles;
+
+    if (!cycles.length) return;
+
+    foreach (i, scc; cycles)
     {
-        throw new BuildException(
-            "Found %d cycle(s). Use `bb graph` to see them."
-            .format(cycles)
-            );
+        printfln("Cycle %d:", i+1);
+
+        auto resources = scc.vertices!(Index!Resource);
+        auto tasks = scc.vertices!(Index!Task);
+
+        println("    ", state[resources[0]]);
+        println(" -> ", state[tasks[0]].shortString);
+
+        foreach_reverse(j; 1 .. min(resources.length, tasks.length))
+        {
+            println(" -> ", state[resources[j]]);
+            println(" -> ", state[tasks[j]].shortString);
+        }
+
+        // Make the cycle obvious
+        println(" -> ", state[resources[0]]);
     }
+
+    immutable plural = cycles.length > 1 ? "s" : "";
+
+    throw new BuildException(
+        "Found %d cycle%s. Use also `bb graph` to visualize the cycle%s."
+        .format(cycles.length, plural, plural)
+        );
 }
 
 /**

@@ -149,7 +149,7 @@ void syncBuildState(BuildState state, string path, TextColor color)
         // back to the previous (good) state.
         println(color.status, ":: Analyzing graph for errors...", color.reset);
         BuildStateGraph graph = state.buildGraph();
-        graph.checkCycles();
+        graph.checkCycles(state);
         graph.checkRaces(state);
 
         // Update the build description resource
