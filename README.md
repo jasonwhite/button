@@ -124,6 +124,28 @@ Note that `gcc foo.o bar.o -o foobar` was not executed because its output
 Changes are determined by the checksum of a file's contents, not just its last
 modification time. Thus, one source of overbuilding is eliminated.
 
+## Building the Build System
+
+ 1. Get the dependencies:
+
+     * [A D compiler][DMD]. Only DMD is ensured to work.
+     * [DUB][]: A package manager for D.
+
+ 2. Get the source:
+
+    ```bash
+    git clone --recursive https://github.com/jasonwhite/brilliant-build.git
+    ```
+
+ 3. Bootstrap:
+
+    ```bash
+    ./bootstrap
+    ```
+
+[DMD]: http://dlang.org/download.html
+[DUB]: http://code.dlang.org/download
+
 ## Planned Features
 
 All of the above is already implemented. Below gives rough details on what will
