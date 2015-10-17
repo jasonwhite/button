@@ -143,6 +143,10 @@ modification time. Thus, one source of overbuilding is eliminated.
     ./bootstrap
     ```
 
+There should now be an executable `bb` at the root of the repository. It is
+completely self-contained. Put it in a directory that is on your `$PATH` and run
+`bb help` to get started!
+
 [DMD]: http://dlang.org/download.html
 [DUB]: http://code.dlang.org/download
 
