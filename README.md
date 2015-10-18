@@ -177,6 +177,40 @@ some other program.
 The idea is to write libraries in one or more scripting languages (e.g., Lua and
 Python) that help in generating the JSON build description.
 
+### Caching
+
+Similar to what [Bazel][] and [Buck][] do, build outputs should be cached. This
+helps to solve two major problems:
+
+ 1. Brilliant Build has no explicit support for variants (a *debug* or *release*
+    build). If one wants to switch between debug and release builds, the build
+    description must be regenerated and, thus, the entire build graph is
+    invalidated and triggers a new build. If build outputs are cached, switching
+    between variants will copy the build outputs from the cache instead of
+    building from scratch.
+ 2. If two machines, A and B, both run the same build, a lot of work is
+    duplicated. If both builds are adding cached outputs to a shared cache,
+    there would be a 50% cache hit rate on average between the two machines. As
+    more machines are added, the average cache hit rate goes up.
+
+This caching mechanism would be implemented as a simple web server with a REST
+interface. Outputs are keyed by the checksum of the task's resource
+dependencies, the task's command string, and the output's file name. The
+contents of an output is uploaded with an HTTP `POST` using the output's key.
+Similarly, an output is retrieved with an HTTP `GET` using the output's key. A
+`404` error code should be returned if it doesn't exist in the cache.
+
+The effectiveness of the cache relies on outputs being bit-for-bit reproducible
+given the same inputs to a task. Certain compilers (such as `gcc`) do indeed
+produce a bit-for-bit identical output every time it is executed for a given
+source file. However, others do not (such as Microsoft's `cl.exe`). To cope with
+this issue, "impure" compilers should be wrapped such that they create
+reproducible outputs. For example, in the case of Microsoft's C/C++ compiler,
+timestamps are embedded in the output files and should be stripped out.
+
+[Bazel]: http://bazel.io/
+[Buck]: https://buckbuild.com/
+
 ### File system monitoring
 
 Since the set of input files is known, these can be monitored for changes. When
