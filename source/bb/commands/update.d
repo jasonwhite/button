@@ -137,20 +137,16 @@ int update(string[] args)
  */
 void syncBuildState(BuildState state, string path, TextColor color)
 {
+    // TODO: Don't store the build description in the database. The parent build
+    // system should store the change state of the build description and tell
+    // the child which input resources have changed upon an update.
     auto r = state[BuildState.buildDescId];
     r.path = path;
     if (r.update())
     {
-        println(color.status, ":: Syncing database with build description...",
+        println(color.status, ":: Build description changed. Syncing with the database...",
                 color.reset);
         path.syncState(state);
-
-        // Analyze the new graph. If any errors are detected, the database rolls
-        // back to the previous (good) state.
-        println(color.status, ":: Analyzing graph for errors...", color.reset);
-        BuildStateGraph graph = state.buildGraph();
-        graph.checkCycles(state);
-        graph.checkRaces(state);
 
         // Update the build description resource
         state[BuildState.buildDescId] = r;

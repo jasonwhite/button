@@ -139,7 +139,7 @@ unittest
 /**
  * Generates the explicit subgraph from the build state.
  */
-Graph!(Resource, Task) graph(BuildState state)
+Graph!(Resource, Task) explicitGraph(BuildState state)
 {
     auto g = new typeof(return)();
 
@@ -208,8 +208,13 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
     import change;
     import std.array : array;
 
-    auto g1 = graph(state);
+    auto g1 = explicitGraph(state);
     auto g2 = graph(rules);
+
+    // Analyze the build description graph. If any errors are detected, no
+    // changes are made to the database.
+    g2.checkCycles();
+    g2.checkRaces();
 
     auto resourceDiff     = g1.diffVertices!Resource(g2).array;
     auto taskDiff         = g1.diffVertices!Task(g2).array;
@@ -250,16 +255,21 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
         final switch (c.type)
         {
         case ChangeType.added:
-            state.addPending(state.find(c.value.from.identifier));
-            state.put(c.value.from.identifier, c.value.to.identifier, EdgeType.explicit);
+            auto taskid = state.find(c.value.from.identifier);
+            auto resid = state.find(c.value.to.identifier);
+            state.addPending(taskid);
+            state.put(taskid, resid, EdgeType.explicit);
             break;
         case ChangeType.removed:
+            auto taskid = state.find(c.value.from.identifier);
+            auto resid = state.find(c.value.to.identifier);
+
             // When an edge from a task to a resource is removed, the
             // resource should be deleted.
             if (!dryRun)
-                state[c.value.to.identifier].remove();
+                state[resid].remove();
 
-            state.remove(c.value.from.identifier, c.value.to.identifier);
+            state.remove(taskid, resid);
             break;
         case ChangeType.none:
             break;
@@ -458,7 +468,7 @@ BuildStateGraph buildGraph(Resources, Tasks)
  *
  * Throws: BuildException exception if one or more cycles are found.
  */
-void checkCycles(BuildStateGraph graph, BuildState state)
+void checkCycles(Graph!(Resource, Task) graph)
 {
     import std.format : format;
     import std.algorithm.iteration : map;
@@ -475,20 +485,20 @@ void checkCycles(BuildStateGraph graph, BuildState state)
     {
         printfln("Cycle %d:", i+1);
 
-        auto resources = scc.vertices!(Index!Resource);
-        auto tasks = scc.vertices!(Index!Task);
+        auto resources = scc.vertices!(Resource);
+        auto tasks = scc.vertices!(Task);
 
-        println("    ", state[resources[0]]);
-        println(" -> ", state[tasks[0]].shortString);
+        println("    ", resources[0]);
+        println(" -> ", tasks[0].shortString);
 
         foreach_reverse(j; 1 .. min(resources.length, tasks.length))
         {
-            println(" -> ", state[resources[j]]);
-            println(" -> ", state[tasks[j]].shortString);
+            println(" -> ", resources[j]);
+            println(" -> ", tasks[j].shortString);
         }
 
         // Make the cycle obvious
-        println(" -> ", state[resources[0]]);
+        println(" -> ", resources[0]);
     }
 
     immutable plural = cycles.length > 1 ? "s" : "";
@@ -504,16 +514,16 @@ void checkCycles(BuildStateGraph graph, BuildState state)
  *
  * Throws: BuildException exception if one or more race conditions are found.
  */
-void checkRaces(BuildStateGraph graph, BuildState state)
+void checkRaces(Graph!(Resource, Task) graph)
 {
     import std.format : format;
     import std.algorithm : filter, map, joiner;
     import std.array : array;
     import std.typecons : tuple;
 
-    auto races = graph.vertices!(Index!Resource)
+    auto races = graph.vertices!(Resource)
                       .filter!(v => graph.degreeIn(v) > 1)
-                      .map!(v => tuple(state[v], graph.degreeIn(v)))
+                      .map!(v => tuple(v, graph.degreeIn(v)))
                       .array;
 
     if (races.length == 0)
