@@ -122,6 +122,9 @@ struct Index(T)
 {
     ulong index;
     alias index this;
+
+    /// An invalid index.
+    enum Invalid = Index!T(0);
 }
 
 /**
@@ -451,8 +454,11 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
         auto s = prepare(`SELECT id FROM resource WHERE path=?`, id);
-        enforce(s.step(), "Resource does not exist.");
-        return typeof(return)(s.get!ulong(0));
+
+        if (s.step())
+            return typeof(return)(s.get!ulong(0));
+
+        return typeof(return).Invalid;
     }
 
     /// Ditto
@@ -461,8 +467,11 @@ class BuildState : SQLite3
         import std.conv : to;
         import std.exception : enforce;
         auto s = prepare(`SELECT id FROM task WHERE command=?`, id.to!string);
-        enforce(s.step(), "Task does not exist.");
-        return typeof(return)(s.get!ulong(0));
+
+        if (s.step())
+            return typeof(return)(s.get!ulong(0));
+
+        return typeof(return).Invalid;
     }
 
     /**
@@ -1085,6 +1094,25 @@ class BuildState : SQLite3
     {
         return prepare(`SELECT "from","to",id FROM taskEdge`)
             .rows!(parse!(EdgeRow!(From, To, Data)));
+    }
+
+    /**
+     * Checks if an edge exists between two vertices.
+     */
+    bool edgeExists(Index!Task from, Index!Resource to)
+    {
+        auto s = prepare(
+            `SELECT "type" FROM taskEdge WHERE "from"=? AND "to"=?`, from, to);
+        return s.step();
+    }
+
+    /// Ditto
+    bool edgeExists(Index!Resource from, Index!Task to)
+    {
+        auto s = prepare(
+            `SELECT "type" FROM resourceEdge WHERE "from"=? AND "to"=?`,
+            from, to);
+        return s.step();
     }
 
     /**

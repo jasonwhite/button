@@ -601,6 +601,51 @@ void queueChanges(BuildState state, TaskPool pool, TextColor color)
     }
 }
 
+/**
+ * Syncs the build state with implicit dependencies.
+ */
+void syncStateImplicit(BuildState state, Index!Task v,
+        string inputs, string outputs)
+{
+    import std.algorithm.iteration : splitter;
+
+    state.begin();
+    scope (success) state.commit();
+    scope (failure) state.rollback();
+
+    foreach (immutable res; inputs.splitter('\0'))
+    {
+        if (res.length == 0) continue;
+
+        auto id = state.find(res);
+        if (id == Index!Resource.Invalid)
+        {
+            auto r = Resource(res);
+            r.update();
+            id = state.put(r);
+        }
+
+        if (!state.edgeExists(id, v))
+            state.put(id, v, EdgeType.implicit);
+    }
+
+    foreach (immutable res; outputs.splitter('\0'))
+    {
+        if (res.length == 0) continue;
+
+        auto id = state.find(res);
+        if (id == Index!Resource.Invalid)
+        {
+            auto r = Resource(res);
+            r.update();
+            id = state.put(r);
+        }
+
+        if (!state.edgeExists(v, id))
+            state.put(v, id, EdgeType.implicit);
+    }
+}
+
 struct VisitorContext
 {
     BuildState state;
@@ -701,9 +746,12 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
                     "Task failed. Process exited with code ", result.status
                     );
 
-        // TODO: Sync the build state with the list of inputs and outputs.
-        // We diff the list of inputs and outputs of this task. If an output
-        // resource is removed, it should be deleted.
+        // Sync the build state with the list of inputs and outputs.
+        syncStateImplicit(context.state, v, result.inputs, result.outputs);
+
+        /*stream.println(color.status, "   ➥ Dependencies: ",
+                color.reset, "Found ", inputs, " implicit input(s) and ",
+                outputs, " implicit output(s)");*/
     }
 
     if (failed)
