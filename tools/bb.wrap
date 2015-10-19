@@ -61,11 +61,11 @@ def dmd(args):
     deps = [x for x in enumerate(args) if x[1].startswith('-deps=')]
 
     if len(deps) > 1:
-        println("Error: Found multiple '-deps=' options", file=sys.stderr)
+        print("Error: Found multiple '-deps=' options", file=sys.stderr)
         sys.exit(1)
 
     if deps:
-        println("FIXME: Support -deps being in the command line", file=sys.stderr)
+        print("FIXME: Support -deps being in the command line", file=sys.stderr)
         sys.exit(1)
 
     # Create a temporary file to write dependencies to
