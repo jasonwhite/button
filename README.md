@@ -193,12 +193,12 @@ helps solve two major problems:
     50% cache hit rate on average between the two machines. As more machines are
     added, the average cache hit rate goes up.
 
-This caching mechanism would be implemented as a simple REST service Outputs are
-keyed by the checksum of the task's resource dependencies, the task's command
-string, and the output's file name. The contents of an output is uploaded with
-an HTTP `POST` using the output's key. Similarly, an output is retrieved with an
-HTTP `GET` using the output's key. A `404` error code should be returned if it
-doesn't exist in the cache.
+This caching mechanism would be implemented as a simple REST service. Outputs
+are keyed by the checksum of the task's resource dependencies, the task's
+command string, and the output's file name. The contents of an output is
+uploaded with an HTTP `POST` using the output's key. Similarly, an output is
+retrieved with an HTTP `GET` using the output's key. A `404` error code should
+be returned if it doesn't exist in the cache.
 
 The effectiveness of the cache relies on outputs being bit-for-bit reproducible
 given the same inputs to a task. Certain compilers (such as `gcc`) do indeed
