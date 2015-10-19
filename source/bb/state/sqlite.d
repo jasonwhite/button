@@ -1232,6 +1232,18 @@ class BuildState : SQLite3
             .rows!(parse!(Neighbor!(Index!Resource, Data)));
     }
 
+    /// Ditto
+    @property auto outgoing(Data : ResourceId)(Index!Task v)
+    {
+        return prepare(
+                `SELECT resource.path`
+                ` FROM taskEdge AS e`
+                ` JOIN resource ON e."to"=resource.id`
+                ` WHERE e."from"=?`, v
+                )
+            .rows!((SQLite3.Statement s) => s.get!string(0));
+    }
+
     /**
      * Returns the incoming neighbors of the given node.
      */
@@ -1260,6 +1272,18 @@ class BuildState : SQLite3
     {
         return prepare(`SELECT "from",id FROM resourceEdge WHERE "to"=?`, v)
             .rows!(parse!(Neighbor!(Index!Resource, Data)));
+    }
+
+    /// Ditto
+    @property auto incoming(Data : ResourceId)(Index!Task v)
+    {
+        return prepare(
+                `SELECT resource.path`
+                ` FROM resourceEdge AS e`
+                ` JOIN resource ON e."from"=resource.id`
+                ` WHERE e."to"=?`, v
+                )
+            .rows!((SQLite3.Statement s) => s.get!string(0));
     }
 
     unittest

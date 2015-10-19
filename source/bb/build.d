@@ -607,42 +607,114 @@ void queueChanges(BuildState state, TaskPool pool, TextColor color)
 void syncStateImplicit(BuildState state, Index!Task v,
         string inputs, string outputs)
 {
-    import std.algorithm.iteration : splitter;
+    import std.algorithm.iteration : splitter, uniq, filter;
+    import std.array : array;
+    import std.algorithm.sorting : sort;
+    import std.format : format;
+    import change;
+
+    import io; // FOR TESTING
 
     state.begin();
     scope (success) state.commit();
     scope (failure) state.rollback();
 
-    foreach (immutable res; inputs.splitter('\0'))
+    auto inputDiff = changes(
+            state.incoming!ResourceId(v).array.sort(),
+            inputs.splitter('\0').filter!(x => x.length).array.sort().uniq
+            );
+
+    auto outputDiff = changes(
+            state.outgoing!ResourceId(v).array.sort(),
+            outputs.splitter('\0').filter!(x => x.length).array.sort().uniq);
+
+    foreach (c; inputDiff)
     {
-        if (res.length == 0) continue;
-
-        auto id = state.find(res);
-        if (id == Index!Resource.Invalid)
+        if (c.type == ChangeType.added)
         {
-            auto r = Resource(res);
-            r.update();
-            id = state.put(r);
-        }
+            auto r = Resource(c.value);
 
-        if (!state.edgeExists(id, v))
-            state.put(id, v, EdgeType.implicit);
+            // A new implicit input. If the resource is *not* an output
+            // resource, then we are fine. Otherwise, it is an error because we
+            // are potentially changing the build order with this new edge.
+            auto id = state.find(c.value);
+            if (id == Index!Resource.Invalid || state.degreeIn(id) == 0)
+            {
+                if (id == Index!Resource.Invalid)
+                {
+                    r.update();
+                    id = state.put(r);
+                }
+
+                state.put(id, v, EdgeType.implicit);
+            }
+            else
+            {
+                throw new BuildException(
+                    "Implicit task input '%s' must be explicitly added to the"
+                    " build description.".format(r)
+                    );
+            }
+        }
+        else if (c.type == ChangeType.removed)
+        {
+            // Build state has edges that weren't discovered implicitly. These
+            // can be either explicit edges that weren't found or removed
+            // implicit edges. We only care about the latter case here.
+
+            auto id = state.find(c.value);
+            assert(id != Index!Resource.Invalid);
+
+            if (state[id, v] == EdgeType.implicit)
+                state.remove(id, v);
+        }
     }
 
-    foreach (immutable res; outputs.splitter('\0'))
+    foreach (c; outputDiff)
     {
-        if (res.length == 0) continue;
-
-        auto id = state.find(res);
-        if (id == Index!Resource.Invalid)
+        if (c.type == ChangeType.added)
         {
-            auto r = Resource(res);
-            r.update();
-            id = state.put(r);
-        }
+            auto r = Resource(c.value);
 
-        if (!state.edgeExists(v, id))
-            state.put(v, id, EdgeType.implicit);
+            // A new implicit output. The resource must either not exist or be a
+            // dangling resource awaiting garbage collection. Otherwise, it is
+            // an error.
+            auto id = state.find(c.value);
+            if (id == Index!Resource.Invalid ||
+                    (state.degreeIn(id) == 0 && state.degreeOut(id) == 0))
+            {
+                if (id == Index!Resource.Invalid)
+                {
+                    r.update();
+                    id = state.put(r);
+                }
+
+                state.put(v, id, EdgeType.implicit);
+            }
+            else
+            {
+                throw new BuildException(
+                    "Implicit task output '%s' must be explicitly added to the"
+                    " build description.".format(r)
+                    );
+            }
+        }
+        else if (c.type == ChangeType.removed)
+        {
+            // Build state has edges that weren't discovered implicitly. These
+            // can be either explicit edges that weren't found or removed
+            // implicit edges. We only care about the latter case here.
+
+            auto id = state.find(c.value);
+            assert(id != Index!Resource.Invalid);
+
+            if (state[v, id] == EdgeType.implicit)
+            {
+                state[id].remove();
+                state.remove(v, id);
+                state.remove(id);
+            }
+        }
     }
 }
 
