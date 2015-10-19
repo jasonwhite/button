@@ -200,14 +200,6 @@ uploaded with an HTTP `POST` using the output's key. Similarly, an output is
 retrieved with an HTTP `GET` using the output's key. A `404` error code should
 be returned if it doesn't exist in the cache.
 
-The effectiveness of the cache relies on outputs being bit-for-bit reproducible
-given the same inputs to a task. Certain compilers (such as `gcc`) do indeed
-produce a bit-for-bit identical output every time it is executed for a given
-source file. However, others do not (such as Microsoft's `cl.exe`). To cope with
-this issue, "impure" compilers should be wrapped such that they create
-reproducible outputs. For example, in the case of Microsoft's C/C++ compiler,
-timestamps are embedded in the output files and should be stripped out.
-
 [Bazel]: http://bazel.io/
 [Buck]: https://buckbuild.com/
 
