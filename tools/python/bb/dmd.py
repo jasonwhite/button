@@ -15,7 +15,7 @@ def objects(files, flags=[]):
         - flags: Extra flags to pass to the compiler.
     """
 
-    args = ['dmd'] + flags
+    args = ['./tools/bb.wrap', 'dmd'] + flags
 
     for source, output in files:
         yield Rule(
