@@ -22,7 +22,7 @@ def parse_args():
     return parser.parse_args()
 
 
-compiler_flags=['-Isource/io/source', '-release', '-O', '-w']
+compiler_flags=['-Isource/io/source', '-release', '-w']
 
 io_sources = glob('source/io/source/io/**/*.d', recursive=True)
 
