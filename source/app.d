@@ -35,6 +35,9 @@ int main(string[] args)
         case "status":
             return status(commandArgs);
 
+        case "clean":
+            return cleanCommand(commandArgs);
+
         default:
             displayHelp(commandArgs);
             return 1;

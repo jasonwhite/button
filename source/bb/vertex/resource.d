@@ -189,9 +189,6 @@ struct Resource
         try
         {
             unlink(path);
-
-            // TODO: Don't print this from here.
-            println(":: Deleting `", path, "`");
         }
         catch (Exception e)
         {

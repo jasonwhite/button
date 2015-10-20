@@ -854,6 +854,24 @@ void build(BuildStateGraph graph, BuildState state, TaskPool pool,
 }
 
 /**
+ * Deletes all outputs from the file system.
+ */
+void clean(BuildState state)
+{
+    import io.text, io.file.stdio;
+
+    foreach (id; state.indices!Resource)
+    {
+        if (state.degreeIn(id) > 0)
+        {
+            auto r = state[id];
+            println("Deleting `", r, "`");
+            r.remove();
+        }
+    }
+}
+
+/**
  * Finds the path to the build description.
  *
  * Throws BuildException if no path is given and none could be found.

@@ -9,3 +9,4 @@ public import bb.commands.update;
 public import bb.commands.graph;
 public import bb.commands.help;
 public import bb.commands.status;
+public import bb.commands.clean;
