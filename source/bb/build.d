@@ -791,19 +791,19 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
     }
 
     auto result = task.execute();
-    immutable failed = result.status != 0;
+    immutable succeeded = result.status == 0;
 
     synchronized
     {
         // Print to stderr or stdout depending on if it failed or not.
-        auto stream = failed ? stderr : stdout;
+        auto stream = succeeded ? stdout : stderr;
 
-        if (failed)
+        if (succeeded)
+            stream.println(color.status, " > ", color.reset, task);
+        else
             stream.println(" > ", color.error, task,
                     color.reset, color.bold, " (exit code: ", result.status,
                     ")", color.reset);
-        else
-            stream.println(color.status, " > ", color.reset, task);
 
         stream.write(result.stdout);
 
@@ -813,15 +813,15 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
 
         stream.println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
 
-        if (failed)
+        if (succeeded)
+            syncStateImplicit(context.state, v, result.inputs, result.outputs);
+        else
             stream.println(color.status, "   ➥ ", color.error, "Error: ", color.reset,
                     "Task failed. Process exited with code ", result.status
                     );
-        else
-            syncStateImplicit(context.state, v, result.inputs, result.outputs);
     }
 
-    if (failed)
+    if (!succeeded)
         throw new TaskError(v, result.status);
 
     // Only remove this from the set of pending tasks if it succeeds completely.
