@@ -1469,4 +1469,16 @@ class BuildState : SQLite3
         assert(equal(state.pending!Resource, [3, 4].map!(x => Index!Resource(x))));
         assert(equal(state.pending!Task, [Index!Task(1)]));
     }
+
+    /**
+     * Finds vertices with no incoming and no outgoing edges.
+     */
+    @property auto islands(Vertex : Resource)()
+    {
+        return prepare(
+                `SELECT id FROM resource`
+                ` WHERE id>1 AND`
+                ` resource.id`
+                ).rows!((SQLite3.Statement s) => Index!Vertex(s.get!string(0)));
+    }
 }

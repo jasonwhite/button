@@ -53,7 +53,7 @@ immutable usage = q"EOS
 Usage: bb graph [-f FILE] [--changes] [--edges {explicit,implicit,both}]
 EOS";
 
-int graph(string[] args)
+int graphCommand(string[] args)
 {
     Options options;
 

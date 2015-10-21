@@ -40,7 +40,7 @@ EOS";
 /**
  * Updates the build.
  */
-int update(string[] args)
+int updateCommand(string[] args)
 {
     import std.getopt;
     import std.parallelism : totalCPUs;

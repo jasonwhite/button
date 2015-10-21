@@ -37,7 +37,7 @@ immutable usage = q"EOS
 Usage: bb status [-f FILE] [--cached]
 EOS";
 
-int status(string[] args)
+int statusCommand(string[] args)
 {
     Options options;
 

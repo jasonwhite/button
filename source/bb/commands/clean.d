@@ -45,6 +45,7 @@ EOS";
 int cleanCommand(string[] args)
 {
     import std.getopt;
+    import std.file : remove;
 
     Options options;
 
@@ -82,10 +83,7 @@ int cleanCommand(string[] args)
         clean(state);
 
         if (options.purge)
-        {
-            import std.file : remove;
             remove(path.stateName);
-        }
     }
     catch (BuildException e)
     {

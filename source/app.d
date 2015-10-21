@@ -27,13 +27,13 @@ int main(string[] args)
 
         case "build":
         case "update":
-            return update(commandArgs);
+            return updateCommand(commandArgs);
 
         case "graph":
-            return graph(commandArgs);
+            return graphCommand(commandArgs);
 
         case "status":
-            return status(commandArgs);
+            return statusCommand(commandArgs);
 
         case "clean":
             return cleanCommand(commandArgs);
