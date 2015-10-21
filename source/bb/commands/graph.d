@@ -186,7 +186,6 @@ void graphviz(Stream)(
     immutable styles = ["solid", "dashed"];
 
     // Edges
-    // TODO: Style as dashed edge if implicit edge
     foreach (edge; state.edges!(Resource, Task, EdgeType))
     {
         stream.printfln(`    "r:%s" -> "t:%s" [style=%s];`,
