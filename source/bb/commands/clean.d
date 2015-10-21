@@ -4,7 +4,7 @@
  * Authors:   Jason White
  *
  * Description:
- * Handles command line arguments.
+ * Command to delete outputs.
  */
 module bb.commands.clean;
 
@@ -40,7 +40,7 @@ Usage: bb clean [-f FILE]
 EOS";
 
 /**
- * Collects garbage.
+ * Deletes outputs.
  */
 int cleanCommand(string[] args)
 {
