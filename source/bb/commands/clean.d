@@ -30,6 +30,9 @@ private struct Options
 
     // When to colorize the output.
     string color = "auto";
+
+    // True if the build state should be deleted too.
+    bool purge;
 }
 
 immutable usage = q"EOS
@@ -58,6 +61,9 @@ int cleanCommand(string[] args)
         "color",
             "When to colorize the output.",
             &options.color,
+        "purge",
+            "Delete the build state too.",
+            &options.purge,
     );
 
     if (helpInfo.helpWanted)
@@ -74,6 +80,12 @@ int cleanCommand(string[] args)
 
         auto state = new BuildState(path.stateName);
         clean(state);
+
+        if (options.purge)
+        {
+            import std.file : remove;
+            remove(path.stateName);
+        }
     }
     catch (BuildException e)
     {
