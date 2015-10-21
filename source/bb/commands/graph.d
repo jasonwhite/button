@@ -18,6 +18,7 @@ import io.text,
 import io.stream.types : isSink;
 
 import bb.vertex,
+       bb.edgedata,
        bb.graph,
        bb.state,
        bb.build;
@@ -182,13 +183,21 @@ void graphviz(Stream)(
         stream.println("    }");
     }
 
+    immutable styles = ["solid", "dashed"];
+
     // Edges
     // TODO: Style as dashed edge if implicit edge
-    foreach (edge; graph.edges!(A, B))
-        stream.printfln(`    "r:%s" -> "t:%s";`, edge.from, edge.to);
+    foreach (edge; state.edges!(Resource, Task, EdgeType))
+    {
+        stream.printfln(`    "r:%s" -> "t:%s" [style=%s];`,
+                edge.from, edge.to, styles[edge.data]);
+    }
 
-    foreach (edge; graph.edges!(B, A))
-        stream.printfln(`    "t:%s" -> "r:%s";`, edge.from, edge.to);
+    foreach (edge; state.edges!(Task, Resource, EdgeType))
+    {
+        stream.printfln(`    "t:%s" -> "r:%s";`,
+                edge.from, edge.to, styles[edge.data]);
+    }
 }
 
 /// Ditto
