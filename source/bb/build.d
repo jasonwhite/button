@@ -817,13 +817,8 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
             stream.println(color.status, "   ➥ ", color.error, "Error: ", color.reset,
                     "Task failed. Process exited with code ", result.status
                     );
-
-        // Sync the build state with the list of inputs and outputs.
-        syncStateImplicit(context.state, v, result.inputs, result.outputs);
-
-        /*stream.println(color.status, "   ➥ Dependencies: ",
-                color.reset, "Found ", inputs, " implicit input(s) and ",
-                outputs, " implicit output(s)");*/
+        else
+            syncStateImplicit(context.state, v, result.inputs, result.outputs);
     }
 
     if (failed)
