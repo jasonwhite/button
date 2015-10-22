@@ -21,8 +21,8 @@ import bb.rule;
 alias BuildStateGraph = Graph!(
         Index!Resource,
         Index!Task,
-        EdgeIndex!(Resource, Task),
-        EdgeIndex!(Task, Resource)
+        EdgeType,
+        EdgeType,
         );
 
 /**
@@ -412,10 +412,10 @@ BuildStateGraph buildGraph(BuildState state)
         g.put(v);
 
     // Add all edges
-    foreach (v; state.edges!(Resource, Task, EdgeIndex!(Resource, Task)))
+    foreach (v; state.edges!(Resource, Task, EdgeType))
         g.put(v.from, v.to, v.data);
 
-    foreach (v; state.edges!(Task, Resource, EdgeIndex!(Task, Resource)))
+    foreach (v; state.edges!(Task, Resource, EdgeType))
         g.put(v.from, v.to, v.data);
 
     return g;
@@ -434,7 +434,7 @@ private void buildGraph(Vertex, G, Visited)(BuildState state, G graph, Vertex v,
 
     graph.put(v);
 
-    foreach (neighbor; state.outgoing!(NeighborIndex!Vertex)(v))
+    foreach (neighbor; state.outgoing!EdgeType(v))
     {
         buildGraph(state, graph, neighbor.vertex, visited);
         graph.put(v, neighbor.vertex, neighbor.data);

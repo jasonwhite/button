@@ -186,13 +186,13 @@ void graphviz(Stream)(
     immutable styles = ["solid", "dashed"];
 
     // Edges
-    foreach (edge; state.edges!(Resource, Task, EdgeType))
+    foreach (edge; graph.edges!(A, B))
     {
         stream.printfln(`    "r:%s" -> "t:%s" [style=%s];`,
                 edge.from, edge.to, styles[edge.data]);
     }
 
-    foreach (edge; state.edges!(Task, Resource, EdgeType))
+    foreach (edge; graph.edges!(B, A))
     {
         stream.printfln(`    "t:%s" -> "r:%s";`,
                 edge.from, edge.to, styles[edge.data]);
