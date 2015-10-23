@@ -114,6 +114,8 @@ int updateCommand(string[] args)
         }
 
         update(state, pool, options.dryRun, color);
+
+        publishResources(state);
     }
     catch (BuildException e)
     {

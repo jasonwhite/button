@@ -867,6 +867,49 @@ void clean(BuildState state)
 }
 
 /**
+ * If this build system is running under itself, send back all of its
+ * inputs and outputs.
+ */
+void publishResources(BuildState state)
+{
+    import std.process;
+    import std.conv : to;
+    import io.file.stream;
+
+    auto inputsHandle  = environment.get("BRILLIANT_BUILD_INPUTS");
+    auto outputsHandle = environment.get("BRILLIANT_BUILD_INPUTS");
+
+    if (inputsHandle is null || outputsHandle is null)
+        return;
+
+    version (Posix)
+    {
+        auto inputs  = File(inputsHandle.to!int);
+        auto outputs = File(outputsHandle.to!int);
+
+        foreach (v; state.indices!Resource)
+        {
+            immutable degreeIn  = state.degreeIn(v);
+            immutable degreeOut = state.degreeOut(v);
+
+            if (degreeIn == 0 && degreeOut == 0)
+                continue;
+
+            if (degreeIn == 0)
+            {
+                inputs.write(state[v].identifier);
+                inputs.write("\0");
+            }
+            else
+            {
+                outputs.write(state[v].identifier);
+                outputs.write("\0");
+            }
+        }
+    }
+}
+
+/**
  * Finds the path to the build description.
  *
  * Throws BuildException if no path is given and none could be found.
