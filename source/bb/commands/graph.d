@@ -194,7 +194,7 @@ void graphviz(Stream)(
 
     foreach (edge; graph.edges!(B, A))
     {
-        stream.printfln(`    "t:%s" -> "r:%s";`,
+        stream.printfln(`    "t:%s" -> "r:%s" [style=%s];`,
                 edge.from, edge.to, styles[edge.data]);
     }
 }
