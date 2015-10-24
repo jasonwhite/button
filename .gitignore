@@ -7,4 +7,4 @@ dub.selections.json
 __test__library__
 __pycache__/
 .*.state
-bb.json
+*.bb.json

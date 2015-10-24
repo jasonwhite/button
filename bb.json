@@ -1,0 +1,12 @@
+[
+    {
+        "inputs": ["build.py"],
+        "outputs": ["build.bb.json"],
+        "task": ["./build.py", "build.bb.json"]
+    },
+    {
+        "inputs": ["build.bb.json"],
+        "outputs": [".build.bb.json.state"],
+        "task": ["./bb", "build", "-f", "build.bb.json"]
+    }
+]
