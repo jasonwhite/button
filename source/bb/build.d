@@ -877,7 +877,7 @@ void publishResources(BuildState state)
     import io.file.stream;
 
     auto inputsHandle  = environment.get("BRILLIANT_BUILD_INPUTS");
-    auto outputsHandle = environment.get("BRILLIANT_BUILD_INPUTS");
+    auto outputsHandle = environment.get("BRILLIANT_BUILD_OUTPUTS");
 
     if (inputsHandle is null || outputsHandle is null)
         return;
