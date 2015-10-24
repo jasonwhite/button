@@ -133,6 +133,7 @@ struct Task
     version (Posix) TaskResult execute() const
     {
         import core.sys.posix.unistd;
+        import core.sys.posix.fcntl : open, O_RDONLY;
 
         import io.file.stream : sysEnforce;
 
@@ -145,6 +146,10 @@ struct Task
         TaskResult result;
 
         sw.start();
+
+        // /dev/null will be the child's standard input
+        int devnull = open("/dev/null", O_RDONLY);
+        sysEnforce(devnull != -1);
 
         int[2] stdfds, inputfds, outputfds;
 
@@ -172,7 +177,7 @@ struct Task
             close(inputfds[0]);
             close(outputfds[0]);
 
-            executeChild(argv, stdfds[1], inputfds[1], outputfds[1],
+            executeChild(argv, devnull, stdfds[1], inputfds[1], outputfds[1],
                     inputsenv.ptr, outputsenv.ptr);
         }
 
@@ -363,8 +368,10 @@ private version (Posix)
      * NOTE: Memory should not be allocated here. It can cause the child process
      * to hang.
      */
-    void executeChild(const(char*)[] argv, int stdfd, int inputsfd,
-            int outputsfd, const(char)* inputsenv, const(char)* outputsenv)
+    void executeChild(const(char*)[] argv,
+            int devnull, int stdfd,
+            int inputsfd, int outputsfd,
+            const(char)* inputsenv, const(char)* outputsenv)
     {
         import core.sys.posix.unistd;
         import core.sys.posix.stdlib : setenv;
@@ -373,9 +380,15 @@ private version (Posix)
         import io.file.stream : SysException;
         import io.text;
 
-        // Close standard input because it won't be possible to write to it when
-        // multiple tasks are running simultaneously.
-        close(STDIN_FILENO);
+        // Get standard input from /dev/null. With potentially multiple tasks
+        // executing in parallel, the child cannot use standard input.
+        if (dup2(devnull, STDIN_FILENO) == -1)
+        {
+            perror("dup2");
+            _exit(1);
+        }
+
+        close(devnull);
 
         // Let the child know two bits of information: (1) that it is being run
         // under this build system and (2) which file descriptors to use to send
