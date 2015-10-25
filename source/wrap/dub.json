@@ -1,0 +1,12 @@
+{
+    "name": "bb-wrap",
+    "description": "Wraps commands to provide dependency information.",
+    "copyright": "Copyright © 2015, Jason White",
+    "authors": ["Jason White"],
+    "targetType": "executable",
+    "dependencies": {
+        "io" : {
+            "path": "../io"
+        }
+    }
+}
