@@ -10,7 +10,7 @@ module bb.state.sqlite;
 
 import bb.vertex;
 import bb.edge, bb.edgedata;
-import sqlite3;
+import util.sqlite3;
 
 import std.typecons : tuple, Tuple;
 

@@ -205,7 +205,7 @@ Rules parseBuildDescription(string path)
 void syncState(R)(R rules, BuildState state, bool dryRun = false)
     if (is(ElementType!R : const(Rule)))
 {
-    import change;
+    import util.change;
     import std.array : array;
 
     auto g1 = explicitGraph(state);
@@ -325,7 +325,7 @@ version (none) unittest
 {
     import std.algorithm : equal;
     import bb.vertex, bb.edge, bb.rule, bb.state;
-    import change;
+    import util.change;
 
     auto state = new BuildState;
 
@@ -611,7 +611,7 @@ void syncStateImplicit(BuildState state, Index!Task v,
     import std.array : array;
     import std.algorithm.sorting : sort;
     import std.format : format;
-    import change;
+    import util.change;
 
     import io; // FOR TESTING
 

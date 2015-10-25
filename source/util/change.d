@@ -9,7 +9,7 @@
  * All changes are discovered in O(max(n, m)) where n and m are the length of
  * the two ranges.
  */
-module change;
+module util.change;
 
 import std.range : isInputRange, ElementType;
 

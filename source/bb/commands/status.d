@@ -94,7 +94,7 @@ int statusCommand(string[] args)
 version (none) void displayResourceDiff(ref BuildDescription build, BuildState state,
         TextColor color)
 {
-    import change;
+    import util.change;
 
     auto resourceDiff = build.diffVertices!Resource(state)
                              .filter!(c => c.type != ChangeType.none);

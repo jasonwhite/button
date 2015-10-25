@@ -4,7 +4,7 @@
  * Description: Wraps the SQLite3 C API in D goodness.
  * This is an updated version of $(WEB https://github.com/bayun/SQLite3-D).
  */
-module sqlite3;
+module util.sqlite3;
 
 import etc.c.sqlite3;
 import std.string, std.exception;

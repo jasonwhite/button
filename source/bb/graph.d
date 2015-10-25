@@ -465,7 +465,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     {
         import std.array : array;
         import std.algorithm.sorting : sort;
-        import change;
+        import util.change;
 
         auto theseVertices = this.neighbors!Vertex.byKey().array.sort();
         auto thoseVertices = other.neighbors!Vertex.byKey().array.sort();
@@ -481,7 +481,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     {
         import std.array : array;
         import std.algorithm.sorting : sort;
-        import change;
+        import util.change;
 
         auto theseEdges = this.edges!(From, To).array.sort();
         auto thoseEdges = other.edges!(From, To).array.sort();
@@ -769,7 +769,7 @@ unittest
 unittest
 {
     import std.algorithm.comparison : equal;
-    import change;
+    import util.change;
     import bb.edge;
 
     alias C = Change;
