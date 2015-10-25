@@ -72,6 +72,26 @@ struct Task
 
     // TODO: Store last execution duration.
 
+    // Open /dev/null to be used by all child processes as its standard input.
+    version (Posix)
+    {
+        shared static int devnull;
+
+        shared static this()
+        {
+            import io.file.stream : sysEnforce;
+            import core.sys.posix.fcntl : open, O_RDONLY;
+            devnull = open("/dev/null", O_RDONLY);
+            sysEnforce(devnull != -1);
+        }
+
+        shared static ~this()
+        {
+            import core.sys.posix.unistd : close;
+            close(devnull);
+        }
+    }
+
     /**
      * Returns a string representation of the command.
      *
@@ -133,7 +153,6 @@ struct Task
     version (Posix) TaskResult execute() const
     {
         import core.sys.posix.unistd;
-        import core.sys.posix.fcntl : open, O_RDONLY;
 
         import io.file.stream : sysEnforce;
 
@@ -146,10 +165,6 @@ struct Task
         TaskResult result;
 
         sw.start();
-
-        // /dev/null will be the child's standard input
-        int devnull = open("/dev/null", O_RDONLY);
-        sysEnforce(devnull != -1);
 
         int[2] stdfds, inputfds, outputfds;
 
@@ -177,7 +192,7 @@ struct Task
             close(inputfds[0]);
             close(outputfds[0]);
 
-            executeChild(argv, devnull, stdfds[1], inputfds[1], outputfds[1],
+            executeChild(argv, this.devnull, stdfds[1], inputfds[1], outputfds[1],
                     inputsenv.ptr, outputsenv.ptr);
         }
 
