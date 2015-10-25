@@ -33,6 +33,7 @@ io_rules = bb.dmd.static_library(
         )
 
 bb_sources = glob('source/*.d') + \
+             glob('source/util/*.d') + \
              glob('source/bb/**/*.d', recursive=True)
 
 bb_rules = bb.dmd.binary(
