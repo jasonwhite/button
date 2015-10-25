@@ -23,11 +23,13 @@ def parse_args():
 
 
 dmd_flags=['-Isource/io/source', '-release', '-w']
+prefix=['./bb-wrap-bootstrap']
 
 io_rules = bb.dmd.static_library(
         path = 'io',
         sources = glob('source/io/source/io/**/*.d', recursive=True),
         compiler_flags = dmd_flags,
+        prefix = prefix,
         )
 
 bb_rules = bb.dmd.binary(
@@ -36,14 +38,16 @@ bb_rules = bb.dmd.binary(
                   glob('source/bb/**/*.d', recursive=True),
         libraries = ['io'],
         compiler_flags = ['-Isource'] + dmd_flags,
-        linker_flags = ['-L-lsqlite3']
+        linker_flags = ['-L-lsqlite3'],
+        prefix = prefix,
         )
 
 wrap_rules = bb.dmd.binary(
         path = 'bb-wrap',
         sources = glob('source/wrap/source/wrap/**/*.d', recursive=True),
         libraries = ['io'],
-        compiler_flags = ['-Isource/wrap/source'] + dmd_flags
+        compiler_flags = ['-Isource/wrap/source'] + dmd_flags,
+        prefix = prefix,
         )
 
 rules = chain(io_rules, bb_rules, wrap_rules)

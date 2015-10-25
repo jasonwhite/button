@@ -6,7 +6,7 @@
 # Provides useful functions for generating rules for C/C++ projects.
 from bb.rules import Rule
 
-def objects(files, flags=[]):
+def objects(files, prefix=[], flags=[]):
     """
     Generates the rules needed to compile the list of files.
 
@@ -15,7 +15,7 @@ def objects(files, flags=[]):
         - flags: Extra flags to pass to the compiler.
     """
 
-    args = ['./bb-wrap', 'dmd'] + flags
+    args = prefix + ['dmd'] + flags
 
     for source, output in files:
         yield Rule(
@@ -24,7 +24,7 @@ def objects(files, flags=[]):
                 outputs = [output]
                 )
 
-def link(path, files, flags=[], static=False):
+def link(path, files, prefix=[], flags=[], static=False):
     """
     Returns the rule needed to link the list of files.
 
@@ -32,7 +32,7 @@ def link(path, files, flags=[], static=False):
         - files: List of source files or object files.
         - flags: Extra flags to pass to the linker.
     """
-    args = ['dmd'] + flags
+    args = prefix + ['dmd'] + flags
 
     if static:
         args.append('-lib')
@@ -43,7 +43,7 @@ def link(path, files, flags=[], static=False):
             outputs = [path]
             )
 
-def binary(path, sources, libraries=[], compiler_flags=[], linker_flags=[]):
+def binary(path, sources, libraries=[], prefix=[], compiler_flags=[], linker_flags=[]):
     """
     Generates the rules needed to create a binary executable with the given path.
 
@@ -55,15 +55,15 @@ def binary(path, sources, libraries=[], compiler_flags=[], linker_flags=[]):
     outputs = [s + '.o' for s in sources]
 
     # Compile
-    yield from objects(zip(sources, outputs), flags=compiler_flags)
+    yield from objects(zip(sources, outputs), prefix=prefix, flags=compiler_flags)
 
     # TODO: Make this more generic
     link_inputs = outputs + ['lib%s.a' % lib for lib in libraries]
 
     # Link
-    yield link(path, link_inputs, flags=linker_flags)
+    yield link(path, link_inputs, prefix=prefix, flags=linker_flags)
 
-def static_library(path, sources, compiler_flags=[], linker_flags=[]):
+def static_library(path, sources, prefix=[], compiler_flags=[], linker_flags=[]):
     """
     Generates the rules needed to create a static library with the given path.
 
@@ -75,9 +75,9 @@ def static_library(path, sources, compiler_flags=[], linker_flags=[]):
     outputs = [s + '.o' for s in sources]
 
     # Compile
-    yield from objects(zip(sources, outputs), flags=compiler_flags)
+    yield from objects(zip(sources, outputs), prefix=prefix, flags=compiler_flags)
 
     path = 'lib' + path + '.a'
 
     # Link
-    yield link(path, outputs, flags=linker_flags, static=True)
+    yield link(path, outputs, prefix=prefix, flags=linker_flags, static=True)

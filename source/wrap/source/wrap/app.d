@@ -42,7 +42,7 @@ int main(string[] args)
 
     if (auto p = args[1] in tools)
     {
-        (*p)(args[1 .. $]);
+        return (*p)(args[1 .. $]);
     }
     else
     {
@@ -50,6 +50,4 @@ int main(string[] args)
         stderr.writeln("Error: Tool not supported.");
         return 1;
     }
-
-    return 0;
 }

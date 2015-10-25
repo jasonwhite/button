@@ -4,10 +4,10 @@ echo "Bootstrapping..."
 dub build --compiler=dmd
 dub build --root source/wrap --compiler=dmd
 
-cp source/wrap/bb-wrap ./
+cp source/wrap/bb-wrap-bootstrap ./
 
 export PYTHONPATH=tools/python:$PYTHONPATH
 
 echo "Building with the One True Build System..."
 rm -f .*bb.json.state
-./bb build
+./bb-bootstrap build

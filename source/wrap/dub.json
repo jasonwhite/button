@@ -1,5 +1,5 @@
 {
-    "name": "bb-wrap",
+    "name": "bb-wrap-bootstrap",
     "description": "Wraps commands to provide dependency information.",
     "copyright": "Copyright © 2015, Jason White",
     "authors": ["Jason White"],
