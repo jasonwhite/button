@@ -2,6 +2,9 @@
 
 echo "Bootstrapping..."
 dub build --compiler=dmd
+dub build --root source/wrap --compiler=dmd
+
+cp source/wrap/bb-wrap ./
 
 export PYTHONPATH=tools/python:$PYTHONPATH
 
