@@ -1,13 +1,13 @@
 #!/bin/bash
 
 echo "Bootstrapping..."
-dub build --compiler=dmd || exit 1
-dub build --root source/wrap --compiler=dmd || exit 1
+dub build --compiler=dmd || exit $?
+dub build --root source/wrap --compiler=dmd || exit $?
 
-cp source/wrap/bb-wrap-bootstrap ./ || exit 1
+cp source/wrap/bb-wrap-bootstrap ./ || exit $?
 
 export PYTHONPATH=tools/python:$PYTHONPATH
 
 echo "Building with the One True Build System..."
-rm -f .*bb.json.state || exit 1
+rm -f .*bb.json.state || exit $?
 ./bb-bootstrap build
