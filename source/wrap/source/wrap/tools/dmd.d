@@ -7,10 +7,12 @@ module wrap.tools.dmd;
 
 import wrap.pipes;
 
+import io.file;
+
 /**
  * Parses the given file for dependencies. Returns a sorted list of inputs.
  */
-immutable(string)[] parseInputs(File f)
+immutable(string)[] parseInputs(BufferedFile f)
 {
     import io.text : byLine;
     import std.regex;
@@ -41,7 +43,7 @@ int dmd(string[] args)
     import std.array : array;
     import std.regex;
 
-    import io.file.temp, io.text, io.file.stdio, io.range;
+    import io.text, io.range;
 
     // Check for existing '-deps' options.
     auto deps = args
@@ -65,7 +67,7 @@ int dmd(string[] args)
 
     auto exitCode = wait(spawnProcess(args));
 
-    foreach (input; File(depsPath).parseInputs.uniq)
+    foreach (input; BufferedFile(depsPath).parseInputs.uniq)
         sendInput(input);
 
     return exitCode;
