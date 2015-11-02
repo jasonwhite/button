@@ -48,7 +48,7 @@ int dmd(string[] args)
     // Check for existing '-deps' options.
     auto deps = args
             .enumerate
-            .filter!((x) => x.value.startsWith("-deps"))
+            .filter!((x) => x.value.startsWith("-deps="))
             .array;
 
     if (deps.length > 1)
@@ -57,13 +57,14 @@ int dmd(string[] args)
         return 1;
     }
 
-    auto depsPath = tempFile(AutoDelete.no).path;
-    scope (exit) remove(depsPath);
+    string depsPath;
 
-    if (deps.length == 1)
-        args[deps[0].index] = "-deps=" ~ depsPath;
+    if (deps.length == 0)
+        depsPath = tempFile(AutoDelete.no).path;
     else
-        args ~= "-deps=" ~ depsPath;
+        depsPath = args[deps[0].index]["-deps=".length .. $];
+
+    scope (exit) if (deps.length == 0) remove(depsPath);
 
     auto exitCode = wait(spawnProcess(args));
 
