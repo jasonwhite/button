@@ -38,7 +38,7 @@ int dmd(string[] args)
     import std.process : wait, spawnProcess;
     import std.algorithm.iteration : filter, uniq;
     import std.algorithm.searching : startsWith;
-    import std.range : enumerate;
+    import std.range : enumerate, empty;
     import std.file : remove;
     import std.array : array;
     import std.regex;
@@ -48,7 +48,7 @@ int dmd(string[] args)
     // Check for existing '-deps' options.
     auto deps = args
             .enumerate
-            .filter!((x) => x.value.startsWith("-deps="))
+            .filter!(x => x.value.startsWith("-deps="))
             .array;
 
     if (deps.length > 1)
@@ -59,7 +59,7 @@ int dmd(string[] args)
 
     string depsPath;
 
-    if (deps.length == 0)
+    if (deps.empty)
         depsPath = tempFile(AutoDelete.no).path;
     else
         depsPath = args[deps[0].index]["-deps=".length .. $];
@@ -70,6 +70,17 @@ int dmd(string[] args)
 
     foreach (input; BufferedFile(depsPath).parseInputs.uniq)
         sendInput(input);
+
+    // Deduce outputs from the command line
+    auto outputs = args.filter!(x => x.startsWith("-of")).array;
+    if (outputs.length > 1)
+    {
+        stderr.println("Error: Found multiple '-of' options.");
+        return 1;
+    }
+
+    if (!outputs.empty)
+        sendOutput(outputs[0]["-of".length .. $]);
 
     return exitCode;
 }
