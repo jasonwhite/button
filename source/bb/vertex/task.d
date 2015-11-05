@@ -57,6 +57,13 @@ struct Task
     TaskId command;
 
     /**
+     * The working directory for the command relative to the current working
+     * directory of the build system. If empty, the current working directory of
+     * the build system is used.
+     */
+    string workingDirectory;
+
+    /**
      * Text to display when running the command. If this is null, the command
      * itself will be displayed. This is useful for reducing the amount of
      * information that is displayed.
