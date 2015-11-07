@@ -76,7 +76,18 @@ struct Rules
             .array()
             .idup;
 
-        rule = Rule(inputs, outputs, Task(command));
+        string cwd;
+
+        try
+        {
+            cwd = jsonRule["cwd"].str();
+        }
+        catch(JSONException e)
+        {
+            // Optional.
+        }
+
+        rule = Rule(inputs, outputs, Task(command, cwd));
 
         rules.popFront();
     }
