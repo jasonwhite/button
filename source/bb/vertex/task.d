@@ -176,10 +176,13 @@ struct Task
     /**
      * Compares this task with another.
      */
-    int opCmp()(const auto ref typeof(this) rhs) const pure nothrow
+    int opCmp()(const auto ref typeof(this) that) const pure nothrow
     {
         import std.algorithm.comparison : cmp;
-        return cmp(this.command, rhs.command);
+        if (immutable result = cmp(this.command, that.command))
+            return result;
+
+        return cmp(this.workingDirectory, that.workingDirectory);
     }
 
     unittest
