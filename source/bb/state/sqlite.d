@@ -87,15 +87,27 @@ CREATE TABLE IF NOT EXISTS pendingTasks (
 )}";
 
 /**
+ * Index on vertex keys to speed up searches.
+ */
+private immutable resourceIndex = q"{
+CREATE INDEX IF NOT EXISTS resourceIndex ON resource(path)
+}";
+
+/// Ditto
+private immutable taskIndex = q"{
+CREATE INDEX IF NOT EXISTS taskIndex ON task(command,workDir)
+}";
+
+/**
  * Index on edges to speed up finding neighbors.
  */
 private immutable resourceEdgeIndex = q"{
-CREATE INDEX IF NOT EXISTS resourceEdgeIndex ON resourceEdge("from")
+CREATE INDEX IF NOT EXISTS resourceEdgeIndex ON resourceEdge("from","to")
 }";
 
 /// Ditto
 private immutable taskEdgeIndex = q"{
-CREATE INDEX IF NOT EXISTS taskEdgeIndex ON taskEdge("from")
+CREATE INDEX IF NOT EXISTS taskEdgeIndex ON taskEdge("from","to")
 }";
 
 /**
@@ -113,6 +125,8 @@ private immutable initializeStatements = [
     // Indiees
     resourceEdgeIndex,
     taskEdgeIndex,
+    resourceIndex,
+    taskIndex,
 ];
 
 /**
