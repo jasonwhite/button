@@ -12,6 +12,33 @@ import std.digest.digest : DigestType, isDigest;
 alias ResourceId = string;
 
 /**
+ * A resource key must be unique.
+ */
+struct ResourceKey
+{
+    /**
+     * File path to the resource. To ensure uniqueness, this should never be
+     * changed after construction.
+     */
+    string path;
+
+    /**
+     * Compares this key with another.
+     */
+    int opCmp()(const auto ref typeof(this) that) const pure nothrow
+    {
+        import std.algorithm.comparison : cmp;
+        return cmp(this.path, that.path);
+    }
+}
+
+unittest
+{
+    static assert(ResourceKey("abc") == ResourceKey("abc"));
+    static assert(ResourceKey("abc") < ResourceKey("abcd"));
+}
+
+/**
  * Compute the checksum of a file.
  */
 private DigestType!Hash digestFile(Hash)(string path)

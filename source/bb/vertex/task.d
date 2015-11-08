@@ -11,6 +11,52 @@ module bb.vertex.task;
 alias TaskId = immutable(string)[];
 
 /**
+ * A task key must be unique.
+ */
+struct TaskKey
+{
+    /**
+     * The command to execute. The first argument is the name of the executable.
+     */
+    immutable(string)[] command;
+
+    /**
+     * The working directory for the command relative to the current working
+     * directory of the build system. If empty, the current working directory of
+     * the build system is used.
+     */
+    string workingDirectory;
+
+    /**
+     * Text to display when running the command. If this is null, the command
+     * itself will be displayed. This is useful for reducing the amount of
+     * information that is displayed.
+     */
+    //string display;
+
+    /**
+     * Compares this key with another.
+     */
+    int opCmp()(const auto ref typeof(this) that) const pure nothrow
+    {
+        import std.algorithm.comparison : cmp;
+
+        if (immutable result = cmp(this.command, that.command))
+            return result;
+
+        return cmp(this.workingDirectory, that.workingDirectory);
+    }
+}
+
+unittest
+{
+    static assert(TaskKey(["a", "b"]) < TaskKey(["a", "c"]));
+    static assert(TaskKey(["a", "c"]) > TaskKey(["a", "b"]));
+    static assert(TaskKey(["a", "b"], "a") == TaskKey(["a", "b"], "a"));
+    static assert(TaskKey(["a", "b"], "a") < TaskKey(["a", "b"], "b"));
+}
+
+/**
  * The result of executing a task.
  */
 struct TaskResult
@@ -62,13 +108,6 @@ struct Task
      * the build system is used.
      */
     string workingDirectory;
-
-    /**
-     * Text to display when running the command. If this is null, the command
-     * itself will be displayed. This is useful for reducing the amount of
-     * information that is displayed.
-     */
-    //string display;
 
     /**
      * Time this task was last executed. If this is SysTime.min, then it is
