@@ -202,13 +202,13 @@ struct Task
     version (Posix) TaskResult execute() const
     {
         import core.sys.posix.unistd;
+        import core.stdc.stdio : sprintf;
 
         import io.file.stream : sysEnforce;
 
         import std.string : toStringz;
-        import std.format : sformat;
         import std.datetime : StopWatch;
-        import std.conv : to;
+        import core.time : Duration;
 
         StopWatch sw;
         TaskResult result;
@@ -228,8 +228,8 @@ struct Task
         argv[$-1] = null;
 
         char[16] inputsenv, outputsenv;
-        sformat(inputsenv, "%d\0", inputfds[1]);
-        sformat(outputsenv, "%d\0", outputfds[1]);
+        sprintf(inputsenv.ptr, "%d", inputfds[1]);
+        sprintf(outputsenv.ptr, "%d", outputfds[1]);
 
         immutable pid = fork();
         sysEnforce(pid >= 0, "Failed to fork current process");
@@ -245,11 +245,11 @@ struct Task
                     inputsenv.ptr, outputsenv.ptr);
         }
 
+        // In the parent process
         close(stdfds[1]);
         close(inputfds[1]);
         close(outputfds[1]);
 
-        // In the parent process
         auto output = readOutput(stdfds[0], inputfds[0], outputfds[0]);
         result.stdout  = output.stdout;
         result.inputs  = output.inputs;
