@@ -42,7 +42,7 @@ struct Edge(From, To, Data)
     /**
      * Compares two edges.
      */
-    int opCmp()(const auto ref typeof(this) rhs) const pure nothrow
+    int opCmp()(const auto ref typeof(this) rhs) const pure
     {
         if (this.from != rhs.from)
             return this.from < rhs.from ? -1 : 1;
