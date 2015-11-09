@@ -83,7 +83,7 @@ int updateCommand(string[] args)
         import core.time : Duration;
         sw.stop();
         println(color.status, ":: Total time taken: ", color.reset,
-                sw.peek().to!Duration);
+                cast(Duration)sw.peek());
     }
 
     auto pool = new TaskPool(options.threads - 1);

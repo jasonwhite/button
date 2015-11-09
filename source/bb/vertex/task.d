@@ -260,7 +260,7 @@ struct Task
 
         sw.stop();
 
-        result.duration = sw.peek().to!(typeof(result.duration));
+        result.duration = cast(Duration)sw.peek();
 
         return result;
     }
