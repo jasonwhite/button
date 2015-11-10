@@ -97,17 +97,9 @@ struct Task
     import core.time : TickDuration;
     import std.datetime : SysTime;
 
-    /**
-     * The command to execute. The first argument is the name of the executable.
-     */
-    TaskId command;
+    TaskKey key;
 
-    /**
-     * The working directory for the command relative to the current working
-     * directory of the build system. If empty, the current working directory of
-     * the build system is used.
-     */
-    string workingDirectory;
+    alias key this;
 
     /**
      * Time this task was last executed. If this is SysTime.min, then it is
@@ -117,6 +109,25 @@ struct Task
     SysTime lastExecuted = SysTime.min;
 
     // TODO: Store last execution duration.
+
+    this(TaskKey key)
+    {
+        this.key = key;
+    }
+
+    this(immutable(string)[] command, string workDir = null,
+            SysTime lastExecuted = SysTime.min)
+    {
+        this.command = command;
+        this.workingDirectory = workDir;
+        this.lastExecuted = lastExecuted;
+    }
+
+    this(immutable(string)[] command, SysTime lastExecuted)
+    {
+        this.command = command;
+        this.lastExecuted = lastExecuted;
+    }
 
     // Open /dev/null to be used by all child processes as its standard input.
     version (Posix)

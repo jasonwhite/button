@@ -144,7 +144,7 @@ Graph!(Resource, Task) explicitGraph(BuildState state)
     auto g = new typeof(return)();
 
     // Add all tasks.
-    foreach (v; state.vertices!Task)
+    foreach (v; state.enumerate!Task)
         g.put(v);
 
     // Add all explicit edges.
@@ -405,10 +405,10 @@ BuildStateGraph buildGraph(BuildState state)
     auto g = new typeof(return)();
 
     // Add all vertices
-    foreach (v; state.indices!Resource)
+    foreach (v; state.enumerate!(Index!Resource))
         g.put(v);
 
-    foreach (v; state.indices!Task)
+    foreach (v; state.enumerate!(Index!Task))
         g.put(v);
 
     // Add all edges
@@ -561,7 +561,7 @@ void queueChanges(BuildState state, TaskPool pool, TextColor color)
     import io.text : println;
 
     // FIXME: The parallel foreach fails if this is not an array.
-    auto resources = state.indices!Resource
+    auto resources = state.enumerate!(Index!Resource)
         .array;
 
     foreach (v; pool.parallel(resources))
@@ -855,7 +855,7 @@ void clean(BuildState state)
 {
     import io.text, io.file.stdio;
 
-    foreach (id; state.indices!Resource)
+    foreach (id; state.enumerate!(Index!Resource))
     {
         if (state.degreeIn(id) > 0)
         {
@@ -887,7 +887,7 @@ void publishResources(BuildState state)
         auto inputs  = File(inputsHandle.to!int);
         auto outputs = File(outputsHandle.to!int);
 
-        foreach (v; state.indices!Resource)
+        foreach (v; state.enumerate!(Index!Resource))
         {
             immutable degreeIn  = state.degreeIn(v);
             immutable degreeOut = state.degreeOut(v);

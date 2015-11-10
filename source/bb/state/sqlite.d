@@ -323,6 +323,27 @@ E parse(E : Neighbor!(Index!Task, EdgeIndex!(Resource, Task)))(SQLite3.Statement
 }
 
 /**
+ * Parses a vertex key.
+ */
+E parse(E : ResourceKey)(SQLite3.Statement s)
+{
+    return E(
+        s.get!string(0)
+        );
+}
+
+/// Ditto
+E parse(E : TaskKey)(SQLite3.Statement s)
+{
+    import std.conv : to;
+
+    return E(
+        s.get!string(0).to!(string[]),
+        s.get!string(1)
+        );
+}
+
+/**
  * Stores the current state of the build.
  */
 class BuildState : SQLite3
@@ -606,11 +627,11 @@ class BuildState : SQLite3
      * Returns an input range that iterates over all resources. The order is
      * guaranteed to be the same as the order they were inserted in.
      */
-    @property auto vertices(Vertex : Resource)()
+    @property auto enumerate(T : Resource)()
     {
         return prepare(
                 `SELECT path,lastModified,checksum FROM resource WHERE id>1`
-                ).rows!(parse!Resource);
+                ).rows!(parse!T);
     }
 
     unittest
@@ -630,78 +651,17 @@ class BuildState : SQLite3
         foreach (vertex; vertices)
             state.put(vertex);
 
-        assert(equal(vertices, state.vertices!Resource));
-    }
-
-    /**
-     * Returns a sorted range of resource identifiers.
-     */
-    @property auto identifiers(Vertex : Resource)()
-    {
-        return prepare(`SELECT path FROM resource WHERE id>1 ORDER BY path`)
-            .rows!((SQLite3.Statement s) => s.get!string(0));
-    }
-
-    unittest
-    {
-        import std.algorithm : equal, sort, map;
-
-        auto state = new BuildState;
-
-        auto vertices = [
-            Resource("foo.o"),
-            Resource("foo.c"),
-            Resource("bar.c"),
-            Resource("bar.o"),
-            ];
-
-        foreach (vertex; vertices)
-            state.put(vertex);
-
-        assert(equal(vertices.sort().map!(v => v.identifier), state.identifiers!Resource));
-    }
-
-    /**
-     * Returns an input range that iterates over all resources in sorted
-     * ascending order.
-     */
-    @property auto verticesSorted(Vertex : Resource)()
-    {
-        return prepare(
-                `SELECT path,lastModified,checksum`
-                ` FROM resource WHERE id>1 ORDER BY path`
-                )
-            .rows!(parse!Resource);
-    }
-
-    unittest
-    {
-        import std.algorithm : equal, sort;
-        import std.datetime : SysTime;
-
-        auto state = new BuildState;
-
-        auto vertices = [
-            Resource("foo.o", SysTime(42)),
-            Resource("foo.c", SysTime(1337)),
-            Resource("bar.c", SysTime(9001)),
-            Resource("bar.o", SysTime(0)),
-            ];
-
-        foreach (vertex; vertices)
-            state.put(vertex);
-
-        assert(equal(vertices.sort(), state.verticesSorted!Resource));
+        assert(equal(vertices, state.enumerate!Resource));
     }
 
     /**
      * Returns an input range that iterates over all tasks. The order is
      * guaranteed to be the same as the order they were inserted in.
      */
-    @property auto vertices(Vertex : Task)()
+    @property auto enumerate(T : Task)()
     {
         return prepare(`SELECT command,workDir,lastExecuted FROM task`)
-            .rows!(parse!Task);
+            .rows!(parse!T);
     }
 
     unittest
@@ -719,95 +679,40 @@ class BuildState : SQLite3
         foreach (task; tasks)
             state.put(task);
 
-        assert(equal(tasks, state.vertices!Task));
+        assert(equal(tasks, state.enumerate!Task));
     }
 
     /**
-     * Returns an input range that iterates over all tasks in sorted ascending
-     * order.
+     * Returns a range of vertex keys. The returned range is not guaranteed to
+     * be sorted.
      */
-    @property auto verticesSorted(Vertex : Task)()
+    @property auto enumerate(T : ResourceKey)()
     {
-        import std.array : array;
-        import std.algorithm : sort;
-
-        // SQLite cannot correctly sort an array when that array is stored as a
-        // string. Thus, we must sort it in D. This has the penalty of loading
-        // all tasks into memory at once.
-        return vertices!Vertex.array.sort();
+        return prepare(`SELECT path FROM resource WHERE id>1`)
+            .rows!(parse!Type);
     }
 
-    unittest
+    /// Ditto
+    @property auto enumerate(T : TaskKey)()
     {
-        import std.algorithm : equal, sort;
-
-        auto state = new BuildState;
-
-        auto vertices = [
-            Task(["foo", "arg 1", "arg 2"]),
-            Task(["bar", "arg 1"]),
-            Task(["baz", "arg 1", "arg 2", "arg 3"]),
-            ];
-
-        foreach (vertex; vertices)
-            state.put(vertex);
-
-        assert(equal(vertices.sort(), state.verticesSorted!Task));
-    }
-
-    /**
-     * Returns a sorted range of task identifiers.
-     */
-    @property auto identifiers(Vertex : Task)()
-    {
-        import std.conv : to;
-        import std.array : array;
-        import std.algorithm : sort;
-
-        return prepare(`SELECT command FROM task`)
-            .rows!(
-                (SQLite3.Statement s) =>
-                    cast(TaskId)(s.get!string(0).to!(string[]))
-                )
-            .array()
-            .sort();
-    }
-
-    unittest
-    {
-        import std.algorithm : equal, map, sort;
-
-        auto state = new BuildState;
-
-        auto vertices = [
-            Task(["z"]),
-            Task(["b"]),
-            Task(["a"]),
-            Task(["c"]),
-            Task(["q"]),
-            ];
-
-        foreach (vertex; vertices)
-            state.put(vertex);
-
-        assert(equal(vertices.sort().map!(v => v.identifier),
-                    state.identifiers!Task));
+        return prepare(`SELECT command,workDir FROM task`)
+            .rows!(parse!TaskKey);
     }
 
     /**
      * Returns a range of row indices.
      */
-    @property auto indices(Vertex : Resource)()
+    @property auto enumerate(T : Index!Resource)()
     {
         return prepare(`SELECT id FROM resource WHERE id>1`)
-            .rows!((SQLite3.Statement s) => Index!Vertex(s.get!ulong(0)));
+            .rows!((SQLite3.Statement s) => T(s.get!ulong(0)));
     }
 
     /// Ditto
-    @property auto indices(Vertex : Task)()
+    @property auto enumerate(T : Index!Task)()
     {
         return prepare(`SELECT id FROM task`)
-            .rows!((SQLite3.Statement s) => Index!Vertex(s.get!ulong(0)));
+            .rows!((SQLite3.Statement s) => T(s.get!ulong(0)));
     }
 
     /**

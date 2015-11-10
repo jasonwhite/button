@@ -101,7 +101,7 @@ int graphCommand(string[] args)
         if (options.changes)
         {
             // Construct the minimal subgraph based on pending vertices
-            auto resourceRoots = state.indices!Resource
+            auto resourceRoots = state.enumerate!(Index!Resource)
                 .filter!(v => state.degreeIn(v) == 0 && state[v].update())
                 .array;
 

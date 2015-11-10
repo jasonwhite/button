@@ -124,7 +124,7 @@ version (none) void displayResourceDiff(ref BuildDescription build, BuildState s
 
 void displayPendingResources(BuildState state, TextColor color)
 {
-    auto resources = state.vertices!Resource
+    auto resources = state.enumerate!Resource
                           .filter!(v => v.update())
                           .array
                           .sort();
