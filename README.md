@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/jasonwhite/brilliant-build.svg?branch=master)](https://travis-ci.org/jasonwhite/brilliant-build)
+
 # Brilliant Build
 
 *This is a work in progress.*
