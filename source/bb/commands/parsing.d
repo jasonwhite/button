@@ -149,6 +149,9 @@ struct GCOptions
     string color = "auto";
 }
 
+/**
+ * Returns the type of the given command.
+ */
 template Options(string command)
 {
     static if (command == "help")
@@ -171,7 +174,12 @@ template Options(string command)
     }
 }
 
+/**
+ * Parse options for the given command.
+ */
 alias parseOpts(string command) = parseArgs!(Options!command);
 
+/**
+ * Returns the usage string of the given command.
+ */
 enum Usage(string command) = usageString!(Options!command)("bb "~ command);
-//enum Help(string command) = helpString!(Options!command)();
