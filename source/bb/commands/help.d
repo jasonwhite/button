@@ -8,6 +8,8 @@
  */
 module bb.commands.help;
 
+import bb.commands.parsing;
+
 import io.text, io.file.stdio;
 
 /**
@@ -19,36 +21,69 @@ int displayVersion(string[] args)
     return 0;
 }
 
-/**
- * Display help information.
- */
-int displayHelp(string[] args)
+int displayHelp(string command)
 {
-    if (args.length == 1)
+    string usage;
+    string help;
+
+    switch (command)
     {
-        displayUsage();
-        return 0;
+        case "help":
+            usage = Usage!"help";
+            help  = helpString!(Options!"help")();
+            break;
+        case "build":
+        case "update":
+            usage = Usage!"update";
+            help  = helpString!(Options!"update")();
+            break;
+        case "graph":
+            usage = Usage!"graph";
+            help  = helpString!(Options!"graph")();
+            break;
+        case "status":
+            usage = Usage!"status";
+            help  = helpString!(Options!"status")();
+            break;
+        case "clean":
+            usage = Usage!"clean";
+            help  = helpString!(Options!"clean")();
+            break;
+        case "gc":
+            usage = Usage!"gc";
+            help  = helpString!(Options!"gc")();
+            break;
+
+        default:
+            printfln("No help available for '%s'.", command);
+            return 1;
     }
+
+    println(usage);
+    println(help);
 
     return 0;
 }
 
-immutable string usageHelp = q"EOS
-Usage: bb <command> {options] [<args>]
-
+private immutable string generalHelp = q"EOS
 The most commonly used commands are:
-   update   Builds based on changes.
-   graph    Writes the build description in GraphViz format.
-   help     Prints help on a specific command.
+ update          Builds based on changes.
+ graph           Writes the build description in GraphViz format.
+ help            Prints help on a specific command.
 
 Use 'bb help <command>' to get help on a specific command.
 EOS";
 
 /**
- * Display usage information.
+ * Display help information.
  */
-int displayUsage()
+int displayHelp(Options!"help" opts, GlobalOptions globalOpts)
 {
-    print(usageHelp);
-    return 1;
+    if (opts.command)
+        return displayHelp(opts.command);
+
+    println(globalUsage);
+    println(globalHelp);
+    println(generalHelp);
+    return 0;
 }

@@ -4,9 +4,9 @@
  * Authors:   Jason White
  *
  * Description:
- * Command to delete outputs.
+ * Handles command line arguments.
  */
-module bb.commands.clean;
+module bb.commands.gc;
 
 import bb.commands.parsing;
 
@@ -19,13 +19,16 @@ import bb.state,
        bb.vertex,
        bb.textcolor;
 
+immutable usage = q"EOS
+Usage: bb gc [-f FILE]
+EOS";
+
 /**
- * Deletes outputs.
+ * Collects garbage.
  */
-int cleanCommand(Options!"clean" opts, GlobalOptions globalOpts)
+int collectGarbage(Options!"gc" opts, GlobalOptions globalOpts)
 {
     import std.getopt;
-    import std.file : remove;
 
     immutable color = TextColor(colorOutput(opts.color));
 
@@ -34,10 +37,6 @@ int cleanCommand(Options!"clean" opts, GlobalOptions globalOpts)
         string path = buildDescriptionPath(opts.path);
 
         auto state = new BuildState(path.stateName);
-        clean(state);
-
-        if (opts.purge)
-            remove(path.stateName);
     }
     catch (BuildException e)
     {

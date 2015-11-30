@@ -8,6 +8,8 @@
  */
 module bb.commands.graph;
 
+import bb.commands.parsing;
+
 import std.array : array;
 import std.algorithm.iteration : filter;
 import std.getopt;
@@ -24,81 +26,25 @@ import bb.vertex,
        bb.build;
 
 
-// TODO: Allow graphing of just the build description.
-private struct Options
+int graphCommand(Options!"graph" opts, GlobalOptions globalOpts)
 {
-    // Path to the build description
-    string path;
-
-    // Only display the minimal subgraph?
-    bool changes;
-
-    // Display the graph stored in the database.
-    bool cached;
-
-    // Generate verbose node names for GraphViz.
-    bool verbose;
-
-    enum Edges
-    {
-        explicit = 1 << 0,
-        implicit = 1 << 1,
-        both = explicit | implicit,
-    }
-
-    // What types of edges to show
-    Edges edges = Edges.both;
-}
-
-immutable usage = q"EOS
-Usage: bb graph [-f FILE] [--changes] [--edges {explicit,implicit,both}]
-EOS";
-
-int graphCommand(string[] args)
-{
-    Options options;
-
-    auto helpInfo = getopt(args,
-        "file|f",
-            "Path to the build description",
-            &options.path,
-        "changes|c",
-            "Only display the subgraph that will be traversed on an update",
-            &options.changes,
-        "edges|e",
-            "Type of edges to show",
-            &options.edges,
-        "cached",
-            "Display the cached graph from the previous build.",
-            &options.cached,
-        "verbose|v",
-            "Display the full name of each vertex.",
-            &options.verbose,
-    );
-
-    if (helpInfo.helpWanted)
-    {
-        defaultGetoptPrinter(usage, helpInfo.options);
-        return 0;
-    }
-
     try
     {
-        string path = buildDescriptionPath(options.path);
+        string path = buildDescriptionPath(opts.path);
 
         auto state = new BuildState(path.stateName);
 
         state.begin();
         scope (exit) state.rollback();
 
-        if (!options.cached)
+        if (!opts.cached)
         {
             path.syncState(state, true);
         }
 
         auto graph = state.buildGraph;
 
-        if (options.changes)
+        if (opts.changes)
         {
             // Construct the minimal subgraph based on pending vertices
             auto resourceRoots = state.enumerate!(Index!Resource)
@@ -110,11 +56,11 @@ int graphCommand(string[] args)
                 .array;
 
             auto subgraph = graph.subgraph(resourceRoots, taskRoots);
-            subgraph.graphviz(state, stdout, options.verbose);
+            subgraph.graphviz(state, stdout, opts.verbose == OptionFlag.yes);
         }
         else
         {
-            graph.graphviz(state, stdout, options.verbose);
+            graph.graphviz(state, stdout, opts.verbose == OptionFlag.yes);
         }
     }
     catch (BuildException e)

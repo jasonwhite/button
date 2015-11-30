@@ -8,6 +8,8 @@
  */
 module bb.commands.status;
 
+import bb.commands.parsing;
+
 import std.getopt;
 import std.range : empty;
 import std.array : array;
@@ -21,55 +23,19 @@ import bb.vertex,
        bb.build,
        bb.textcolor;
 
-private struct Options
+int statusCommand(Options!"status" opts, GlobalOptions globalOpts)
 {
-    // Path to the build description
-    string path;
-
-    // Display the cached list of changes.
-    bool cached;
-
-    // When to colorize the output.
-    string color = "auto";
-}
-
-immutable usage = q"EOS
-Usage: bb status [-f FILE] [--cached]
-EOS";
-
-int statusCommand(string[] args)
-{
-    Options options;
-
-    auto helpInfo = getopt(args,
-        "file|f",
-            "Path to the build description",
-            &options.path,
-        "cached",
-            "Display the cached graph from the previous build.",
-            &options.cached,
-        "color",
-            "When to colorize the output.",
-            &options.color,
-    );
-
-    immutable color = TextColor(colorOutput(options.color));
-
-    if (helpInfo.helpWanted)
-    {
-        defaultGetoptPrinter(usage, helpInfo.options);
-        return 0;
-    }
+    immutable color = TextColor(colorOutput(opts.color));
 
     try
     {
-        string path = buildDescriptionPath(options.path);
+        string path = buildDescriptionPath(opts.path);
         auto state = new BuildState(path.stateName);
 
         state.begin();
         scope (exit) state.rollback();
 
-        if (!options.cached)
+        if (opts.cached == OptionFlag.no)
         {
             path.syncState(state);
 

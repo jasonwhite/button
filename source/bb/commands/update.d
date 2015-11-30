@@ -8,6 +8,8 @@
  */
 module bb.commands.update;
 
+import bb.commands.parsing;
+
 import io.text,
        io.file;
 
@@ -18,21 +20,6 @@ import bb.state,
        bb.vertex,
        bb.textcolor;
 
-private struct Options
-{
-    // Path to the build description
-    string path;
-
-    // True if this is a dry run.
-    bool dryRun;
-
-    // Number of threads to use.
-    size_t threads = 0;
-
-    // When to colorize the output.
-    string color = "auto";
-}
-
 immutable usage = q"EOS
 Usage: bb update [-f FILE]
 EOS";
@@ -40,40 +27,17 @@ EOS";
 /**
  * Updates the build.
  */
-int updateCommand(string[] args)
+int updateCommand(Options!"update" opts, GlobalOptions globalOpts)
 {
-    import std.getopt;
     import std.parallelism : totalCPUs;
     import std.datetime : StopWatch;
 
     StopWatch sw;
-    Options options;
 
-    auto helpInfo = getopt(args,
-        "file|f",
-            "Path to the build description",
-            &options.path,
-        "dryrun|n",
-            "Don't make any functional changes. Just print what might happen.",
-            &options.dryRun,
-        "threads|j",
-            "The number of threads to use. Default is the number of logical cores.",
-            &options.threads,
-        "color",
-            "When to colorize the output.",
-            &options.color,
-    );
+    if (opts.threads == 0)
+        opts.threads = totalCPUs;
 
-    if (options.threads == 0)
-        options.threads = totalCPUs;
-
-    if (helpInfo.helpWanted)
-    {
-        defaultGetoptPrinter(usage, helpInfo.options);
-        return 0;
-    }
-
-    immutable color = TextColor(colorOutput(options.color));
+    immutable color = TextColor(colorOutput(opts.color));
 
     sw.start();
 
@@ -86,12 +50,12 @@ int updateCommand(string[] args)
                 cast(Duration)sw.peek());
     }
 
-    auto pool = new TaskPool(options.threads - 1);
+    auto pool = new TaskPool(opts.threads - 1);
     scope (exit) pool.finish(true);
 
     try
     {
-        string path = buildDescriptionPath(options.path);
+        string path = buildDescriptionPath(opts.path);
 
         auto state = new BuildState(path.stateName);
 
@@ -103,7 +67,7 @@ int updateCommand(string[] args)
                 // Note that the transaction is not ended if this is a dry run.
                 // We don't want the database to retain changes introduced
                 // during the build.
-                if (!options.dryRun)
+                if (opts.dryRun == OptionFlag.no)
                     state.commit();
             }
 
@@ -113,7 +77,7 @@ int updateCommand(string[] args)
             queueChanges(state, pool, color);
         }
 
-        update(state, pool, options.dryRun, color);
+        update(state, pool, opts.dryRun == OptionFlag.yes, color);
 
         publishResources(state);
     }
