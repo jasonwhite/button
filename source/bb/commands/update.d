@@ -20,10 +20,6 @@ import bb.state,
        bb.vertex,
        bb.textcolor;
 
-immutable usage = q"EOS
-Usage: bb update [-f FILE]
-EOS";
-
 /**
  * Updates the build.
  */

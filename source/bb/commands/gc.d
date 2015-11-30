@@ -19,10 +19,6 @@ import bb.state,
        bb.vertex,
        bb.textcolor;
 
-immutable usage = q"EOS
-Usage: bb gc [-f FILE]
-EOS";
-
 /**
  * Collects garbage.
  */
