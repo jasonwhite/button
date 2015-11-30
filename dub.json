@@ -7,6 +7,9 @@
     "dependencies": {
         "io" : {
             "path": "source/io"
+        },
+        "darg" : {
+            "path": "source/darg"
         }
     },
     "libs-posix": ["sqlite3"]
