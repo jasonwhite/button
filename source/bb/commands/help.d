@@ -12,15 +12,6 @@ import bb.commands.parsing;
 
 import io.text, io.file.stdio;
 
-/**
- * Display version information.
- */
-int displayVersion(string[] args)
-{
-    stdout.println("bb version 0.1.0");
-    return 0;
-}
-
 int displayHelp(string command)
 {
     string usage;
@@ -31,6 +22,10 @@ int displayHelp(string command)
         case "help":
             usage = Usage!"help";
             help  = helpString!(Options!"help")();
+            break;
+        case "version":
+            usage = Usage!"version";
+            help  = helpString!(Options!"version")();
             break;
         case "build":
         case "update":
@@ -85,5 +80,14 @@ int displayHelp(Options!"help" opts, GlobalOptions globalOpts)
     println(globalUsage);
     println(globalHelp);
     println(generalHelp);
+    return 0;
+}
+
+/**
+ * Display version information.
+ */
+int displayVersion(Options!"version" opts, GlobalOptions globalOpts)
+{
+    stdout.println("bb version 0.1.0");
     return 0;
 }

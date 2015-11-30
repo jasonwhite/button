@@ -45,6 +45,9 @@ int main(string[] args)
             case "help":
                 return displayHelp(parseOpts!"help"(opts.args), opts);
 
+            case "version":
+                return displayVersion(parseOpts!"version"(opts.args), opts);
+
             case "build":
             case "update":
                 return updateCommand(parseOpts!"update"(opts.args), opts);

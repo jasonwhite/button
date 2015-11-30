@@ -34,6 +34,10 @@ struct HelpOptions
     string command;
 }
 
+struct VersionOptions
+{
+}
+
 struct UpdateOptions
 {
     @Option("file", "f")
@@ -149,6 +153,8 @@ template Options(string command)
 {
     static if (command == "help")
         alias Options = HelpOptions;
+    else static if (command == "version")
+        alias Options = VersionOptions;
     else static if (command == "update")
         alias Options = UpdateOptions;
     else static if (command == "graph")
