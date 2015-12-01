@@ -54,8 +54,10 @@ int displayHelp(string command)
             return 1;
     }
 
-    println(usage);
-    println(help);
+    if (usage)
+        println(usage);
+    if (help)
+        println(help);
 
     return 0;
 }
