@@ -216,8 +216,3 @@ template Options(string command)
  * Parse options for the given command.
  */
 alias parseOpts(string command) = parseArgs!(Options!command);
-
-/**
- * Returns the usage string of the given command.
- */
-enum Usage(string command) = usageString!(Options!command)("bb "~ command);
