@@ -5,7 +5,14 @@
  */
 module bb.commands.parsing;
 
+import std.meta : AliasSeq;
+
 public import darg;
+
+struct Command
+{
+    string name;
+}
 
 struct GlobalOptions
 {
@@ -27,6 +34,7 @@ struct GlobalOptions
 immutable globalUsage = usageString!GlobalOptions("bb");
 immutable globalHelp  = helpString!GlobalOptions();
 
+@Command("help")
 struct HelpOptions
 {
     @Argument("command", Multiplicity.optional)
@@ -34,10 +42,13 @@ struct HelpOptions
     string command;
 }
 
+@Command("version")
 struct VersionOptions
 {
 }
 
+@Command("update")
+@Command("build")
 struct UpdateOptions
 {
     @Option("file", "f")
@@ -61,6 +72,7 @@ struct UpdateOptions
 }
 
 // TODO: Allow graphing of just the build description.
+@Command("graph")
 struct GraphOptions
 {
     @Option("file", "f")
@@ -91,6 +103,7 @@ struct GraphOptions
     Edges edges = Edges.both;
 }
 
+@Command("status")
 struct StatusOptions
 {
     @Option("file", "f")
@@ -107,6 +120,7 @@ struct StatusOptions
     string color = "auto";
 }
 
+@Command("clean")
 struct CleanOptions
 {
     @Option("file", "f")
@@ -133,6 +147,7 @@ struct CleanOptions
     OptionFlag purge;
 }
 
+@Command("gc")
 struct GCOptions
 {
     @Option("file", "f")
@@ -148,6 +163,16 @@ struct GCOptions
     @MetaVar("{auto,never,always}")
     string color = "auto";
 }
+
+alias OptionsList = AliasSeq!(
+        HelpOptions,
+        VersionOptions,
+        UpdateOptions,
+        GraphOptions,
+        StatusOptions,
+        CleanOptions,
+        GCOptions
+        );
 
 /**
  * Returns the type of the given command.
