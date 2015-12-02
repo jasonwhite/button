@@ -14,6 +14,11 @@ struct Command
     string name;
 }
 
+struct Description
+{
+    string description;
+}
+
 struct GlobalOptions
 {
     @Option("help")
@@ -35,6 +40,7 @@ immutable globalUsage = usageString!GlobalOptions("bb");
 immutable globalHelp  = helpString!GlobalOptions();
 
 @Command("help")
+@Description("Displays help on a given command.")
 struct HelpOptions
 {
     @Argument("command", Multiplicity.optional)
@@ -43,12 +49,14 @@ struct HelpOptions
 }
 
 @Command("version")
+@Description("Prints the current version of the program.")
 struct VersionOptions
 {
 }
 
 @Command("update")
 @Command("build")
+@Description("Runs a build.")
 struct UpdateOptions
 {
     @Option("file", "f")
@@ -73,6 +81,7 @@ struct UpdateOptions
 
 // TODO: Allow graphing of just the build description.
 @Command("graph")
+@Description("Generates a graph for input into GraphViz.")
 struct GraphOptions
 {
     @Option("file", "f")
@@ -104,6 +113,8 @@ struct GraphOptions
 }
 
 @Command("status")
+@Description("Prints the status of the build. That is, which files have been
+        modified and which tasks are pending.")
 struct StatusOptions
 {
     @Option("file", "f")
@@ -121,6 +132,7 @@ struct StatusOptions
 }
 
 @Command("clean")
+@Description("Deletes all build outputs.")
 struct CleanOptions
 {
     @Option("file", "f")
@@ -148,6 +160,7 @@ struct CleanOptions
 }
 
 @Command("gc")
+@Description("EXPERIMENTAL")
 struct GCOptions
 {
     @Option("file", "f")
