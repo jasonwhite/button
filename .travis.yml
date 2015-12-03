@@ -2,9 +2,5 @@ sudo: false
 
 language: d
 
-os:
- - linux
- - osx
-
 d:
  - dmd
