@@ -39,27 +39,27 @@ int main(string[] args)
         switch (opts.command)
         {
             case "":
-                displayHelp(parseOpts!"help"(opts.args), opts);
+                displayHelp(parseArgs!HelpOptions(opts.args), opts);
                 return 1;
 
             case "help":
-                return displayHelp(parseOpts!"help"(opts.args), opts);
+                return displayHelp(parseArgs!HelpOptions(opts.args), opts);
 
             case "version":
-                return displayVersion(parseOpts!"version"(opts.args), opts);
+                return displayVersion(parseArgs!VersionOptions(opts.args), opts);
 
             case "build":
             case "update":
-                return updateCommand(parseOpts!"update"(opts.args), opts);
+                return updateCommand(parseArgs!UpdateOptions(opts.args), opts);
 
             case "status":
-                return statusCommand(parseOpts!"status"(opts.args), opts);
+                return statusCommand(parseArgs!StatusOptions(opts.args), opts);
 
             case "clean":
-                return cleanCommand(parseOpts!"clean"(opts.args), opts);
+                return cleanCommand(parseArgs!CleanOptions(opts.args), opts);
 
             case "gc":
-                return collectGarbage(parseOpts!"gc"(opts.args), opts);
+                return collectGarbage(parseArgs!GCOptions(opts.args), opts);
 
             default:
                 printfln("bb: '%s' is not a valid command. See 'bb help'.",

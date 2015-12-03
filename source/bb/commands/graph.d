@@ -26,7 +26,7 @@ import bb.vertex,
        bb.build;
 
 
-int graphCommand(Options!"graph" opts, GlobalOptions globalOpts)
+int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
 {
     try
     {

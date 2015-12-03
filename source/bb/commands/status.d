@@ -23,7 +23,7 @@ import bb.vertex,
        bb.build,
        bb.textcolor;
 
-int statusCommand(Options!"status" opts, GlobalOptions globalOpts)
+int statusCommand(StatusOptions opts, GlobalOptions globalOpts)
 {
     immutable color = TextColor(colorOutput(opts.color));
 

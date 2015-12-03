@@ -23,7 +23,7 @@ import bb.state,
 /**
  * Updates the build.
  */
-int updateCommand(Options!"update" opts, GlobalOptions globalOpts)
+int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
 {
     import std.parallelism : totalCPUs;
     import std.datetime : StopWatch;

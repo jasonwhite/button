@@ -22,7 +22,7 @@ import bb.state,
 /**
  * Collects garbage.
  */
-int collectGarbage(Options!"gc" opts, GlobalOptions globalOpts)
+int collectGarbage(GCOptions opts, GlobalOptions globalOpts)
 {
     import std.getopt;
 

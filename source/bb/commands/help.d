@@ -57,7 +57,7 @@ EOS";
 /**
  * Display help information.
  */
-int displayHelp(Options!"help" opts, GlobalOptions globalOpts)
+int displayHelp(HelpOptions opts, GlobalOptions globalOpts)
 {
     if (opts.command)
         return displayHelp(opts.command);
@@ -71,7 +71,7 @@ int displayHelp(Options!"help" opts, GlobalOptions globalOpts)
 /**
  * Display version information.
  */
-int displayVersion(Options!"version" opts, GlobalOptions globalOpts)
+int displayVersion(VersionOptions opts, GlobalOptions globalOpts)
 {
     stdout.println("bb version 0.1.0");
     return 0;

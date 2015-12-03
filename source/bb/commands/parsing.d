@@ -186,33 +186,3 @@ alias OptionsList = AliasSeq!(
         CleanOptions,
         GCOptions
         );
-
-/**
- * Returns the type of the given command.
- */
-template Options(string command)
-{
-    static if (command == "help")
-        alias Options = HelpOptions;
-    else static if (command == "version")
-        alias Options = VersionOptions;
-    else static if (command == "update")
-        alias Options = UpdateOptions;
-    else static if (command == "graph")
-        alias Options = GraphOptions;
-    else static if (command == "status")
-        alias Options = StatusOptions;
-    else static if (command == "clean")
-        alias Options = CleanOptions;
-    else static if (command == "gc")
-        alias Options = GCOptions;
-    else
-    {
-        static assert("Invalid command.");
-    }
-}
-
-/**
- * Parse options for the given command.
- */
-alias parseOpts(string command) = parseArgs!(Options!command);

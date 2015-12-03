@@ -22,7 +22,7 @@ import bb.state,
 /**
  * Deletes outputs.
  */
-int cleanCommand(Options!"clean" opts, GlobalOptions globalOpts)
+int cleanCommand(CleanOptions opts, GlobalOptions globalOpts)
 {
     import std.getopt;
     import std.file : remove;
