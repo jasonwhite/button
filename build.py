@@ -22,7 +22,7 @@ def parse_args():
     return parser.parse_args()
 
 
-dmd_flags = ['-Isource/io/source', '-release', '-w']
+dmd_flags = ['-Isource/io/source', '-release', '-O', '-w']
 prefix = ['./bb-wrap-bootstrap']
 
 io_rules = bb.dmd.static_library(
@@ -32,18 +32,12 @@ io_rules = bb.dmd.static_library(
         prefix = prefix,
         )
 
-darg_rules = bb.dmd.static_library(
-        path = 'darg',
-        sources = glob('source/darg/source/**/*.d', recursive=True),
-        compiler_flags = ['-Isource/darg/source', '-release', '-w'],
-        prefix = prefix,
-        )
-
 bb_rules = bb.dmd.binary(
         path = 'bb',
         sources = glob('source/util/*.d') + \
-                  glob('source/bb/**/*.d', recursive=True),
-        libraries = ['io', 'darg'],
+                  glob('source/bb/**/*.d', recursive=True) + \
+                  glob('source/darg/source/*.d'),
+        libraries = ['io'],
         compiler_flags = ['-Isource', '-Isource/darg/source'] + dmd_flags,
         linker_flags = ['-L-lsqlite3'],
         prefix = prefix,
@@ -57,7 +51,7 @@ wrap_rules = bb.dmd.binary(
         prefix = prefix,
         )
 
-rules = chain(io_rules, darg_rules, bb_rules, wrap_rules)
+rules = chain(io_rules, bb_rules, wrap_rules)
 
 if __name__ == '__main__':
     args = parse_args()
