@@ -21,38 +21,36 @@ def parse_args():
             help='Path to the file to output the rules to')
     return parser.parse_args()
 
+def rules():
+    dmd_flags = ['-Isource/io/source', '-release', '-O', '-w']
+    prefix = ['./bb-wrap-bootstrap']
 
-dmd_flags = ['-Isource/io/source', '-release', '-O', '-w']
-prefix = ['./bb-wrap-bootstrap']
+    yield from bb.dmd.static_library(
+            path = 'io',
+            sources = glob('source/io/source/io/**/*.d', recursive=True),
+            compiler_flags = ['-Isource/io/source', '-w'],
+            prefix = prefix,
+            )
 
-io_rules = bb.dmd.static_library(
-        path = 'io',
-        sources = glob('source/io/source/io/**/*.d', recursive=True),
-        compiler_flags = ['-Isource/io/source', '-w'],
-        prefix = prefix,
-        )
+    yield from bb.dmd.binary(
+            path = 'bb',
+            sources = glob('source/util/*.d') + \
+                      glob('source/bb/**/*.d', recursive=True) + \
+                      glob('source/darg/source/*.d'),
+            libraries = ['io'],
+            compiler_flags = ['-Isource', '-Isource/darg/source'] + dmd_flags,
+            linker_flags = ['-L-lsqlite3'],
+            prefix = prefix,
+            )
 
-bb_rules = bb.dmd.binary(
-        path = 'bb',
-        sources = glob('source/util/*.d') + \
-                  glob('source/bb/**/*.d', recursive=True) + \
-                  glob('source/darg/source/*.d'),
-        libraries = ['io'],
-        compiler_flags = ['-Isource', '-Isource/darg/source'] + dmd_flags,
-        linker_flags = ['-L-lsqlite3'],
-        prefix = prefix,
-        )
-
-wrap_rules = bb.dmd.binary(
-        path = 'bb-wrap',
-        sources = glob('source/wrap/source/wrap/**/*.d', recursive=True),
-        libraries = ['io'],
-        compiler_flags = ['-Isource/wrap/source'] + dmd_flags,
-        prefix = prefix,
-        )
-
-rules = chain(io_rules, bb_rules, wrap_rules)
+    yield from bb.dmd.binary(
+            path = 'bb-wrap',
+            sources = glob('source/wrap/source/wrap/**/*.d', recursive=True),
+            libraries = ['io'],
+            compiler_flags = ['-Isource/wrap/source'] + dmd_flags,
+            prefix = prefix,
+            )
 
 if __name__ == '__main__':
     args = parse_args()
-    bb.dump(rules, f=args.output, indent=4)
+    bb.dump(rules(), f=args.output, indent=4)
