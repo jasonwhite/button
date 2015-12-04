@@ -56,11 +56,11 @@ int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
                 .array;
 
             auto subgraph = graph.subgraph(resourceRoots, taskRoots);
-            subgraph.graphviz(state, stdout, opts.verbose == OptionFlag.yes);
+            subgraph.graphviz(state, stdout, opts.full == OptionFlag.yes);
         }
         else
         {
-            graph.graphviz(state, stdout, opts.verbose == OptionFlag.yes);
+            graph.graphviz(state, stdout, opts.full == OptionFlag.yes);
         }
     }
     catch (BuildException e)
@@ -79,7 +79,7 @@ void graphviz(Stream)(
         BuildStateGraph graph,
         BuildState state,
         Stream stream,
-        bool verbose
+        bool full
         )
     if (isSink!Stream)
 {
@@ -99,7 +99,7 @@ void graphviz(Stream)(
     foreach (id; graph.vertices!A)
     {
         immutable v = state[id];
-        immutable name = verbose ? v.toString : v.shortString;
+        immutable name = full ? v.toString : v.shortString;
         stream.printfln(`        "r:%s" [label="%s", tooltip="%s"];`, id, name, v);
     }
     stream.println("    }");
@@ -110,7 +110,7 @@ void graphviz(Stream)(
     foreach (id; graph.vertices!B)
     {
         immutable v = state[id];
-        immutable name = verbose ? v.toString : v.shortString;
+        immutable name = full ? v.toString : v.shortString;
         stream.printfln(`        "t:%s" [label="%s", tooltip="%s"];`, id, name, v);
     }
     stream.println("    }");

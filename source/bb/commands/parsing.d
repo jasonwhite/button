@@ -96,9 +96,9 @@ struct GraphOptions
     @Help("Display the cached graph from the previous build.")
     OptionFlag cached;
 
-    @Option("verbose", "v")
+    @Option("full")
     @Help("Display the full name of each vertex.")
-    OptionFlag verbose;
+    OptionFlag full;
 
     enum Edges
     {
