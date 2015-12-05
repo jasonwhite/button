@@ -12,7 +12,6 @@ import std.meta : AliasSeq;
 
 import io.text;
 
-immutable usage = usageString!GlobalOptions("bb");
 
 /**
  * List of command functions.
@@ -36,6 +35,9 @@ int main(string[] args)
     }
     catch (ArgParseException e)
     {
+        // Generate usage string at compile time.
+        static immutable usage = usageString!GlobalOptions("bb");
+
         println("Error parsing arguments: ", e.msg, "\n");
         println(usage);
         return 1;
