@@ -24,7 +24,7 @@ int displayHelp(string command)
         {
             if (c.name == command)
             {
-                enum usage = usageString!Options("bb "~ c.name);
+                enum usage = usageString!Options("bb "~ commands[0].name);
 
                 alias descriptions = getUDAs!(Options, Description);
                 static if(descriptions.length > 0)
