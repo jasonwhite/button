@@ -33,7 +33,7 @@ struct GlobalOptions
     string command;
 
     @Argument("args", Multiplicity.zeroOrMore)
-    string[] args;
+    const(string)[] args;
 }
 
 immutable globalUsage = usageString!GlobalOptions("bb");
