@@ -12,7 +12,7 @@ import io.file;
 /**
  * Parses the given file for dependencies. Returns a sorted list of inputs.
  */
-immutable(string)[] parseInputs(BufferedFile f)
+immutable(string)[] parseInputs(File f)
 {
     import io.text : byLine;
     import std.regex;
@@ -68,7 +68,7 @@ int dmd(string[] args)
 
     auto exitCode = wait(spawnProcess(args));
 
-    foreach (input; BufferedFile(depsPath).parseInputs.uniq)
+    foreach (input; File(depsPath).parseInputs.uniq)
         sendInput(input);
 
     // Deduce outputs from the command line

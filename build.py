@@ -28,7 +28,7 @@ def rules():
     yield from bb.dmd.static_library(
             path = 'io',
             sources = glob('source/io/source/io/**/*.d', recursive=True),
-            compiler_flags = ['-Isource/io/source', '-w'],
+            compiler_flags = dmd_flags,
             prefix = prefix,
             )
 

@@ -25,7 +25,7 @@ alias Commands = AliasSeq!(
         collectGarbage,
         );
 
-int main(string[] args)
+int main(const(string)[] args)
 {
     GlobalOptions opts;
 

@@ -108,6 +108,7 @@ struct GraphOptions
     }
 
     @Option("edges", "e")
+    @MetaVar("{explicit,implicit,both}")
     @Help("Type of edges to show")
     Edges edges = Edges.both;
 }
