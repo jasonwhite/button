@@ -177,6 +177,9 @@ struct GCOptions
     string color = "auto";
 }
 
+/**
+ * List of all options structs.
+ */
 alias OptionsList = AliasSeq!(
         HelpOptions,
         VersionOptions,
@@ -187,6 +190,9 @@ alias OptionsList = AliasSeq!(
         GCOptions
         );
 
+/**
+ * Thrown when an invalid command name is given to $(D runCommand).
+ */
 class InvalidCommand : Exception
 {
     this(string msg)
@@ -195,6 +201,12 @@ class InvalidCommand : Exception
     }
 }
 
+/**
+ * Using the list of command functions, runs a command from the specified
+ * string.
+ *
+ * Throws: InvalidCommand if the given command name is not valid.
+ */
 int runCommand(Funcs...)(string name, GlobalOptions opts)
 {
     import std.traits : Parameters, getUDAs;
