@@ -14,6 +14,7 @@ import io.text, io.file.stdio;
 
 int displayHelp(string command)
 {
+    import io.text;
     import std.traits : getUDAs;
 
     foreach (Options; OptionsList)
@@ -57,7 +58,7 @@ EOS";
 /**
  * Display help information.
  */
-int displayHelp(HelpOptions opts, GlobalOptions globalOpts)
+int helpCommand(HelpOptions opts, GlobalOptions globalOpts)
 {
     if (opts.command)
         return displayHelp(opts.command);

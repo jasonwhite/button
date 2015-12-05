@@ -186,3 +186,33 @@ alias OptionsList = AliasSeq!(
         CleanOptions,
         GCOptions
         );
+
+class InvalidCommand : Exception
+{
+    this(string msg)
+    {
+        super(msg);
+    }
+}
+
+int runCommand(Funcs...)(string name, GlobalOptions opts)
+{
+    import std.traits : Parameters, getUDAs;
+    import std.format : format;
+
+    foreach (F; Funcs)
+    {
+        alias Options = Parameters!F[0];
+
+        alias Commands = getUDAs!(Options, Command);
+
+        foreach (C; Commands)
+        {
+            if (C.name == name)
+                return F(parseArgs!Options(opts.args), opts);
+        }
+    }
+
+    throw new InvalidCommand("bb: '%s' is not a valid command. See 'bb help'."
+            .format(name));
+}

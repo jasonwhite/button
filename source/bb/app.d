@@ -8,9 +8,23 @@
  */
 import bb.commands;
 
+import std.meta : AliasSeq;
+
 import io.text;
 
 immutable usage = usageString!GlobalOptions("bb");
+
+/**
+ * List of command functions.
+ */
+alias Commands = AliasSeq!(
+        helpCommand,
+        displayVersion,
+        updateCommand,
+        statusCommand,
+        cleanCommand,
+        collectGarbage,
+        );
 
 int main(string[] args)
 {
@@ -34,38 +48,20 @@ int main(string[] args)
         opts.command = "help";
     }
 
+    if (opts.command == "")
+    {
+        helpCommand(parseArgs!HelpOptions(opts.args), opts);
+        return 1;
+    }
+
     try
     {
-        switch (opts.command)
-        {
-            case "":
-                displayHelp(parseArgs!HelpOptions(opts.args), opts);
-                return 1;
-
-            case "help":
-                return displayHelp(parseArgs!HelpOptions(opts.args), opts);
-
-            case "version":
-                return displayVersion(parseArgs!VersionOptions(opts.args), opts);
-
-            case "build":
-            case "update":
-                return updateCommand(parseArgs!UpdateOptions(opts.args), opts);
-
-            case "status":
-                return statusCommand(parseArgs!StatusOptions(opts.args), opts);
-
-            case "clean":
-                return cleanCommand(parseArgs!CleanOptions(opts.args), opts);
-
-            case "gc":
-                return collectGarbage(parseArgs!GCOptions(opts.args), opts);
-
-            default:
-                printfln("bb: '%s' is not a valid command. See 'bb help'.",
-                        opts.command);
-                return 1;
-        }
+        return runCommand!Commands(opts.command, opts);
+    }
+    catch (InvalidCommand e)
+    {
+        println(e.msg);
+        return 1;
     }
     catch (ArgParseException e)
     {
