@@ -8,9 +8,8 @@
 import bb
 
 from glob import glob
-from itertools import chain
 
-# Wrap all commands with the bootstrapped wrapper.
+# Wrap all commands with the bootstrapped wrapper to catch dependencies.
 bb.core.Target.wrapper = ['./bb-wrap-bootstrap']
 
 def targets():
