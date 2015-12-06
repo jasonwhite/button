@@ -11,10 +11,11 @@ class Generic(Target):
     """A generic target to be inherited. For internal use only.
     """
     def __init__(self, name, deps=[], srcs=[], imports=[], string_imports=[],
-            compiler_opts=[], linker_opts=[]):
+            versions=[], compiler_opts=[], linker_opts=[]):
         super().__init__(name=name, deps=deps, srcs=srcs)
         self.imports = imports
         self.string_imports = string_imports
+        self.versions = versions;
         self.compiler_opts = compiler_opts
         self.linker_opts = linker_opts
 
@@ -23,6 +24,7 @@ class Generic(Target):
                         ['dmd'] + \
                         ['-I'+ i for i in self.imports] + \
                         ['-J'+ i for i in self.string_imports] + \
+                        ['-versioo='+ v for v in self.versions] + \
                         self.compiler_opts
 
         files = [(src, src + '.o') for src in self.srcs if src.endswith('.d')]
