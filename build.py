@@ -27,11 +27,12 @@ bb.core.Target.wrapper = ['./bb-wrap-bootstrap']
 
 def targets():
 
-    dmd_opts = ['-Isource/io/source', '-release', '-O', '-w']
+    dmd_opts = ['-release', '-O', '-w']
 
     yield bb.dmd.Library(
         name = 'io',
         srcs = glob('source/io/source/io/**/*.d', recursive=True),
+        imports = ['source/io/source'],
         compiler_opts = dmd_opts,
         )
 
@@ -41,7 +42,8 @@ def targets():
         srcs = glob('source/util/*.d') + \
                glob('source/bb/**/*.d', recursive=True) + \
                glob('source/darg/source/*.d'),
-        compiler_opts = ['-Isource', '-Isource/darg/source'] + dmd_opts,
+        imports = ['source', 'source/darg/source', 'source/io/source'],
+        compiler_opts = dmd_opts,
         linker_opts = ['-L-lsqlite3'],
         )
 
@@ -49,7 +51,8 @@ def targets():
         name = 'bb-wrap',
         deps = ['io'],
         srcs = glob('source/wrap/source/wrap/**/*.d', recursive=True),
-        compiler_opts = ['-Isource/wrap/source'] + dmd_opts,
+        imports = ['source/wrap/source', 'source/io/source'],
+        compiler_opts = dmd_opts,
         )
 
 if __name__ == '__main__':
