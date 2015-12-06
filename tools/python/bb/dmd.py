@@ -71,11 +71,7 @@ class Binary(Generic):
         - compiler_opts: Additional options to pass to the compiler.
         - linker_opts: Additional options to pass to the linker.
     """
-    def __init__(self, name, deps=[], srcs=[], shared=False, compiler_opts=[],
+    def __init__(self, name, deps=[], srcs=[], compiler_opts=[],
             linker_opts=[]):
         super().__init__(name, deps, srcs, compiler_opts, ['-lib'] + linker_opts)
-
-        if shared:
-            self.path = 'lib'+ self.name +'.a'
-        else:
-            self.path = self.name
+        self.path = self.name
