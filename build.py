@@ -5,22 +5,10 @@
 #
 # Description:
 # Generates the rules necessary to build Brilliant Build.
-
 import bb
 
 from glob import glob
 from itertools import chain
-
-def parse_args():
-    """Parses arguments for the application."""
-    import argparse
-
-    parser = argparse.ArgumentParser(
-            description='Generates the rules for building Brilliant Build.')
-    parser.add_argument('output',
-            type=argparse.FileType('w'),
-            help='Path to the file to output the rules to')
-    return parser.parse_args()
 
 # Wrap all commands with the bootstrapped wrapper.
 bb.core.Target.wrapper = ['./bb-wrap-bootstrap']
@@ -56,8 +44,4 @@ def targets():
         )
 
 if __name__ == '__main__':
-    args = parse_args()
-    try:
-        bb.dump(targets(), f=args.output, indent=4)
-    except bb.TargetError as e:
-        print('Error:', e, file=sys.stderr)
+    bb.main(targets())

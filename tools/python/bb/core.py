@@ -76,3 +76,21 @@ def dump(targets, f=stdout, **kwargs):
     """Helper function for both translating targets to rules and dumping them.
     """
     dump_rules(rules(targets), f=f, **kwargs)
+
+def main(targets):
+    """Helper main function.
+    """
+    import argparse
+    from sys import stderr
+
+    parser = argparse.ArgumentParser(
+            description='Generates the build description.')
+    parser.add_argument('output',
+            type=argparse.FileType('w'),
+            help='Path to the file to output the build description to')
+    args = parser.parse_args()
+
+    try:
+        dump(targets, f=args.output, indent=4)
+    except TargetError as e:
+        print('Error:', e, file=stderr)
