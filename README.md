@@ -1,6 +1,7 @@
-[![Build Status](https://travis-ci.org/jasonwhite/brilliant-build.svg?branch=master)](https://travis-ci.org/jasonwhite/brilliant-build)
+[buildbadge]: https://travis-ci.org/jasonwhite/brilliant-build.svg?branch=master
+[buildstatus]: https://travis-ci.org/jasonwhite/brilliant-build
 
-# Brilliant Build
+# Brilliant Build [![Build Status][buildbadge]][buildstatus]
 
 *This is a work in progress.*
 
