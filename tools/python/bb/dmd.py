@@ -1,6 +1,9 @@
 # Copyright: Copyright Jason White, 2015
 # License:   MIT
 # Authors:   Jason White
+#
+# Description:
+# Generates rules for the Digital Mars D (DMD) compiler.
 
 from bb.core import Target, Rule
 
@@ -31,13 +34,13 @@ class Library(Target):
         # Build the objects
         for src, output in files:
             yield Rule(
-                inputs  = src,
+                inputs  = [src],
                 task    = compiler_args + ['-c', src, '-of' + output],
                 outputs = [output]
                 )
 
         # Link
-        linker_args = self.wrapper + ['dmd', '-static'] + self.linker_opts
+        linker_args = self.wrapper + ['dmd', '-lib'] + self.linker_opts
 
         link_inputs = [output for (src, output) in files] + \
                       [dep.path for dep in deps if isinstance(dep, Library)]
@@ -80,7 +83,7 @@ class Binary(Target):
         # Build the objects
         for src, output in files:
             yield Rule(
-                inputs  = src,
+                inputs  = [src],
                 task    = compiler_args + ['-c', src, '-of' + output],
                 outputs = [output]
                 )
