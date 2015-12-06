@@ -377,8 +377,8 @@ class BuildState : SQLite3
 
         // Add the build description resource if it doesn't already exist.
         execute(
-            `INSERT OR IGNORE INTO resource`
-            `    (id,path,lastModified,checksum)`
+            `INSERT OR IGNORE INTO resource` ~
+            `    (id,path,lastModified,checksum)` ~
             `    VALUES (?,?,?,?)`
             , buildDescId, "", 0, 0
             );
@@ -410,8 +410,8 @@ class BuildState : SQLite3
      */
     Index!Resource put(in Resource resource)
     {
-        execute(`INSERT INTO resource`
-                ` (path, lastModified, checksum)`
+        execute(`INSERT INTO resource` ~
+                ` (path, lastModified, checksum)` ~
                 ` VALUES(?, ?, ?)`,
                 resource.path,
                 resource.lastModified.stdTime,
@@ -425,8 +425,8 @@ class BuildState : SQLite3
     {
         import std.conv : to;
 
-        execute(`INSERT INTO task`
-                ` (command, workDir, lastExecuted)`
+        execute(`INSERT INTO task` ~
+                ` (command, workDir, lastExecuted)` ~
                 ` VALUES(?, ?, ?)`,
                 task.command.to!string(),
                 task.workingDirectory,
@@ -521,7 +521,7 @@ class BuildState : SQLite3
         import std.datetime : SysTime;
 
         auto s = prepare(
-                `SELECT path,lastModified,checksum`
+                `SELECT path,lastModified,checksum` ~
                 ` FROM resource WHERE id=?`, index
                 );
         enforce(s.step(), "Vertex does not exist.");
@@ -552,7 +552,7 @@ class BuildState : SQLite3
         import std.datetime : SysTime;
 
         auto s = prepare(
-                `SELECT path,lastModified,checksum`
+                `SELECT path,lastModified,checksum` ~
                 ` FROM resource WHERE path=?`, path
                 );
         enforce(s.step(), "Vertex does not exist.");
@@ -604,8 +604,8 @@ class BuildState : SQLite3
     void opIndexAssign(in Resource v, Index!Resource index)
     {
         execute(
-                `UPDATE resource`
-                ` SET path=?,lastModified=?,checksum=?`
+                `UPDATE resource` ~
+                ` SET path=?,lastModified=?,checksum=?` ~
                 ` WHERE id=?`,
                 v.path, v.lastModified.stdTime, v.checksum, index
                 );
@@ -615,8 +615,8 @@ class BuildState : SQLite3
     void opIndexAssign(in Task v, Index!Task index)
     {
         import std.conv : to;
-        execute(`UPDATE task`
-                ` SET command=?,workDir=?,lastExecuted=?`
+        execute(`UPDATE task` ~
+                ` SET command=?,workDir=?,lastExecuted=?` ~
                 ` WHERE id=?`,
                 v.command.to!string, v.workingDirectory, v.lastExecuted.stdTime,
                 index
@@ -756,7 +756,7 @@ class BuildState : SQLite3
 
         // TODO: Turn this into a single SQLite query
         execute(
-                `INSERT INTO resourceEdge("from","to",type)`
+                `INSERT INTO resourceEdge("from","to",type)` ~
                 ` VALUES (?, ?, ?)`,
                 find(a), find(b), type
                 );
@@ -771,7 +771,7 @@ class BuildState : SQLite3
 
         // TODO: Turn this into a single SQLite query
         execute(
-                `INSERT INTO taskEdge("from","to",type)`
+                `INSERT INTO taskEdge("from","to",type)` ~
                 ` VALUES (?, ?, ?)`,
                 find(a), find(b), type
                 );
@@ -1060,9 +1060,9 @@ class BuildState : SQLite3
     @property auto edgeIdentifiers(From : ResourceId, To : TaskId)()
     {
         return prepare(
-            `SELECT resource.path, task.command`
-            ` FROM resourceEdge AS e`
-            ` JOIN task ON e."from"=resource.id`
+            `SELECT resource.path, task.command` ~
+            ` FROM resourceEdge AS e` ~
+            ` JOIN task ON e."from"=resource.id` ~
             ` JOIN resource ON e."to"=task.id`
             ).rows!(parse!(Edge!(From, To)));
     }
@@ -1071,9 +1071,9 @@ class BuildState : SQLite3
     @property auto edgeIdentifiers(From : TaskId, To : ResourceId)()
     {
         return prepare(
-            `SELECT task.command, resource.path`
-            ` FROM taskEdge AS e`
-            ` JOIN resource ON e."from"=task.id`
+            `SELECT task.command, resource.path` ~
+            ` FROM taskEdge AS e` ~
+            ` JOIN resource ON e."from"=task.id` ~
             ` JOIN task ON e."to"=resource.id`
             ).rows!(parse!(Edge!(From, To)));
     }
@@ -1085,9 +1085,9 @@ class BuildState : SQLite3
         import std.algorithm : sort;
 
         return prepare(
-            `SELECT resource.path, task.command`
-            ` FROM resourceEdge AS e`
-            ` JOIN task ON e."from"=resource.id`
+            `SELECT resource.path, task.command` ~
+            ` FROM resourceEdge AS e` ~
+            ` JOIN task ON e."from"=resource.id` ~
             ` JOIN resource ON e."to"=task.id`)
             .rows!(parse!(Edge!(From, To)))
             .array
@@ -1101,10 +1101,10 @@ class BuildState : SQLite3
         import std.algorithm : sort;
 
         return prepare(
-            `SELECT task.command, resource.path`
-            ` FROM taskEdge AS e`
-            ` JOIN resource ON e."from"=task.id`
-            ` JOIN task ON e."to"=resource.id`
+            `SELECT task.command, resource.path` ~
+            ` FROM taskEdge AS e` ~
+            ` JOIN resource ON e."from"=task.id` ~
+            ` JOIN task ON e."to"=resource.id` ~
             ` ORDER BY task.command, resource.path`)
             .rows!(parse!(Edge!(From, To)))
             .array
@@ -1159,9 +1159,9 @@ class BuildState : SQLite3
     @property auto outgoing(Data : ResourceId)(Index!Task v)
     {
         return prepare(
-                `SELECT resource.path`
-                ` FROM taskEdge AS e`
-                ` JOIN resource ON e."to"=resource.id`
+                `SELECT resource.path` ~
+                ` FROM taskEdge AS e` ~
+                ` JOIN resource ON e."to"=resource.id` ~
                 ` WHERE e."from"=?`, v
                 )
             .rows!((SQLite3.Statement s) => s.get!string(0));
@@ -1201,9 +1201,9 @@ class BuildState : SQLite3
     @property auto incoming(Data : ResourceId)(Index!Task v)
     {
         return prepare(
-                `SELECT resource.path`
-                ` FROM resourceEdge AS e`
-                ` JOIN resource ON e."from"=resource.id`
+                `SELECT resource.path` ~
+                ` FROM resourceEdge AS e` ~
+                ` JOIN resource ON e."from"=resource.id` ~
                 ` WHERE e."to"=?`, v
                 )
             .rows!((SQLite3.Statement s) => s.get!string(0));
@@ -1323,8 +1323,8 @@ class BuildState : SQLite3
         import std.exception : enforce;
 
         auto s = prepare(
-                `SELECT EXISTS(`
-                    `SELECT 1 FROM pendingResources WHERE resid=? LIMIT 1`
+                `SELECT EXISTS(` ~
+                    `SELECT 1 FROM pendingResources WHERE resid=? LIMIT 1` ~
                 `)`, v);
         enforce(s.step(), "Failed to check if resource is pending");
 
@@ -1337,8 +1337,8 @@ class BuildState : SQLite3
         import std.exception : enforce;
 
         auto s = prepare(
-                `SELECT EXISTS(`
-                    `SELECT 1 FROM pendingTasks WHERE taskid=? LIMIT 1`
+                `SELECT EXISTS(` ~
+                    `SELECT 1 FROM pendingTasks WHERE taskid=? LIMIT 1`~
                 `)`, v);
         enforce(s.step(), "Failed to check if task is pending");
 
@@ -1399,8 +1399,8 @@ class BuildState : SQLite3
     @property auto islands(Vertex : Resource)()
     {
         return prepare(
-                `SELECT id FROM resource`
-                ` WHERE id>1 AND`
+                `SELECT id FROM resource` ~
+                ` WHERE id>1 AND` ~
                 ` resource.id`
                 ).rows!((SQLite3.Statement s) => Index!Vertex(s.get!string(0)));
     }

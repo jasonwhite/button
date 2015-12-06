@@ -93,7 +93,7 @@ void graphviz(Stream)(
     scope (success) stream.println("}");
 
     // Vertices
-    stream.println("    subgraph {\n"
+    stream.println("    subgraph {\n" ~
                    "        node [shape=ellipse, fillcolor=lightskyblue2, style=filled];"
             );
     foreach (id; graph.vertices!A)
@@ -104,7 +104,7 @@ void graphviz(Stream)(
     }
     stream.println("    }");
 
-    stream.println("    subgraph {\n"
+    stream.println("    subgraph {\n" ~
                    "        node [shape=box, fillcolor=gray91, style=filled];"
             );
     foreach (id; graph.vertices!B)
@@ -159,7 +159,7 @@ void graphviz(Stream)(Graph!(Resource, Task) graph, Stream stream)
     scope (success) stream.println("}");
 
     // Vertices
-    stream.println("    subgraph {\n"
+    stream.println("    subgraph {\n" ~
                    "        node [shape=ellipse, fillcolor=lightskyblue2, style=filled];"
             );
     foreach (v; graph.vertices!Resource)
@@ -168,7 +168,7 @@ void graphviz(Stream)(Graph!(Resource, Task) graph, Stream stream)
     }
     stream.println("    }");
 
-    stream.println("    subgraph {\n"
+    stream.println("    subgraph {\n" ~
                    "        node [shape=box, fillcolor=gray91, style=filled];"
             );
     foreach (v; graph.vertices!Task)
