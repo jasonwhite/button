@@ -46,11 +46,11 @@ def targets():
         )
 
     yield bb.dmd.Binary(
-            name = 'bb-wrap',
-            deps = ['io'],
-            srcs = glob('source/wrap/source/wrap/**/*.d', recursive=True),
-            compiler_opts = ['-Isource/wrap/source'] + dmd_opts,
-            )
+        name = 'bb-wrap',
+        deps = ['io'],
+        srcs = glob('source/wrap/source/wrap/**/*.d', recursive=True),
+        compiler_opts = ['-Isource/wrap/source'] + dmd_opts,
+        )
 
 if __name__ == '__main__':
     args = parse_args()
