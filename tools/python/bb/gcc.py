@@ -4,7 +4,7 @@
 #
 # Description:
 # Provides useful functions for generating rules for C/C++ projects.
-from bb.rules import Rule
+from bb.core import Rule
 
 def objects(files, flags=[]):
     """

@@ -1,83 +1,99 @@
 # Copyright: Copyright Jason White, 2015
 # License:   MIT
 # Authors:   Jason White
-#
-# Description:
-# Provides useful functions for generating rules for C/C++ projects.
-from bb.rules import Rule
 
-def objects(files, prefix=[], flags=[]):
-    """
-    Generates the rules needed to compile the list of files.
+from bb.core import Target, Rule
+
+class Library(Target):
+    """A D static library.
 
     Parameters:
-        - files: List of (source, object) tuples.
-        - flags: Extra flags to pass to the compiler.
+        - name: Name of the binary without the prefix or extension.
+        - srcs: List of D source files to be compiled to object files.
+        - deps: List of static library names to be used as dependencies.
+                Currently only D static libraries are allowed.
+        - compiler_opts: Additional options to pass to the compiler.
+        - linker_opts: Additional options to pass to the linker.
     """
+    def __init__(self, name, deps=[], srcs=[], compiler_opts=[],
+            linker_opts=[]):
+        super().__init__(name=name, deps=deps, srcs=srcs)
+        self.compiler_opts = compiler_opts
+        self.linker_opts = linker_opts
 
-    args = prefix + ['dmd'] + flags
+        self.path = 'lib'+ self.name +'.a'
 
-    for source, output in files:
-        yield Rule(
-                inputs  = [source],
-                task    = args + ['-c', source, '-of' + output],
+    def rules(self, deps):
+        compiler_args = self.wrapper + ['dmd'] + self.compiler_opts
+
+        files = [(src, src + '.o') for src in self.srcs if src.endswith('.d')]
+
+        # Build the objects
+        for src, output in files:
+            yield Rule(
+                inputs  = src,
+                task    = compiler_args + ['-c', src, '-of' + output],
                 outputs = [output]
                 )
 
-def link(path, files, prefix=[], flags=[], static=False):
-    """
-    Returns the rule needed to link the list of files.
+        # Link
+        linker_args = self.wrapper + ['dmd', '-static'] + self.linker_opts
 
-    Parameters:
-        - files: List of source files or object files.
-        - flags: Extra flags to pass to the linker.
-    """
-    args = prefix + ['dmd'] + flags
+        link_inputs = [output for (src, output) in files] + \
+                      [dep.path for dep in deps if isinstance(dep, Library)]
 
-    if static:
-        args.append('-lib')
-
-    return Rule(
-            inputs = files,
-            task    = args + ['-of' + path] + files,
-            outputs = [path]
+        yield Rule(
+            inputs  = link_inputs,
+            task    = linker_args + ['-of' + self.path] + link_inputs,
+            outputs = [self.path]
             )
 
-def binary(path, sources, libraries=[], prefix=[], compiler_flags=[], linker_flags=[]):
-    """
-    Generates the rules needed to create a binary executable with the given path.
+class Binary(Target):
+    """A binary executable or shared object.
 
     Parameters:
-        - path: Name of the binary without the extension.
-        - sources: List of source files to be compiled to object files.
+        - name: Name of the binary without the prefix or extension.
+        - srcs: List of D source files to be compiled to object files.
+        - deps: List of static library names to be used as dependencies.
+                Currently only D static libraries are allowed.
+        - shared: Set to true if this is a shared library. Otherwise, it is a
+                  binary executable.
+        - compiler_opts: Additional options to pass to the compiler.
+        - linker_opts: Additional options to pass to the linker.
     """
+    def __init__(self, name, deps=[], srcs=[], shared=False, compiler_opts=[],
+            linker_opts=[]):
+        super().__init__(name=name, deps=deps, srcs=srcs)
+        self.compiler_opts = compiler_opts
+        self.linker_opts = linker_opts
 
-    outputs = [s + '.o' for s in sources]
+        if shared:
+            self.path = 'lib'+ self.name +'.a'
+        else:
+            self.path = self.name
 
-    # Compile
-    yield from objects(zip(sources, outputs), prefix=prefix, flags=compiler_flags)
+    def rules(self, deps):
+        compiler_args = self.wrapper + ['dmd'] + self.compiler_opts
 
-    # TODO: Make this more generic
-    link_inputs = outputs + ['lib%s.a' % lib for lib in libraries]
+        files = [(src, src + '.o') for src in self.srcs if src.endswith('.d')]
 
-    # Link
-    yield link(path, link_inputs, prefix=prefix, flags=linker_flags)
+        # Build the objects
+        for src, output in files:
+            yield Rule(
+                inputs  = src,
+                task    = compiler_args + ['-c', src, '-of' + output],
+                outputs = [output]
+                )
 
-def static_library(path, sources, prefix=[], compiler_flags=[], linker_flags=[]):
-    """
-    Generates the rules needed to create a static library with the given path.
+        # Link
+        linker_args = self.wrapper + ['dmd'] + self.linker_opts
 
-    Parameters:
-        - path: Name of the static library without the extension.
-        - sources: List of source files to be included in the library.
-    """
+        # TODO: Allow C/C++ static libraries
+        link_inputs = [output for (src, output) in files] + \
+                      [dep.path for dep in deps if isinstance(dep, Library)]
 
-    outputs = [s + '.o' for s in sources]
-
-    # Compile
-    yield from objects(zip(sources, outputs), prefix=prefix, flags=compiler_flags)
-
-    path = 'lib' + path + '.a'
-
-    # Link
-    yield link(path, outputs, prefix=prefix, flags=linker_flags, static=True)
+        yield Rule(
+            inputs  = link_inputs,
+            task    = linker_args + ['-of' + self.path] + link_inputs,
+            outputs = [self.path]
+            )

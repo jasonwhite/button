@@ -7,7 +7,7 @@
 
 __all__ = ['Rule', 'dump', 'gcc', 'dmd']
 
-from .rules import *
+from .core import *
 
 from . import (
     dmd,
