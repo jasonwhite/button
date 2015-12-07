@@ -25,50 +25,58 @@ alias Commands = AliasSeq!(
         collectGarbage,
         );
 
-int main(const(string)[] args)
+version (unittest)
 {
-    GlobalOptions opts;
+    // Dummy main for unit testing.
+    void main() {}
+}
+else
+{
+    int main(const(string)[] args)
+    {
+        GlobalOptions opts;
 
-    try
-    {
-        opts = parseArgs!GlobalOptions(args[1 .. $], Config.ignoreUnknown);
-    }
-    catch (ArgParseException e)
-    {
-        // Generate usage string at compile time.
-        static immutable usage = usageString!GlobalOptions("bb");
+        try
+        {
+            opts = parseArgs!GlobalOptions(args[1 .. $], Config.ignoreUnknown);
+        }
+        catch (ArgParseException e)
+        {
+            // Generate usage string at compile time.
+            static immutable usage = usageString!GlobalOptions("bb");
 
-        println("Error parsing arguments: ", e.msg, "\n");
-        println(usage);
-        return 1;
-    }
+            println("Error parsing arguments: ", e.msg, "\n");
+            println(usage);
+            return 1;
+        }
 
-    // Rewrite to "help" command.
-    if (opts.help == OptionFlag.yes)
-    {
-        opts.args = (opts.command ? opts.command : "help") ~ opts.args;
-        opts.command = "help";
-    }
+        // Rewrite to "help" command.
+        if (opts.help == OptionFlag.yes)
+        {
+            opts.args = (opts.command ? opts.command : "help") ~ opts.args;
+            opts.command = "help";
+        }
 
-    if (opts.command == "")
-    {
-        helpCommand(parseArgs!HelpOptions(opts.args), opts);
-        return 1;
-    }
+        if (opts.command == "")
+        {
+            helpCommand(parseArgs!HelpOptions(opts.args), opts);
+            return 1;
+        }
 
-    try
-    {
-        return runCommand!Commands(opts.command, opts);
-    }
-    catch (InvalidCommand e)
-    {
-        println(e.msg);
-        return 1;
-    }
-    catch (ArgParseException e)
-    {
-        println("Error parsing arguments: ", e.msg, "\n");
-        displayHelp(opts.command);
-        return 1;
+        try
+        {
+            return runCommand!Commands(opts.command, opts);
+        }
+        catch (InvalidCommand e)
+        {
+            println(e.msg);
+            return 1;
+        }
+        catch (ArgParseException e)
+        {
+            println("Error parsing arguments: ", e.msg, "\n");
+            displayHelp(opts.command);
+            return 1;
+        }
     }
 }

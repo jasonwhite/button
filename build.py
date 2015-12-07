@@ -14,13 +14,21 @@ bb.core.Target.wrapper = ['./bb-wrap-bootstrap']
 
 def targets():
 
-    dmd_opts = ['-release', '-O', '-w']
+    dmd_opts = ['-release', '-w']
 
     yield bb.dmd.Library(
         name = 'io',
         srcs = glob('source/io/source/io/**/*.d', recursive=True),
         imports = ['source/io/source'],
         compiler_opts = dmd_opts,
+        )
+
+    yield bb.dmd.Test(
+        name = 'io_test',
+        srcs = glob('source/io/source/io/**/*.d', recursive=True),
+        imports = ['source/io/source'],
+        compiler_opts = dmd_opts,
+        linker_opts = ['-main'],
         )
 
     yield bb.dmd.Binary(

@@ -7,6 +7,6 @@
     {
         "inputs": ["build.bb.json"],
         "outputs": [".build.bb.json.state"],
-        "task": ["./bb-bootstrap", "build", "-f", "build.bb.json"]
+        "task": ["./bb-bootstrap", "build", "--color=always", "-f", "build.bb.json"]
     }
 ]

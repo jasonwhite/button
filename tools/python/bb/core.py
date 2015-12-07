@@ -24,7 +24,7 @@ class Target:
     # Command to prepend to all others
     wrapper = []
 
-    def __init__(self, name, deps, srcs):
+    def __init__(self, name, deps=[], srcs=[]):
         self.name = name;
         self.deps = deps;
         self.srcs = srcs;
