@@ -42,6 +42,17 @@ def targets():
         linker_opts = ['-L-lsqlite3'],
         )
 
+    yield bb.dmd.Test(
+        name = 'bb_test',
+        deps = ['io'],
+        srcs = glob('source/util/*.d') + \
+               glob('source/bb/**/*.d', recursive=True) + \
+               glob('source/darg/source/*.d'),
+        imports = ['source', 'source/darg/source', 'source/io/source'],
+        compiler_opts = dmd_opts,
+        linker_opts = ['-L-lsqlite3'],
+        )
+
     yield bb.dmd.Binary(
         name = 'bb-wrap',
         deps = ['io'],
