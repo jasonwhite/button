@@ -20,6 +20,7 @@ alias Commands = AliasSeq!(
         helpCommand,
         displayVersion,
         updateCommand,
+        graphCommand,
         statusCommand,
         cleanCommand,
         collectGarbage,
