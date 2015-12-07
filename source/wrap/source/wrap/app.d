@@ -29,25 +29,33 @@ shared static this()
     ];
 }
 
-int main(string[] args)
+version (unittest)
 {
-    import std.range : SortedRange;
-    import std.stdio;
+    // Dummy main for unit testing.
+    void main() {}
+}
+else
+{
+    int main(string[] args)
+    {
+        import std.range : SortedRange;
+        import std.stdio;
 
-    if (args.length <= 1)
-    {
-        stderr.writeln("Usage: bb.wrap program [arg...]");
-        return 1;
-    }
+        if (args.length <= 1)
+        {
+            stderr.writeln("Usage: bb.wrap program [arg...]");
+            return 1;
+        }
 
-    if (auto p = args[1] in tools)
-    {
-        return (*p)(args[1 .. $]);
-    }
-    else
-    {
-        // TODO: Fallback to using strace.
-        stderr.writeln("Error: Tool not supported.");
-        return 1;
+        if (auto p = args[1] in tools)
+        {
+            return (*p)(args[1 .. $]);
+        }
+        else
+        {
+            // TODO: Fallback to using strace.
+            stderr.writeln("Error: Tool not supported.");
+            return 1;
+        }
     }
 }

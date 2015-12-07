@@ -54,7 +54,15 @@ def targets():
         )
 
     yield bb.dmd.Binary(
-        name = 'bb-wrap',
+        name = 'bbwrapper',
+        deps = ['io'],
+        srcs = glob('source/wrap/source/wrap/**/*.d', recursive=True),
+        imports = ['source/wrap/source', 'source/io/source'],
+        compiler_opts = dmd_opts,
+        )
+
+    yield bb.dmd.Test(
+        name = 'bbwrapper_test',
         deps = ['io'],
         srcs = glob('source/wrap/source/wrap/**/*.d', recursive=True),
         imports = ['source/wrap/source', 'source/io/source'],
