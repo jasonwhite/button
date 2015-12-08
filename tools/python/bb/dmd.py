@@ -20,7 +20,8 @@ class Generic(Target):
     """A generic target to be inherited. For internal use only.
     """
     def __init__(self, *args, imports=[], string_imports=[], versions=[],
-            compiler_opts=[], linker_opts=[], objdir=None, bindir='./bin', **kwargs):
+            compiler_opts=[], linker_opts=[], combined=True, objdir=None,
+            bindir='./bin', **kwargs):
 
         super().__init__(*args, **kwargs)
 
@@ -29,6 +30,7 @@ class Generic(Target):
         self.versions       = versions
         self.compiler_opts  = compiler_opts
         self.linker_opts    = linker_opts
+        self.combined       = combined
         self.bindir         = bindir
 
         if objdir is None:
@@ -37,38 +39,49 @@ class Generic(Target):
             self.objdir = objdir
 
     def rules(self, deps):
-        compiler_args = self.wrapper + \
-                        [self.dmd] + \
-                        ['-I'+ i for i in self.imports] + \
+
+        base = self.wrapper + [self.dmd] + self.opts
+
+        compiler_args = ['-I'+ i for i in self.imports] + \
                         ['-J'+ i for i in self.string_imports] + \
                         ['-version='+ v for v in self.versions] + \
-                        self.opts + \
                         self.compiler_opts
 
         files = [(src, join(self.objdir, src + '.o')) for src in self.srcs if src.endswith('.d')]
 
-        # Build the objects
-        for src, output in files:
-            yield Rule(
-                inputs  = [src],
-                task    = compiler_args + ['-c', src, '-of' + output],
-                outputs = [output]
-                )
-
-        # Link
-        linker_args = self.wrapper + [self.dmd] + self.opts + self.linker_opts
-
         # TODO: Allow C/C++ libraries
-        link_inputs = [output for (src, output) in files] + \
-                      [join(dep.bindir, dep.path) for dep in deps if isinstance(dep, Library)]
+        inputs = [join(dep.bindir, dep.path) for dep in deps
+                          if isinstance(dep, Library)]
 
         path = join(self.bindir, self.path)
 
-        yield Rule(
-            inputs  = link_inputs,
-            task    = linker_args + ['-of' + path] + link_inputs,
-            outputs = [path]
-            )
+        linker_args = self.linker_opts + ['-of' + path]
+
+        # Build the objects
+        if self.combined:
+            inputs += [src for (src, output) in files];
+
+            yield Rule(
+                inputs  = inputs,
+                task    = base + linker_args + compiler_args + inputs,
+                outputs = [path]
+                )
+        else:
+            for src, output in files:
+                yield Rule(
+                    inputs  = [src],
+                    task    = base + compiler_args + \
+                              ['-c', src, '-of' + output],
+                    outputs = [output]
+                    )
+
+            inputs += [output for (src, output) in files]
+
+            yield Rule(
+                inputs  = inputs,
+                task    = base + linker_args + inputs,
+                outputs = [path]
+                )
 
 class Library(Generic):
     """A D library.
