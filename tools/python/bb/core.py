@@ -94,3 +94,12 @@ def main(targets):
         dump(targets, f=args.output, indent=4)
     except TargetError as e:
         print('Error:', e, file=stderr)
+
+
+from glob import glob as orig_glob
+from itertools import chain
+
+def glob(patterns):
+    """Convenience function for globbing with multiple patterns at once.
+    """
+    return set(chain(*[orig_glob(p, recursive=True) for p in patterns]))

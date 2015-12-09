@@ -17,55 +17,59 @@ def targets():
     dmd_opts = ['-release', '-w']
 
     yield bb.dmd.Library(
-        name          = 'io',
-        srcs          = glob('source/io/source/io/**/*.d', recursive = True),
-        imports       = ['source/io/source'],
+        name = 'io',
+        srcs = glob('source/io/source/io/**/*.d', recursive = True),
+        imports = ['source/io/source'],
         compiler_opts = dmd_opts,
         )
 
     yield bb.dmd.Test(
-        name          = 'io_test',
-        srcs          = glob('source/io/source/io/**/*.d', recursive = True),
-        imports       = ['source/io/source'],
+        name = 'io_test',
+        srcs = bb.glob(['source/io/source/io/**/*.d']),
+        imports = ['source/io/source'],
         compiler_opts = dmd_opts,
-        linker_opts   = ['-main'],
+        linker_opts = ['-main'],
         )
 
     yield bb.dmd.Binary(
-        name          = 'bb',
-        deps          = ['io'],
-        srcs          = glob('source/util/*.d') + \
-                        glob('source/bb/**/*.d', recursive = True) + \
-                        glob('source/darg/source/*.d'),
-        imports       = ['source', 'source/darg/source', 'source/io/source'],
+        name = 'bb',
+        deps = ['io'],
+        srcs = bb.glob([
+            'source/util/*.d',
+            'source/bb/**/*.d',
+            'source/darg/source/*.d'
+            ]),
+        imports = ['source', 'source/darg/source', 'source/io/source'],
         compiler_opts = dmd_opts,
-        linker_opts   = ['-L-lsqlite3'],
+        linker_opts = ['-L-lsqlite3'],
         )
 
     yield bb.dmd.Test(
-        name          = 'bb_test',
-        deps          = ['io'],
-        srcs          = glob('source/util/*.d') + \
-                        glob('source/bb/**/*.d', recursive = True) + \
-                        glob('source/darg/source/*.d'),
-        imports       = ['source', 'source/darg/source', 'source/io/source'],
+        name = 'bb_test',
+        deps = ['io'],
+        srcs = bb.glob([
+            'source/util/*.d',
+            'source/bb/**/*.d',
+            'source/darg/source/*.d',
+            ])
+        imports = ['source', 'source/darg/source', 'source/io/source'],
         compiler_opts = dmd_opts,
-        linker_opts   = ['-L-lsqlite3'],
+        linker_opts = ['-L-lsqlite3'],
         )
 
     yield bb.dmd.Binary(
-        name          = 'bbwrapper',
-        deps          = ['io'],
-        srcs          = glob('source/wrap/source/wrap/**/*.d', recursive = True),
-        imports       = ['source/wrap/source', 'source/io/source'],
+        name = 'bbwrapper',
+        deps = ['io'],
+        srcs = bb.glob(['source/wrap/source/wrap/**/*.d']),
+        imports = ['source/wrap/source', 'source/io/source'],
         compiler_opts = dmd_opts,
         )
 
     yield bb.dmd.Test(
-        name          = 'bbwrapper_test',
-        deps          = ['io'],
-        srcs          = glob('source/wrap/source/wrap/**/*.d', recursive = True),
-        imports       = ['source/wrap/source', 'source/io/source'],
+        name = 'bbwrapper_test',
+        deps = ['io'],
+        srcs = bb.glob(['source/wrap/source/wrap/**/*.d']),
+        imports = ['source/wrap/source', 'source/io/source'],
         compiler_opts = dmd_opts,
         )
 
