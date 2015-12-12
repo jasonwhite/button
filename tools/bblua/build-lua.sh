@@ -20,5 +20,9 @@ if [[ ! -d lua-$VERSION ]]; then
     tar zxf lua-$VERSION.tar.gz || exit $?
 fi
 
+INSTALL_TOP=$(pwd)/lua
+
 cd lua-$VERSION
 make $OS test || exit $?
+
+make install INSTALL_TOP=$INSTALL_TOP || exit $?
