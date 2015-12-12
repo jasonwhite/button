@@ -11,7 +11,11 @@ if [[ -n "$1" ]]; then
     OS=$1
 fi
 
+# cd to this script directory
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+
 if [[ ! -f lua-$VERSION.tar.gz ]]; then
+    echo "Downloading Lua $VERSION ..."
     curl -R -O http://www.lua.org/ftp/lua-$VERSION.tar.gz || exit $?
     echo "$SHA256SUM  lua-$VERSION.tar.gz" | sha256sum --check || exit $?
 fi
@@ -22,7 +26,13 @@ fi
 
 INSTALL_TOP=$(pwd)/lua
 
-cd lua-$VERSION
+pushd lua-$VERSION
+
 make $OS test || exit $?
 
 make install INSTALL_TOP=$INSTALL_TOP || exit $?
+
+popd
+
+# Cleanup
+rm -rf lua-$VERSION || exit $?
