@@ -8,7 +8,7 @@ TARGET=bblua
 INCLUDE_PATHS=-Icontrib/lua/include
 LIB_PATHS=-Lcontrib/lua/lib
 
-CXXFLAGS=-g
+CXXFLAGS=-g -Wall -Werror
 
 all: $(TARGET)
 
