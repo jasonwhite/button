@@ -13,6 +13,22 @@
 
 namespace {
 
+const char  escape_chars[] = {'\"',   '\t',  '\r',  '\n',  '\b',  '\\',  '\0'};
+const char* replacements[] = {"\\\"", "\\t", "\\r", "\\n", "\\b", "\\\\", NULL};
+
+/**
+ * For the given character, returns the equivalent JSON escape sequence. If the
+ * given character is not a character to be escaped, returns NULL.
+ */
+const char* json_escape_sequence(char c) {
+    for (size_t i = 0; escape_chars[i] != '\0'; ++i) {
+        if (escape_chars[i] == c)
+            return replacements[i];
+    }
+
+    return NULL;
+}
+
 /**
  * Escapes the given string that will be output to JSON. The resulting string is
  * left at the top of the stack.
@@ -23,7 +39,7 @@ int json_escaped_string(lua_State *L, const char* s, size_t len) {
 
     // Calculate the new size of the escaped string
     for (size_t i = 0; i < len; ++i) {
-        if (s[i] == '"' || s[i] == '\\')
+        if (json_escape_sequence(s[i]))
             ++newlen;
     }
 
@@ -32,8 +48,11 @@ int json_escaped_string(lua_State *L, const char* s, size_t len) {
     size_t j = 0;
 
     for (size_t i = 0; i < len; ++i) {
-        if (s[i] == '"' || s[i] == '\\')
-            buf[j++] = '\\';
+        if (const char* r = json_escape_sequence(s[i])) {
+            buf[j++] = r[0];
+            buf[j++] = r[1];
+            continue;
+        }
 
         buf[j++] = s[i];
     }
