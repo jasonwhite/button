@@ -23,25 +23,24 @@ assert(path.join("/", "foo") == "/foo")
 --[[
     path.split
 ]]
-local h, t
 
-h, t = path.split("")
-assert(h == "" and t == "")
+split_tests = {
+    {"", "", "", ""},
+    {"/", "/", "", "/"},
+    {"/foo", "/", "foo", "/foo"},
+    {"foo/bar", "foo", "bar", "foo/bar"},
+    {"/foo////bar", "/foo", "bar", "/foo/bar"},
+    {"////foo////bar", "////foo", "bar", "////foo/bar"},
+}
 
-h, t = path.split("/")
-assert(h == "/" and t == "")
+local split_error = 'In path.split("%s"): expected "%s", got "%s"'
 
-h, t = path.split("/foo")
-assert(h == "/" and t == "foo")
-
-h, t = path.split("foo/bar")
-assert(h == "foo" and t == "bar")
-
-h, t = path.split("/foo////bar")
-assert(h == "/foo" and t == "bar")
-
-h, t = path.split("////foo////bar")
-assert(h == "////foo" and t == "bar")
+for k,v in ipairs(split_tests) do
+    local head, tail = path.split(v[1])
+    assert(head == v[2], string.format(split_error, v[1], head, v[2]))
+    assert(tail == v[3], string.format(split_error, v[1], tail, v[3]))
+    assert(path.join(head, tail) == v[4])
+end
 
 
 --[[
