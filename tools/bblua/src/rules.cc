@@ -13,6 +13,10 @@
 
 namespace {
 
+/**
+ * Escapes the given string that will be output to JSON. The resulting string is
+ * left at the top of the stack.
+ */
 int json_escaped_string(lua_State *L, const char* s, size_t len) {
 
     size_t newlen = len;
@@ -104,7 +108,7 @@ int Rules::fieldToJSON(lua_State *L, int tbl, const char* field, size_t i) {
                 fwrite(escaped, 1, len, _f);
                 fputs("\"", _f);
 
-                lua_pop(L, 1);
+                lua_pop(L, 1); // Pop escaped string
 
                 ++element;
             }
