@@ -11,11 +11,39 @@
 #include <stdio.h>
 #include "rules.h"
 
+namespace {
+
+int json_escaped_string(lua_State *L, const char* s, size_t len) {
+
+    size_t newlen = len;
+
+    // Calculate the new size of the escaped string
+    for (size_t i = 0; i < len; ++i) {
+        if (s[i] == '"' || s[i] == '\\')
+            ++newlen;
+    }
+
+    luaL_Buffer b;
+    char* buf = luaL_buffinitsize(L, &b, newlen);
+    size_t j = 0;
+
+    for (size_t i = 0; i < len; ++i) {
+        if (s[i] == '"' || s[i] == '\\')
+            buf[j++] = '\\';
+
+        buf[j++] = s[i];
+    }
+
+    luaL_pushresultsize(&b, newlen);
+
+    return 1;
+}
+
+}
 
 namespace bblua {
 
-Rules::Rules(FILE* f) : _f(f), _n(0)
-{
+Rules::Rules(FILE* f) : _f(f), _n(0) {
     fputs("[", _f);
 }
 
@@ -69,13 +97,14 @@ int Rules::fieldToJSON(lua_State *L, int tbl, const char* field, size_t i) {
                 if (element > 0)
                     fputs(", ", _f);
 
-                const char* sanitized = luaL_gsub(L, s, "\"", "\\\"");
+                json_escaped_string(L, s, len);
+                const char* escaped = lua_tolstring(L, -1, &len);
 
                 fputs("\"", _f);
-                fwrite(sanitized, 1, len, _f);
+                fwrite(escaped, 1, len, _f);
                 fputs("\"", _f);
 
-                lua_pop(L, 1); // Pop gsub string
+                lua_pop(L, 1);
 
                 ++element;
             }
