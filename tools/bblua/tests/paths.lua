@@ -52,3 +52,12 @@ assert(path.basename("/foo") == "foo")
 assert(path.basename("/foo/bar") == "bar")
 assert(path.basename("////foo////bar") == "bar")
 assert(path.basename("/foo/bar/") == "")
+
+--[[
+    path.dirname
+]]
+assert(path.dirname("") == "")
+assert(path.dirname("/") == "/")
+assert(path.dirname("/foo") == "/")
+assert(path.dirname("/foo/bar") == "/foo")
+assert(path.dirname("/foo/bar/") == "/foo/bar")

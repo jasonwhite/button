@@ -103,14 +103,14 @@ int path_split(lua_State* L) {
 
 int path_basename(lua_State* L) {
     path_split(L);
-
-    // Remove the head from the stack
-    lua_remove(L, -2);
+    lua_remove(L, -2); // Pop off the head
     return 1;
 }
 
 int path_dirname(lua_State* L) {
-    return 0;
+    path_split(L);
+    lua_pop(L, 1); // Pop off the tail
+    return 1;
 }
 
 int path_norm(lua_State* L) {
@@ -126,6 +126,7 @@ static const luaL_Reg pathlib[] = {
 	{"join", path_join},
 	{"split", path_split},
 	{"basename", path_basename},
+	{"dirname", path_dirname},
 	{NULL, NULL}
 };
 
