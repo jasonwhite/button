@@ -24,7 +24,7 @@ assert(path.join("/", "foo") == "/foo")
     path.split
 ]]
 
-split_tests = {
+local split_tests = {
     {"", "", "", ""},
     {"/", "/", "", "/"},
     {"/foo", "/", "foo", "/foo"},
@@ -61,3 +61,28 @@ assert(path.dirname("/") == "/")
 assert(path.dirname("/foo") == "/")
 assert(path.dirname("/foo/bar") == "/foo")
 assert(path.dirname("/foo/bar/") == "/foo/bar")
+
+
+--[[
+    path.splitext
+]]
+
+local splitext_tests = {
+    {"", "", ""},
+    {"foo", "foo", ""},
+    {".foo", ".foo", ""},
+    {"foo.bar", "foo", ".bar"},
+    {"foo/bar.baz", "foo/bar", ".baz"},
+    {"foo/.bar.baz", "foo/.bar", ".baz"},
+    {"foo/....bar.baz", "foo/....bar", ".baz"},
+    {"/....bar", "/....bar", ""},
+}
+
+local split_error = 'In path.splitext("%s"): expected "%s", got "%s"'
+
+for k,v in ipairs(splitext_tests) do
+    local root, ext = path.splitext(v[1])
+    assert(root == v[2], string.format(split_error, v[1], root, v[2]))
+    assert(ext  == v[3], string.format(split_error, v[1], ext, v[3]))
+    assert(root .. ext == v[1])
+end

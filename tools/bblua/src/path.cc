@@ -118,7 +118,31 @@ int path_norm(lua_State* L) {
 }
 
 int path_splitext(lua_State* L) {
-    return 0;
+
+    size_t len;
+    const char* path = luaL_checklstring(L, 1, &len);
+
+    size_t base = len;
+
+    while (base > 0) {
+        --base;
+        if (_issep(path[base])) {
+            ++base;
+            break;
+        }
+    }
+
+    // Skip past initial dots
+    while (base < len && path[base] == '.')
+        ++base;
+
+    // Skip past non-dots
+    while (base < len && path[base] != '.')
+        ++base;
+
+    lua_pushlstring(L, path, base);
+    lua_pushlstring(L, path+base, len-base);
+    return 2;
 }
 
 static const luaL_Reg pathlib[] = {
@@ -127,6 +151,7 @@ static const luaL_Reg pathlib[] = {
 	{"split", path_split},
 	{"basename", path_basename},
 	{"dirname", path_dirname},
+	{"splitext", path_splitext},
 	{NULL, NULL}
 };
 
