@@ -6,7 +6,7 @@ rule {
 
 rule {
     inputs = {"bar.c", "foo.h"},
-    outputs = 1234,
+    outputs = {"bar.o"},
     task = {"gcc", "-c", "bar.c", "-o", "bar.o"},
 }
 

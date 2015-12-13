@@ -58,9 +58,8 @@ int Rules::fieldToJSON(lua_State *L, int tbl, const char* field, size_t i) {
         size_t len; // Length of the string
 
         for (int i = 1; ; ++i) {
-            lua_rawgeti(L, -1, i);
 
-            if (lua_isnil(L, -1)) {
+            if (lua_rawgeti(L, -1, i) == LUA_TNIL) {
                 lua_pop(L, 1);
                 break;
             }
@@ -76,12 +75,17 @@ int Rules::fieldToJSON(lua_State *L, int tbl, const char* field, size_t i) {
                 fwrite(sanitized, 1, len, _f);
                 fputs("\"", _f);
 
-                lua_pop(L, 1);
+                lua_pop(L, 1); // Pop gsub string
 
                 ++element;
             }
+            else {
+                return luaL_error(L,
+                        "bad type in table for field '%s' (string expected, got %s)",
+                        field, luaL_typename(L, -1));
+            }
 
-            lua_pop(L, 1);
+            lua_pop(L, 1); // Pop table element
         }
     }
     else {
