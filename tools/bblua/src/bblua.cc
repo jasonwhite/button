@@ -11,7 +11,7 @@
 
 #include "bblua.h"
 #include "rules.h"
-
+#include "path.h"
 
 namespace {
 
@@ -78,6 +78,9 @@ int init(lua_State* L) {
 
     // Initialize the standard library
     luaL_openlibs(L);
+
+    luaL_requiref(L, "path", luaopen_path, 1);
+    lua_pop(L, 1);
 
     return 0;
 }
