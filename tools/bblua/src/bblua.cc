@@ -95,15 +95,18 @@ int execute(lua_State* L, int argc, char** argv) {
         return 1;
     }
 
-    if (!opts.output)
-        opts.output = "bb.rules";
-
     if (luaL_loadfile(L, opts.script) != LUA_OK) {
         print_error(L);
         return 1;
     }
 
-    FILE* output = fopen(opts.output, "w");
+    FILE* output;
+
+    if (!opts.output || strcmp(opts.output, "-") == 0)
+        output = stdout;
+    else
+        output = fopen(opts.output, "w");
+
     if (!output) {
         perror("Failed to open output file");
         return 1;
