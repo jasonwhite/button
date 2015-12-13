@@ -22,5 +22,6 @@ int main(int argc, char **argv) {
         ret = bblua::execute(L, argc, argv);
 
     lua_close(L);
+
     return ret;
 }

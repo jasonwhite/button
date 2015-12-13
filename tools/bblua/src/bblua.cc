@@ -62,6 +62,14 @@ void print_error(lua_State* L)
     printf("Error: %s\n", lua_tostring(L, -1));
 }
 
+int rule(lua_State *L)
+{
+    bblua::Rules* rules = (bblua::Rules*)lua_touserdata(L, lua_upvalueindex(1));
+    if (rules)
+        rules->add(L);
+    return 0;
+}
+
 }
 
 namespace bblua {
@@ -99,6 +107,11 @@ int execute(lua_State* L, int argc, char** argv) {
     }
 
     Rules rules(output);
+
+    // Register rule() function
+    lua_pushlightuserdata(L, &rules);
+    lua_pushcclosure(L, rule, 1);
+    lua_setglobal(L, "rule");
 
     // Pass along the rest of the command line arguments to the Lua script.
     for (int i = 0; i < args.n; ++i)

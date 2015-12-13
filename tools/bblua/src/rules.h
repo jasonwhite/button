@@ -23,10 +23,17 @@ public:
     /**
      * Outputs a rule to the file.
      */
-    void add(lua_State *L);
+    int add(lua_State *L);
 
 private:
+    int fieldToJSON(lua_State *L, int tbl, const char* field, size_t i);
+
+private:
+    // File handle to write to.
     FILE* _f;
+
+    // Number of rules.
+    size_t _n;
 };
 
 
