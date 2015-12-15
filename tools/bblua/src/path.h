@@ -60,13 +60,35 @@ int path_join(lua_State* L);
 int path_split(lua_State* L);
 
 /**
+ * Returns the last path element. This is the same as the tail of path_split().
  */
 int path_basename(lua_State* L);
 
+/**
+ * Returns the everything except for the basename of the path. This is the same
+ * as the head of path_split().
+ */
 int path_dirname(lua_State* L);
 
-int path_norm(lua_State* L);
-
+/**
+ * Splits the path into a root and extension such that concatenating the root
+ * and extension returns the original path.
+ */
 int path_splitext(lua_State* L);
 
+/**
+ * Returns the extension of the path. This is the same as splitting by extension
+ * and retrieving just the extension part.
+ */
+int path_getext(lua_State* L);
+
+/**
+ * Normalizes the path such that redundant path separators and up=level
+ * references are collapsed.
+ */
+int path_norm(lua_State* L);
+
+/**
+ * Pushes the path library onto the stack so that it can be registered.
+ */
 int luaopen_path(lua_State* L);

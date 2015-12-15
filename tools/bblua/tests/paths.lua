@@ -69,6 +69,7 @@ assert(path.dirname("/foo/bar/") == "/foo/bar")
 
 local splitext_tests = {
     {"", "", ""},
+    {"/", "/", ""},
     {"foo", "foo", ""},
     {".foo", ".foo", ""},
     {"foo.bar", "foo", ".bar"},
@@ -86,3 +87,14 @@ for k,v in ipairs(splitext_tests) do
     assert(ext  == v[3], string.format(split_error, v[1], ext, v[3]))
     assert(root .. ext == v[1])
 end
+
+--[[
+    path.getext
+]]
+
+assert(path.getext("") == "")
+assert(path.getext("/") == "")
+assert(path.getext("/foo") == "")
+assert(path.getext("/foo.") == ".")
+assert(path.getext("/foo.bar") == ".bar")
+assert(path.getext("/.foo.bar") == ".bar")
