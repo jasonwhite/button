@@ -12,23 +12,39 @@
 
 static inline bool _issep(char c) {
 #if PATH_STYLE == PATH_STYLE_WIN
-	return c == '/' || c == '\\';
+    return c == '/' || c == '\\';
 #else
-	return c == '/';
+    return c == '/';
 #endif
 }
 
 static bool path_isabs(const char* path, size_t len) {
-	if(len > 0 && _issep(path[0]))
-		return true;
+    if(len > 0 && _issep(path[0]))
+        return true;
 
 #if PATH_STYLE == PATH_STYLE_WIN
-	if(len > 2 && path[1] == ':' && _issep(path[2]))
-		return true;
+    if(len > 2 && path[1] == ':' && _issep(path[2]))
+        return true;
 #endif
 
-	return false;
+    return false;
 }
+
+/**
+ * Helper function to get the distance forward to a '/', '\', or to the end of
+ * the buffer.
+ */
+/*static size_t _path_getelem(const char* path, size_t len)
+{
+    size_t i;
+
+    for (i = 0; i < len; ++i) {
+        if (_issep(path[i]))
+            break;
+    }
+
+    return i;
+}*/
 
 int path_isabs(lua_State* L) {
     size_t len;
@@ -39,7 +55,7 @@ int path_isabs(lua_State* L) {
 
 int path_join(lua_State* L) {
 
-	int argc = lua_gettop(L);
+    int argc = lua_gettop(L);
 
     luaL_Buffer b;
     luaL_buffinit(L, &b);
@@ -113,10 +129,6 @@ int path_dirname(lua_State* L) {
     return 1;
 }
 
-int path_norm(lua_State* L) {
-    return 0;
-}
-
 int path_splitext(lua_State* L) {
 
     size_t len;
@@ -124,6 +136,7 @@ int path_splitext(lua_State* L) {
 
     size_t base = len;
 
+    // Find the base name
     while (base > 0) {
         --base;
         if (_issep(path[base])) {
@@ -140,19 +153,39 @@ int path_splitext(lua_State* L) {
     while (base < len && path[base] != '.')
         ++base;
 
-    lua_pushlstring(L, path, base);
-    lua_pushlstring(L, path+base, len-base);
+    lua_pushlstring(L, path, base); // root
+    lua_pushlstring(L, path+base, len-base); // extension
     return 2;
 }
 
+int path_getext(lua_State* L) {
+    path_splitext(L);
+    lua_remove(L, -2); // Pop off the root
+    return 1;
+}
+
+int path_norm(lua_State* L) {
+
+    //size_t len;
+    //const char* path = luaL_checklstring(L, 1, &len);
+
+    luaL_Buffer b;
+    luaL_buffinit(L, &b);
+
+    luaL_pushresult(&b);
+    return 1;
+}
+
 static const luaL_Reg pathlib[] = {
-	{"isabs", path_isabs},
-	{"join", path_join},
-	{"split", path_split},
-	{"basename", path_basename},
-	{"dirname", path_dirname},
-	{"splitext", path_splitext},
-	{NULL, NULL}
+    {"isabs", path_isabs},
+    {"join", path_join},
+    {"split", path_split},
+    {"basename", path_basename},
+    {"dirname", path_dirname},
+    {"splitext", path_splitext},
+    {"getext", path_getext},
+    {"norm", path_norm},
+    {NULL, NULL}
 };
 
 int luaopen_path(lua_State* L) {
