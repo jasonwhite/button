@@ -82,6 +82,42 @@ int init(lua_State* L) {
     luaL_requiref(L, "path", luaopen_path, 1);
     lua_pop(L, 1);
 
+
+    // Remove functions that can affect the file system.
+    lua_getglobal(L, "io");
+
+    lua_pushstring(L, "popen");
+    lua_pushnil(L);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "tmpfile");
+    lua_pushnil(L);
+    lua_settable(L, -3);
+
+    lua_pop(L, 1); // Pop "io" table
+
+    lua_getglobal(L, "os");
+
+    lua_pushstring(L, "execute");
+    lua_pushnil(L);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "tmpname");
+    lua_pushnil(L);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "rename");
+    lua_pushnil(L);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "remove");
+    lua_pushnil(L);
+    lua_settable(L, -3);
+
+    lua_pop(L, 1); // Pop "os" table
+
+    // TODO: Override io.open to disable writing
+
     return 0;
 }
 
