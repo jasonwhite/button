@@ -28,7 +28,7 @@ INSTALL_TOP=$(pwd)/lua
 
 pushd lua-$VERSION
 
-make -j8 $OS test || exit $?
+make $OS test || exit $?
 
 make install INSTALL_TOP=$INSTALL_TOP || exit $?
 
