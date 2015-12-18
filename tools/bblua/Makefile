@@ -15,8 +15,11 @@ all: $(TARGET)
 %.cc.o: %.cc
 	${CXX} $(CXXFLAGS) $(INCLUDE_PATHS) -c $^ -o $@
 
-$(TARGET): $(OBJECTS)
+$(TARGET): $(OBJECTS) contrib/lua/lib/liblua.a
 	${CXX} $(OBJECTS) $(LIB_PATHS) -ldl -llua -o $@
+
+contrib/lua/lib/liblua.a:
+	./contrib/lua.sh
 
 clean:
 	$(RM) $(TARGET) $(OBJECTS)
