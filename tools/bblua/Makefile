@@ -13,7 +13,7 @@ LIB_PATHS=-Lcontrib/lua/lib
 
 CXXFLAGS=-g -Wall -Werror
 
-all: $(TARGET)
+all: $(TARGET) luaminify
 
 %.cc.o: %.cc
 	${CXX} $(CXXFLAGS) $(INCLUDE_PATHS) -c $< -o $@
@@ -31,5 +31,8 @@ $(TARGET): $(OBJECTS) contrib/lua/lib/liblua.a
 contrib/lua/lib/liblua.a:
 	./contrib/lua.sh
 
+luaminify: tools/luaminify.cc.o
+	${CXX} $^ -o $@
+
 clean:
-	$(RM) $(TARGET) $(OBJECTS) $(LUA_SCRIPTS_C)
+	$(RM) $(TARGET) luaminify $(OBJECTS) $(LUA_SCRIPTS_C)
