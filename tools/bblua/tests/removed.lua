@@ -6,3 +6,5 @@ assert(os.execute == nil)
 assert(os.tmpname == nil)
 assert(os.rename == nil)
 assert(os.remove == nil)
+
+assert(#package.searchers == 3)

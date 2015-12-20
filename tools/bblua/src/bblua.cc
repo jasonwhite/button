@@ -12,6 +12,7 @@
 #include "bblua.h"
 #include "rules.h"
 #include "path.h"
+#include "embedded.h"
 
 namespace {
 
@@ -117,6 +118,26 @@ int init(lua_State* L) {
     lua_pop(L, 1); // Pop "os" table
 
     // TODO: Override io.open to disable writing
+
+    // TODO: Override loadfile, dofile, require to catch dependencies
+
+    lua_getglobal(L, "package");
+    lua_getfield(L, -1, "searchers");
+    if (lua_istable(L, -1)) {
+        // Replace the C package loader with our embedded script loader. This
+        // kills two birds with one stone:
+        //  1. The C package loader can include a module that can alter global
+        //     state. Thus, this functionality must be disabled.
+        //  2. Adding the embedded script searcher in the correct position.
+        //     Scripts on disk should have a higher priority of getting loaded.
+        lua_pushcfunction(L, embedded_searcher);
+        lua_seti(L, -2, 3);
+
+        // Also remove the last entry. This also loads C dynamic libraries.
+        lua_pushnil(L);
+        lua_seti(L, -2, 4);
+    }
+    lua_pop(L, 2); // Pop package.searchers and package
 
     return 0;
 }

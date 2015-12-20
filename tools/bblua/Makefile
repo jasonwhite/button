@@ -23,7 +23,7 @@ src/embedded/%.c: scripts/%.lua
 	@mkdir -p "$(@D)"
 	xxd -i $^ $@
 
-src/modules.cc.o: $(LUA_SCRIPTS_C)
+src/embedded.cc.o: $(LUA_SCRIPTS_C)
 
 $(TARGET): $(OBJECTS) contrib/lua/lib/liblua.a
 	${CXX} $(OBJECTS) $(LIB_PATHS) -ldl -llua -o $@
