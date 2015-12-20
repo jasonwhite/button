@@ -83,61 +83,30 @@ int init(lua_State* L) {
     luaL_requiref(L, "path", luaopen_path, 1);
     lua_pop(L, 1);
 
-
-    // Remove functions that can affect the file system.
-    lua_getglobal(L, "io");
-
-    lua_pushstring(L, "popen");
-    lua_pushnil(L);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "tmpfile");
-    lua_pushnil(L);
-    lua_settable(L, -3);
-
-    lua_pop(L, 1); // Pop "io" table
-
-    lua_getglobal(L, "os");
-
-    lua_pushstring(L, "execute");
-    lua_pushnil(L);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "tmpname");
-    lua_pushnil(L);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "rename");
-    lua_pushnil(L);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "remove");
-    lua_pushnil(L);
-    lua_settable(L, -3);
-
-    lua_pop(L, 1); // Pop "os" table
-
-    // TODO: Override io.open to disable writing
-
-    // TODO: Override loadfile, dofile, require to catch dependencies
-
     lua_getglobal(L, "package");
-    lua_getfield(L, -1, "searchers");
-    if (lua_istable(L, -1)) {
+    if (lua_getfield(L, -1, "searchers") == LUA_TTABLE) {
+        // Remove the last entry.
+        lua_pushnil(L);
+        lua_seti(L, -2, 4);
+
         // Replace the C package loader with our embedded script loader. This
         // kills two birds with one stone:
         //  1. The C package loader can include a module that can alter global
         //     state. Thus, this functionality must be disabled.
         //  2. Adding the embedded script searcher in the correct position.
         //     Scripts on disk should have a higher priority of getting loaded.
+        //     This helps with debugging and allows the user to override
+        //     functionality if needed.
         lua_pushcfunction(L, embedded_searcher);
         lua_seti(L, -2, 3);
-
-        // Also remove the last entry. This also loads C dynamic libraries.
-        lua_pushnil(L);
-        lua_seti(L, -2, 4);
     }
     lua_pop(L, 2); // Pop package.searchers and package
+
+    // Run the embedded initialization script
+    if (load_init(L) || lua_pcall(L, 0, LUA_MULTRET, 0)) {
+        print_error(L);
+        return 1;
+    }
 
     return 0;
 }
@@ -181,6 +150,12 @@ int execute(lua_State* L, int argc, char** argv) {
         lua_pushstring(L, args.argv[i]);
 
     if (lua_pcall(L, args.n, LUA_MULTRET, 0) != LUA_OK) {
+        print_error(L);
+        return 1;
+    }
+
+    // Shutdown
+    if (load_shutdown(L) || lua_pcall(L, 0, LUA_MULTRET, 0)) {
         print_error(L);
         return 1;
     }
