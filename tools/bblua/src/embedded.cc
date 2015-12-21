@@ -45,6 +45,7 @@ const Script script_shutdown = SCRIPT("shutdown", "shutdown.lua", shutdown);
 /**
  * Modules to embed
  */
+#include "embedded/rules.c"
 #include "embedded/rules/d/dmd.c"
 
 /**
@@ -53,6 +54,7 @@ const Script script_shutdown = SCRIPT("shutdown", "shutdown.lua", shutdown);
  * NOTE: This must be in alphabetical order according to the Lua script path.
  */
 const Script embedded[] = {
+    SCRIPT("rules", "{embedded}/rules.lua", rules),
     SCRIPT("rules.d.dmd", "{embedded}/rules/d.lua", rules_d_dmd),
 };
 
