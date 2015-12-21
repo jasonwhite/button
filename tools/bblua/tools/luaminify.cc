@@ -11,26 +11,21 @@
 #include <string.h>
 #include <ctype.h>
 
-const char* read_file(const char* name, size_t* len) {
-
-    FILE* f = fopen(name, "rb");
+const char* read_file(FILE* f, size_t* len) {
 
     // Find the length of the file
     fseek(f, 0, SEEK_END);
     *len = (size_t)ftell(f);
     if (fseek(f, 0, SEEK_SET) != 0) {
-        fclose(f);
         return NULL;
     }
 
     char* buf = new char[*len];
 
     if (!buf || fread(buf, 1, *len, f) != *len) {
-        fclose(f);
         return NULL;
     }
 
-    fclose(f);
     return (const char*)buf;
 }
 
@@ -186,8 +181,16 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    FILE* f = fopen(argv[1], "rb");
+    if (!f) {
+        perror("failed to open file");
+        return 1;
+    }
+
     size_t len;
-    const char* buf = read_file(argv[1], &len);
+    const char* buf = read_file(f, &len);
+
+    fclose(f);
 
     if (!buf) {
         perror("failed to read file");
