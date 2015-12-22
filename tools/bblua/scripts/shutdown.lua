@@ -7,3 +7,6 @@
  This file is the last Lua script that gets executed.
 ]]
 
+local rules = require "rules"
+
+rules.resolve()
