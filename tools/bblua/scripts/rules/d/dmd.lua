@@ -23,8 +23,9 @@ local function to_object(objdir, src)
     return path.join(objdir, src .. ".o")
 end
 
-
--- Base metatable
+--[[
+Base metatable
+]]
 local _base = {
 
     -- Path to DMD
@@ -62,17 +63,35 @@ end
 
 setmetatable(_base, {__index = rules.base})
 
-local _binary = {}
+--[[
+A binary executable.
+]]
+local _binary = {
+}
+
 local _binary_mt = {__index = _binary}
+
+local function is_binary(t)
+    return getmetatable(t) == _binary_mt
+end
+
 setmetatable(_binary, {__index = _base})
 
-local _library = {}
-local _library_mt = {__index = _library}
-setmetatable(_library, {__index = _base})
+--[[
+A library. Can be static or dynamic.
+]]
+local _library = {
+    -- Shared library?
+    shared = false,
+}
 
-function _library:path()
-    return path.join(self.bindir, self.name .. ".a")
+local _library_mt = {__index = _library}
+
+local function is_library(t)
+    return getmetatable(t) == _library_mt
 end
+
+setmetatable(_library, {__index = _base})
 
 --[[
 Generates the low-level rules required to build a generic D library/binary.
@@ -82,7 +101,7 @@ function _base:rules(deps)
 
     local args = table.join(self.prefix, self.compiler, self.opts)
 
-    local compiler_opts = {}
+    local compiler_opts = {"-op", "-od".. objdir}
 
     for _,v in ipairs(self.imports) do
         table.insert(compiler_opts, "-I" .. v)
@@ -111,7 +130,7 @@ function _base:rules(deps)
     table.append(inputs, sources)
 
     for _,dep in ipairs(deps) do
-        if getmetatable(dep) == _library_mt then
+        if is_library(dep) then
             table.insert(inputs, dep:path())
         end
     end
@@ -123,9 +142,27 @@ function _base:rules(deps)
     -- Combined compilation
     rule {
         inputs  = inputs,
-        task    = table.join(args, linker_opts, compiler_opts, inputs),
-        outputs = {output}
+        task    = table.join(args, compiler_opts, linker_opts, inputs),
+        outputs = table.join(objects, {output}),
     }
+end
+
+function _library:path()
+    if self.shared then
+        return path.join(self.bindir, self.name .. ".so")
+    else
+        return path.join(self.bindir, self.name .. ".a")
+    end
+end
+
+function _library:rules(deps)
+    if self.shared then
+        table.insert(self.linker_opts, "-shared")
+    else
+        table.insert(self.linker_opts, "-lib")
+    end
+
+    _base.rules(self, deps)
 end
 
 --[[
@@ -147,8 +184,9 @@ end
 
 return {
     _base = _base,
-    _binary_mt  = _binary_mt,
-    _library_mt = _library_mt,
+
+    is_binary = is_binary,
+    is_library = is_library,
 
     binary = binary,
     library = library,
