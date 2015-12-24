@@ -1,17 +1,19 @@
 #!/bin/bash
+set -e
 
 echo "Bootstrapping..."
-dub build --compiler=dmd || exit $?
-dub build --root source/wrap --compiler=dmd || exit $?
+dub build --compiler=dmd
+dub build --root source/wrap --compiler=dmd
 
-cp source/wrap/bb-wrap-bootstrap ./ || exit $?
+cp source/wrap/bb-wrap-bootstrap ./
 
 # Build bblua
-make --directory tools/bblua || exit $?
-cp tools/bblua/bblua ./ || exit $?
+make --directory tools/bblua
+cp tools/bblua/bblua ./
+
 
 export PYTHONPATH=tools/python:$PYTHONPATH
 
 echo "Building with the One True Build System..."
-rm -f .*bb.json.state || exit $?
+rm -f .*bb.json.state
 ./bb-bootstrap build
