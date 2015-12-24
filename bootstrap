@@ -6,6 +6,10 @@ dub build --root source/wrap --compiler=dmd || exit $?
 
 cp source/wrap/bb-wrap-bootstrap ./ || exit $?
 
+# Build bblua
+make --directory tools/bblua || exit $?
+cp tools/bblua/bblua ./ || exit $?
+
 export PYTHONPATH=tools/python:$PYTHONPATH
 
 echo "Building with the One True Build System..."
