@@ -37,7 +37,9 @@ local _generic = {
     -- Path to the bin directory
     bindir = "./bin";
 
-    -- Build all source on the same command line
+    -- Build all source on the same command line. Otherwise, each source is
+    -- compiled separately and finally linked separately. In general, combined
+    -- compilation is faster.
     combined = true;
 
     -- Paths to look for imports
@@ -152,12 +154,30 @@ function _generic:rules(deps)
 
     local linker_opts = table.join(self.linker_opts, {"-of" .. output})
 
-    -- Combined compilation
-    rule {
-        inputs  = inputs,
-        task    = table.join(args, compiler_opts, linker_opts, inputs),
-        outputs = table.join(objects, {output}),
-    }
+    if self.combined then
+        -- Combined compilation
+        rule {
+            inputs  = inputs,
+            task    = table.join(args, compiler_opts, linker_opts, inputs),
+            outputs = table.join(objects, {output}),
+        }
+    else
+        -- Individual compilation
+        for i,src in ipairs(sources) do
+            rule {
+                inputs  = {src},
+                task    = table.join(args, compiler_opts,
+                    {"-c", src, "-of".. objects[i]}),
+                outputs = {objects[i]},
+            }
+        end
+
+        rule {
+            inputs = objects,
+            task = table.join(args, linker_opts, objects),
+            outputs = table.join(objects, {output}),
+        }
+    end
 end
 
 function _library:path()
