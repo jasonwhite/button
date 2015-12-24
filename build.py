@@ -51,7 +51,7 @@ def targets():
             'source/util/*.d',
             'source/bb/**/*.d',
             'source/darg/source/*.d',
-            ])
+            ]),
         imports = ['source', 'source/darg/source', 'source/io/source'],
         compiler_opts = dmd_opts,
         linker_opts = ['-L-lsqlite3'],
