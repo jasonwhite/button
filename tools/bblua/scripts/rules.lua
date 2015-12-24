@@ -50,6 +50,7 @@ function t.resolve()
             table.insert(deps, d)
         end
 
+        print("Generating rules for '".. v.name .."'...")
         v:rules(deps)
     end
 end
