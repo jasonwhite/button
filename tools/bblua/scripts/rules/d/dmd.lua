@@ -26,7 +26,7 @@ end
 --[[
 Base metatable
 ]]
-local _base = {
+local _generic = {
 
     -- Path to DMD
     compiler = {"dmd"};
@@ -57,11 +57,11 @@ local _base = {
 --[[
 Returns the path to the target
 ]]
-function _base:path()
+function _generic:path()
     return path.join(self.bindir, self.name)
 end
 
-setmetatable(_base, {__index = rules.base})
+setmetatable(_generic, {__index = rules.base})
 
 --[[
 A binary executable.
@@ -75,7 +75,7 @@ local function is_binary(t)
     return getmetatable(t) == _binary_mt
 end
 
-setmetatable(_binary, {__index = _base})
+setmetatable(_binary, {__index = _generic})
 
 --[[
 A library. Can be static or dynamic.
@@ -91,12 +91,25 @@ local function is_library(t)
     return getmetatable(t) == _library_mt
 end
 
-setmetatable(_library, {__index = _base})
+setmetatable(_library, {__index = _generic})
+
+--[[
+A test.
+]]
+local _test = {}
+local _test_mt = {__index = _test}
+
+local function is_test(t)
+    return getmetatable(t) == _test_mt
+end
+
+setmetatable(_test, {__index = _generic})
+
 
 --[[
 Generates the low-level rules required to build a generic D library/binary.
 ]]
-function _base:rules(deps)
+function _generic:rules(deps)
     local objdir = self.objdir or path.join("obj", self.name)
 
     local args = table.join(self.prefix, self.compiler, self.opts)
@@ -162,32 +175,46 @@ function _library:rules(deps)
         table.insert(self.linker_opts, "-lib")
     end
 
-    _base.rules(self, deps)
+    _generic.rules(self, deps)
 end
 
---[[
-A D binary.
-]]
+function _test:rules(deps)
+    table.insert(self.compiler_opts, "-unittest")
+
+    _generic.rules(self, deps)
+
+    local test_runner = self:path()
+
+    rule {
+        inputs  = {test_runner},
+        task    = {test_runner},
+        outputs = {},
+    }
+end
+
 local function binary(opts)
-
     setmetatable(opts, _binary_mt)
-
     return rules.add(opts)
 end
 
 local function library(opts)
-
     setmetatable(opts, _library_mt)
-
     return rules.add(opts)
 end
 
+local function test(opts)
+    setmetatable(opts, _test_mt)
+    return reles.add(opts)
+end
+
 return {
-    _base = _base,
+    _generic = _generic,
 
     is_binary = is_binary,
     is_library = is_library,
+    is_test = is_test,
 
     binary = binary,
     library = library,
+    test = test,
 }
