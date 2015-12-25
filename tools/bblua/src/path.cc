@@ -12,11 +12,43 @@
 
 namespace path {
 
+int cmp(char a, char b) {
+    if (issep(a) && issep(b))
+        return 0;
+
+#if PATH_STYLE == PATH_STYLE_WINDOWS
+    return (int)tolower(a) - (int)tolower(b);
+#else
+    return (int)a - (int)b;
+#endif
+}
+
+int cmp(const char* a, const char* b, size_t len) {
+	int result;
+	for (size_t i = 0; i < len; ++i) {
+        result = cmp(a[i], b[i]);
+        if (result != 0)
+            break;
+	}
+
+	return result;
+}
+
+int cmp(const char* a, const char* b, size_t len1, size_t len2) {
+    if (len1 < len2)
+        return -1;
+    else if (len2 < len1)
+        return 1;
+
+    // Lengths are equal
+    return cmp(a, b, len1);
+}
+
 static bool isabs(const char* path, size_t len) {
     if(len > 0 && issep(path[0]))
         return true;
 
-#if PATH_STYLE == PATH_STYLE_WIN
+#if PATH_STYLE == PATH_STYLE_WINDOWS
     if(len > 2 && path[1] == ':' && issep(path[2]))
         return true;
 #endif

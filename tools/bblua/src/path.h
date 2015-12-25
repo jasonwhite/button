@@ -8,6 +8,8 @@
  */
 #pragma once
 
+#include <stddef.h> // For size_t
+
 struct lua_State;
 
 namespace path {
@@ -38,7 +40,7 @@ namespace path {
 const char defaultSep = '\\';
 const bool caseSensitive = false;
 
-static inline bool issep(char c) {
+inline bool issep(char c) {
     return c == '/' || c == '\\';
 }
 
@@ -47,11 +49,23 @@ static inline bool issep(char c) {
 const char defaultSep = '/';
 const bool caseSensitive = true;
 
-static inline bool issep(char c) {
+inline bool issep(char c) {
     return c == '/';
 }
 
 #endif
+
+/**
+ * Compare two characters. The comparison is case insensitive for Windows style
+ * paths.
+ */
+int cmp(char a, char b);
+
+/**
+ * Compares two paths for equality.
+ */
+int cmp(const char* a, const char* b, size_t len);
+int cmp(const char* a, const char* b, size_t len1, size_t len2);
 
 /**
  * Returns true if the path is absolute, false otherwise.
