@@ -80,7 +80,7 @@ int init(lua_State* L) {
     // Initialize the standard library
     luaL_openlibs(L);
 
-    luaL_requiref(L, "path", luaopen_path, 1);
+    luaL_requiref(L, "path", path::luaopen, 1);
     lua_pop(L, 1);
 
     lua_getglobal(L, "package");

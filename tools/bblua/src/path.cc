@@ -10,20 +10,14 @@
 
 #include "lua.hpp"
 
-static inline bool _issep(char c) {
-#if PATH_STYLE == PATH_STYLE_WIN
-    return c == '/' || c == '\\';
-#else
-    return c == '/';
-#endif
-}
+namespace path {
 
-static bool path_isabs(const char* path, size_t len) {
-    if(len > 0 && _issep(path[0]))
+static bool isabs(const char* path, size_t len) {
+    if(len > 0 && issep(path[0]))
         return true;
 
 #if PATH_STYLE == PATH_STYLE_WIN
-    if(len > 2 && path[1] == ':' && _issep(path[2]))
+    if(len > 2 && path[1] == ':' && issep(path[2]))
         return true;
 #endif
 
@@ -34,26 +28,26 @@ static bool path_isabs(const char* path, size_t len) {
  * Helper function to get the distance forward to a '/', '\', or to the end of
  * the buffer.
  */
-/*static size_t _path_getelem(const char* path, size_t len)
+/*static size_t _getelem(const char* path, size_t len)
 {
     size_t i;
 
     for (i = 0; i < len; ++i) {
-        if (_issep(path[i]))
+        if (issep(path[i]))
             break;
     }
 
     return i;
 }*/
 
-int path_isabs(lua_State* L) {
+int isabs(lua_State* L) {
     size_t len;
     const char* path = luaL_checklstring(L, 1, &len);
-    lua_pushboolean(L, path_isabs(path, len));
+    lua_pushboolean(L, isabs(path, len));
     return 1;
 }
 
-int path_join(lua_State* L) {
+int join(lua_State* L) {
 
     int argc = lua_gettop(L);
 
@@ -64,14 +58,14 @@ int path_join(lua_State* L) {
         size_t len;
         const char* path = luaL_checklstring(L, i, &len);
 
-        if (path_isabs(path, len)) {
+        if (isabs(path, len)) {
             // Path is absolute, reset the buffer length
             b.n = 0;
         }
         else {
             // Path is relative, add path separator if necessary.
-            if (b.n > 0 && !_issep(b.b[b.n-1]))
-                luaL_addchar(&b, PATH_SEP);
+            if (b.n > 0 && !issep(b.b[b.n-1]))
+                luaL_addchar(&b, defaultSep);
         }
 
         luaL_addlstring(&b, path, len);
@@ -81,7 +75,7 @@ int path_join(lua_State* L) {
     return 1;
 }
 
-int path_split(lua_State* L) {
+int split(lua_State* L) {
 
     size_t len;
     const char* path = luaL_checklstring(L, 1, &len);
@@ -91,7 +85,7 @@ int path_split(lua_State* L) {
 
     while (tail_start > 0) {
         --tail_start;
-        if (_issep(path[tail_start])) {
+        if (issep(path[tail_start])) {
             ++tail_start;
             break;
         }
@@ -102,7 +96,7 @@ int path_split(lua_State* L) {
     while (head_end > 0) {
         --head_end;
 
-        if (!_issep(path[head_end])) {
+        if (!issep(path[head_end])) {
             ++head_end;
             break;
         }
@@ -117,19 +111,19 @@ int path_split(lua_State* L) {
     return 2;
 }
 
-int path_basename(lua_State* L) {
-    path_split(L);
+int basename(lua_State* L) {
+    split(L);
     lua_remove(L, -2); // Pop off the head
     return 1;
 }
 
-int path_dirname(lua_State* L) {
-    path_split(L);
+int dirname(lua_State* L) {
+    split(L);
     lua_pop(L, 1); // Pop off the tail
     return 1;
 }
 
-int path_splitext(lua_State* L) {
+int splitext(lua_State* L) {
 
     size_t len;
     const char* path = luaL_checklstring(L, 1, &len);
@@ -139,7 +133,7 @@ int path_splitext(lua_State* L) {
     // Find the base name
     while (base > 0) {
         --base;
-        if (_issep(path[base])) {
+        if (issep(path[base])) {
             ++base;
             break;
         }
@@ -158,13 +152,13 @@ int path_splitext(lua_State* L) {
     return 2;
 }
 
-int path_getext(lua_State* L) {
-    path_splitext(L);
+int getext(lua_State* L) {
+    splitext(L);
     lua_remove(L, -2); // Pop off the root
     return 1;
 }
 
-int path_norm(lua_State* L) {
+int norm(lua_State* L) {
 
     //size_t len;
     //const char* path = luaL_checklstring(L, 1, &len);
@@ -177,18 +171,20 @@ int path_norm(lua_State* L) {
 }
 
 static const luaL_Reg pathlib[] = {
-    {"isabs", path_isabs},
-    {"join", path_join},
-    {"split", path_split},
-    {"basename", path_basename},
-    {"dirname", path_dirname},
-    {"splitext", path_splitext},
-    {"getext", path_getext},
-    {"norm", path_norm},
+    {"isabs", isabs},
+    {"join", join},
+    {"split", split},
+    {"basename", basename},
+    {"dirname", dirname},
+    {"splitext", splitext},
+    {"getext", getext},
+    {"norm", norm},
     {NULL, NULL}
 };
 
-int luaopen_path(lua_State* L) {
+int luaopen(lua_State* L) {
     luaL_newlib(L, pathlib);
     return 1;
+}
+
 }
