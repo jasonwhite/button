@@ -4,10 +4,10 @@
  * MIT License
  *
  * Description:
- * Globbing.
+ * File system Lua module.
  */
 #pragma once
 
 struct lua_State;
 
-int luaopen_glob(lua_State* L);
+int luaopen_fs(lua_State* L);

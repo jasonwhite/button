@@ -12,7 +12,7 @@
 #include "bblua.h"
 #include "rules.h"
 #include "path.h"
-#include "glob.h"
+#include "fs.h"
 #include "embedded.h"
 
 namespace {
@@ -84,7 +84,7 @@ int init(lua_State* L) {
     luaL_requiref(L, "path", path::luaopen, 1);
     lua_pop(L, 1);
 
-    luaL_requiref(L, "glob", luaopen_glob, 1);
+    luaL_requiref(L, "fs", luaopen_fs, 1);
     lua_pop(L, 1);
 
     lua_getglobal(L, "package");
