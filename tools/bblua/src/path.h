@@ -68,53 +68,30 @@ int cmp(const char* a, const char* b, size_t len);
 int cmp(const char* a, const char* b, size_t len1, size_t len2);
 
 /**
- * Returns true if the path is absolute, false otherwise.
+ * Returns true if the given path is absolute.
  */
-int isabs(lua_State* L);
+bool isabs(const char* path, size_t len);
 
 /**
- * Returns a path with all path elements joined together.
+ * Helper struct for representing a split path.
  */
-int join(lua_State* L);
+struct Split {
+    const char* head;
+    size_t headlen;
+
+    const char* tail;
+    size_t taillen;
+};
 
 /**
- * Returns the head and tail of the path where the tail is the last path
- * element and the head is everything leading up to it.
+ * Splits a path such that the head is the parent directory (empty if none) and
+ * the tail is the basename of the file path.
  */
-int split(lua_State* L);
+Split split(const char* path, size_t len);
 
-/**
- * Returns the last path element. This is the same as the tail of path_split().
- */
-int basename(lua_State* L);
-
-/**
- * Returns the everything except for the basename of the path. This is the same
- * as the head of path_split().
- */
-int dirname(lua_State* L);
-
-/**
- * Splits the path into a root and extension such that concatenating the root
- * and extension returns the original path.
- */
-int splitext(lua_State* L);
-
-/**
- * Returns the extension of the path. This is the same as splitting by extension
- * and retrieving just the extension part.
- */
-int getext(lua_State* L);
-
-/**
- * Normalizes the path such that redundant path separators and up=level
- * references are collapsed.
- */
-int norm(lua_State* L);
+}
 
 /**
  * Pushes the path library onto the stack so that it can be registered.
  */
-int luaopen(lua_State* L);
-
-}
+int luaopen_path(lua_State* L);
