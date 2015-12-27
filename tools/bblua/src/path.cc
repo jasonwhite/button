@@ -107,6 +107,22 @@ Split split(const char* path, size_t len) {
     return s;
 }
 
+std::string& join(std::string& buf, const char* path, size_t pathLength)
+{
+    if (isabs(path, pathLength)) {
+        // Path is absolute, reset the buffer length
+        buf.clear();
+    }
+    else {
+        // Path is relative, add path separator if necessary.
+        size_t len = buf.size();
+        if (len > 0 && !issep(buf[len-1]))
+            buf.push_back(defaultSep);
+    }
+
+    return buf.append(path, pathLength);
+}
+
 }
 
 static int path_isabs(lua_State* L) {

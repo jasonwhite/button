@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stddef.h> // For size_t
+#include <string>
 
 struct lua_State;
 
@@ -88,6 +89,11 @@ struct Split {
  * the tail is the basename of the file path.
  */
 Split split(const char* path, size_t len);
+
+/**
+ * Joins two paths.
+ */
+std::string& join(std::string& buf, const char* path, size_t pathLength);
 
 }
 

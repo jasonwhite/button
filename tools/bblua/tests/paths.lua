@@ -12,12 +12,15 @@ assert(not path.isabs(""))
     path.join
 ]]
 assert(path.join() == "")
+assert(path.join("") == "")
+assert(path.join("", "") == "")
 assert(path.join("foo") == "foo")
 assert(path.join("foo", "bar") == "foo/bar")
 assert(path.join("foo", "/bar") == "/bar")
 assert(path.join("foo/", "bar") == "foo/bar")
 assert(path.join("foo//", "bar") == "foo//bar")
 assert(path.join("/", "foo") == "/foo")
+assert(path.join("foo", "") == "foo/")
 
 
 --[[
@@ -29,6 +32,7 @@ local split_tests = {
     {"/", "/", "", "/"},
     {"/foo", "/", "foo", "/foo"},
     {"foo/bar", "foo", "bar", "foo/bar"},
+    {"foo/", "foo", "", "foo/"},
     {"/foo////bar", "/foo", "bar", "/foo/bar"},
     {"////foo////bar", "////foo", "bar", "////foo/bar"},
 }
