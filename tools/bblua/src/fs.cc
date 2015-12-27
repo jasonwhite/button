@@ -6,14 +6,20 @@
  * Description:
  * File system module.
  */
-#include "glob.h"
-
-#include "lua.hpp"
-
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <unistd.h>
+
+#include <string>
+#include <set>
+
+#include "lua.hpp"
+
+#include "glob.h"
+#include "path.h"
 
 namespace {
 
@@ -126,7 +132,7 @@ bool globMatch(const char* path, size_t len, const char* pattern, size_t patlen)
 /**
  * Returns true if the given string contains a glob pattern.
  */
-/*bool isGlobPattern(const char* s, size_t len) {
+bool isGlobPattern(const char* s, size_t len) {
     for (size_t i = 0; i < len; ++i) {
         switch (s[i]) {
             case '?':
@@ -137,7 +143,129 @@ bool globMatch(const char* path, size_t len, const char* pattern, size_t patlen)
     }
 
     return false;
+}
+
+/**
+ * Returns true if the given path element is a recursive glob pattern.
+ */
+/*bool isRecursiveGlob(const char* s, size_t len) {
+    return len == 2 && s[0] == '*' && s[1] == '*';
 }*/
+
+/**
+ * Returns true if the given path element is a hidden directory (i.e., "." or
+ * "..").
+ */
+bool isHiddenDir(const char* s, size_t len) {
+    switch (len) {
+        case 1:
+            return s[0] == '.';
+        case 2:
+            return s[0] == '.' && s[1] == '.';
+        default:
+            return false;
+    }
+}
+
+typedef void (*GlobCallback)(const char* path, size_t len, bool isDir, void* data);
+
+struct GlobClosure {
+    const char* parent;
+    size_t parentLength;
+
+    // Next callback
+    GlobCallback next;
+    void* nextData;
+};
+
+/**
+ * Helper function for listing a directory with the given pattern. If the
+ * pattern is empty,
+ */
+void glob(const char* path, size_t len,
+          const char* pattern, size_t patlen,
+          GlobCallback cb, void* data) {
+
+    std::string buf(path, len);
+
+    if (patlen == 0) {
+        path::join(buf, pattern, patlen);
+        cb(buf.data(), buf.size(), true, data);
+        return;
+    }
+
+    struct dirent* entry;
+    DIR* dir;
+
+    if (len > 0)
+        dir = opendir(buf.c_str());
+    else
+        dir = opendir(".");
+
+    if (!dir)
+        return;
+
+    // TODO: Implement this for windows, too.
+    while ((entry = readdir(dir))) {
+        const char* name = entry->d_name;
+        size_t nameLength = strlen(entry->d_name);
+
+        if (isHiddenDir(name, nameLength))
+            continue;
+
+        if (globMatch(name, nameLength, pattern, patlen)) {
+            path::join(buf, entry->d_name, nameLength);
+
+            cb(buf.data(), buf.size(), entry->d_type == DT_DIR, data);
+
+            buf.assign(path, len);
+        }
+    }
+
+    closedir(dir);
+}
+
+void globCallback(const char* path, size_t len, bool isDir, void* data) {
+    if (isDir) {
+        const GlobClosure* c = (const GlobClosure*)data;
+        glob(path, len, c->parent, c->parentLength, c->next, c->nextData);
+    }
+}
+
+/**
+ * Glob a directory.
+ */
+void glob(const char* path, size_t len, GlobCallback cb, void* data = NULL) {
+
+    path::Split s = path::split(path, len);
+
+    if (isGlobPattern(s.head, s.headlen)) {
+        // Directory name contains a glob pattern
+
+        GlobClosure c;
+        c.parent = s.tail;
+        c.parentLength = s.taillen;
+        c.next = cb;
+        c.nextData = data;
+
+        glob(s.head, s.headlen, &globCallback, &c);
+    }
+    else if (isGlobPattern(s.tail, s.taillen)) {
+        // Only base name contains a glob pattern.
+        glob(s.head, s.headlen, s.tail, s.taillen, cb, data);
+    }
+    else {
+        // No glob pattern in this path.
+        if (s.taillen) {
+            // TODO: If file exists, then return it
+            cb(path, len, false, data);
+        }
+        else {
+            // TODO: If directory exists, then return it
+            cb(s.head, s.headlen, true, data);
+        }
+    }
+}
 
 /**
  * Checks if a glob pattern matches a string.
@@ -157,6 +285,14 @@ int fs_globmatch(lua_State* L) {
 }
 
 /**
+ * Callback to put globbed items into a set.
+ */
+void fs_globcallback(const char* path, size_t len, bool isDir, void* data) {
+    std::set<std::string>* paths = (std::set<std::string>*)data;
+    paths->insert(std::string(path, len));
+}
+
+/**
  * Lists files based on a glob expression.
  *
  * Arguments:
@@ -166,34 +302,28 @@ int fs_globmatch(lua_State* L) {
  *
  * TODO: Cache results of a directory listing and use that for further globs.
  */
-static int fs_glob(lua_State* L) {
+int fs_glob(lua_State* L) {
+
+    std::set<std::string> paths;
 
     int argc = lua_gettop(L);
 
-    lua_newtable(L);
-
-    //size_t len;
-    struct dirent* entry;
-    const char* pattern;
-
-    lua_Number n = 1;
+    size_t len;
+    const char* path;
 
     for (int i = 1; i <= argc; ++i) {
-        pattern = luaL_checkstring(L, i);
+        path = luaL_checklstring(L, i, &len);
+        glob(path, len, &fs_globcallback, &paths);
+    }
 
-        DIR* dir = opendir(pattern);
-        if (dir) {
-            while ((entry = readdir(dir))) {
-                if (entry->d_type == DT_REG) {
-                    // TODO:
-                    lua_pushlstring(L, entry->d_name, strlen(entry->d_name));
-                    lua_seti(L, -2, n);
-                    ++n;
-                }
-            }
+    // Construct the Lua table.
+    lua_newtable(L);
+    lua_Number n = 1;
 
-            closedir(dir);
-        }
+    for (std::set<std::string>::iterator it = paths.begin(); it != paths.end(); ++it) {
+        lua_pushlstring(L, it->data(), it->size());
+        lua_seti(L, -2, n);
+        ++n;
     }
 
     return 1;
@@ -210,7 +340,13 @@ static int fs_glob(lua_State* L) {
  * TODO: Cache directory listings.
  */
 int fs_listdir(lua_State* L) {
-    const char* path = luaL_checkstring(L, 1);
+    size_t len;
+    const char* path = luaL_checklstring(L, 1, &len);
+
+    if (len == 0) {
+        len = 1;
+        path = ".";
+    }
 
     lua_newtable(L);
 
@@ -220,11 +356,15 @@ int fs_listdir(lua_State* L) {
     DIR* dir = opendir(path);
     if (!dir) {
         lua_pushnil(L);
-        lua_pushfstring(L, "failed to list directory `%s`: %s", path, strerror(errno));
+        lua_pushfstring(L, "failed to list directory '%s': %s", path, strerror(errno));
         return 2;
     }
 
     while ((entry = readdir(dir))) {
+        // Skip "." and ".."
+        if (isHiddenDir(entry->d_name, strlen(entry->d_name)))
+            continue;
+
         if (entry->d_type == DT_REG) {
             lua_pushstring(L, entry->d_name);
             lua_seti(L, -2, i);
@@ -237,10 +377,24 @@ int fs_listdir(lua_State* L) {
     return 1;
 }
 
+int fs_getcwd(lua_State* L) {
+
+    char* p = getcwd(NULL, 0);
+    if (!p)
+        return luaL_error(L, "getcwd failed");
+
+    lua_pushstring(L, p);
+
+    free(p);
+
+    return 1;
+}
+
 const luaL_Reg fslib[] = {
     {"globmatch", fs_globmatch}, // TODO: Remove this later
     {"glob", fs_glob},
     {"listdir", fs_listdir},
+    {"getcwd", fs_getcwd},
     {NULL, NULL},
 };
 
