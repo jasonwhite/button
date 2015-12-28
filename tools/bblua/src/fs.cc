@@ -323,7 +323,14 @@ int fs_globmatch(lua_State* L) {
 void fs_globcallback(const char* path, size_t len, bool isDir, void* data) {
     std::set<std::string>* paths = (std::set<std::string>*)data;
     paths->insert(std::string(path, len));
-    printf("debug: %.*s\n", (int)len, path);
+}
+
+/**
+ * Callback to remove globbed items from a set.
+ */
+void fs_globcallback_exclude(const char* path, size_t len, bool isDir, void* data) {
+    std::set<std::string>* paths = (std::set<std::string>*)data;
+    paths->erase(std::string(path, len));
 }
 
 /**
@@ -335,7 +342,6 @@ void fs_globcallback(const char* path, size_t len, bool isDir, void* data) {
  * Returns: A table of the matching files.
  *
  * TODO: Cache results of a directory listing and use that for further globs.
- * TODO: Allow exclusion globs.
  */
 int fs_glob(lua_State* L) {
 
@@ -348,7 +354,14 @@ int fs_glob(lua_State* L) {
 
     for (int i = 1; i <= argc; ++i) {
         path = luaL_checklstring(L, i, &len);
-        glob(path, len, &fs_globcallback, &paths);
+
+        if (len > 0 && path[0] == '!') {
+            // Exclude from the list
+            glob(path+1, len-1, &fs_globcallback_exclude, &paths);
+        }
+        else {
+            glob(path, len, &fs_globcallback, &paths);
+        }
     }
 
     // Construct the Lua table.
