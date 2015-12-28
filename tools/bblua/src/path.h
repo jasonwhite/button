@@ -75,12 +75,12 @@ struct Path {
 
     const char* path;
     size_t length;
-};
 
-/**
- * Returns true if the given path is absolute.
- */
-bool isabs(const char* path, size_t len);
+    /**
+     * Returns true if the given path is absolute.
+     */
+    bool isabs() const;
+};
 
 /**
  * Helper struct for representing a split path.
@@ -99,7 +99,7 @@ Split split(const char* path, size_t len);
 /**
  * Joins two paths.
  */
-std::string& join(std::string& buf, const char* path, size_t pathLength);
+std::string& join(std::string& buf, Path path);
 
 }
 

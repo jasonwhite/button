@@ -44,12 +44,12 @@ int cmp(const char* a, const char* b, size_t len1, size_t len2) {
     return cmp(a, b, len1);
 }
 
-bool isabs(const char* path, size_t len) {
-    if(len > 0 && issep(path[0]))
+bool Path::isabs() const {
+    if(length > 0 && issep(path[0]))
         return true;
 
 #if PATH_STYLE == PATH_STYLE_WINDOWS
-    if(len > 2 && path[1] == ':' && issep(path[2]))
+    if(length > 2 && path[1] == ':' && issep(path[2]))
         return true;
 #endif
 
@@ -107,9 +107,9 @@ Split split(const char* path, size_t len) {
     return s;
 }
 
-std::string& join(std::string& buf, const char* path, size_t pathLength)
+std::string& join(std::string& buf, Path path)
 {
-    if (isabs(path, pathLength)) {
+    if (path.isabs()) {
         // Path is absolute, reset the buffer length
         buf.clear();
     }
@@ -120,7 +120,7 @@ std::string& join(std::string& buf, const char* path, size_t pathLength)
             buf.push_back(defaultSep);
     }
 
-    return buf.append(path, pathLength);
+    return buf.append(path.path, path.length);
 }
 
 }
@@ -128,7 +128,7 @@ std::string& join(std::string& buf, const char* path, size_t pathLength)
 static int path_isabs(lua_State* L) {
     size_t len;
     const char* path = luaL_checklstring(L, 1, &len);
-    lua_pushboolean(L, path::isabs(path, len));
+    lua_pushboolean(L, path::Path(path, len).isabs());
     return 1;
 }
 
@@ -143,7 +143,7 @@ static int path_join(lua_State* L) {
         size_t len;
         const char* path = luaL_checklstring(L, i, &len);
 
-        if (path::isabs(path, len)) {
+        if (path::Path(path, len).isabs()) {
             // Path is absolute, reset the buffer length
             b.n = 0;
         }

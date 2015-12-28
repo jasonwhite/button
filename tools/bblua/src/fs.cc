@@ -189,7 +189,7 @@ void glob(path::Path path, path::Path pattern,
     std::string buf(path.path, path.length);
 
     if (pattern.length == 0) {
-        path::join(buf, pattern.path, pattern.length);
+        path::join(buf, pattern);
         callback(path::Path(buf.data(), buf.size()), true, data);
         return;
     }
@@ -209,7 +209,7 @@ void glob(path::Path path, path::Path pattern,
             continue;
 
         if (globMatch(path::Path(name, nameLength), pattern)) {
-            path::join(buf, entry->d_name, nameLength);
+            path::join(buf, path::Path(entry->d_name, nameLength));
 
             callback(path::Path(buf.data(), buf.size()), isDir, data);
 
@@ -241,7 +241,7 @@ void globRecursive(std::string& path, GlobCallback callback, void* data) {
         if (isHiddenDir(name, nameLength))
             continue;
 
-        path::join(path, entry->d_name, nameLength);
+        path::join(path, path::Path(entry->d_name, nameLength));
 
         callback(path::Path(path.data(), path.size()), isDir, data);
 
