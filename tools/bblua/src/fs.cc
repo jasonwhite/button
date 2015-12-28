@@ -38,15 +38,15 @@ static int charCmp(char a, char b) {
  * Returns true if the pattern matches the given filename, false otherwise.
  */
 template <bool CaseSensitive>
-bool globMatch(const char* path, size_t len, const char* pattern, size_t patlen) {
+bool globMatch(path::Path path, path::Path pattern) {
 
     size_t i = 0;
 
-    for (size_t j = 0; j < patlen; ++j) {
-        switch (pattern[j]) {
+    for (size_t j = 0; j < pattern.length; ++j) {
+        switch (pattern.path[j]) {
             case '?': {
                 // Match any single character
-                if (i == len)
+                if (i == path.length)
                     return false;
                 ++i;
                 break;
@@ -54,12 +54,14 @@ bool globMatch(const char* path, size_t len, const char* pattern, size_t patlen)
 
             case '*': {
                 // Match 0 or more characters
-                if (j+1 == patlen)
+                if (j+1 == pattern.length)
                     return true;
 
                 // Consume characters while looking ahead for matches
-                for (; i < len; ++i) {
-                    if (globMatch<CaseSensitive>(path+i, len-i, pattern+j+1, patlen-j-1))
+                for (; i < path.length; ++i) {
+                    if (globMatch<CaseSensitive>(
+                                path::Path(path.path+i, path.length-i),
+                                path::Path(pattern.path+j+1, pattern.length-j-1)))
                         return true;
                 }
 
@@ -68,32 +70,32 @@ bool globMatch(const char* path, size_t len, const char* pattern, size_t patlen)
 
             case '[': {
                 // Match any of the characters that appear in the square brackets
-                if (i == len) return false;
+                if (i == path.length) return false;
 
                 // Skip past the opening bracket
-                if (++j == patlen) return false;
+                if (++j == pattern.length) return false;
 
                 // Invert the match?
                 bool invert = false;
-                if (pattern[j] == '!') {
+                if (pattern.path[j] == '!') {
                     invert = true;
-                    if (++j == patlen)
+                    if (++j == pattern.length)
                         return false;
                 }
 
                 // Find the closing bracket
                 size_t end = j;
-                while (end < patlen && pattern[end] != ']')
+                while (end < pattern.length && pattern.path[end] != ']')
                     ++end;
 
                 // No matching bracket?
-                if (end == patlen) return false;
+                if (end == pattern.length) return false;
 
                 // Check each character between the brackets for a match
                 bool match = false;
                 while (j < end) {
                     // Found a match
-                    if (!match && charCmp<CaseSensitive>(path[i], pattern[j]) == 0) {
+                    if (!match && charCmp<CaseSensitive>(path.path[i], pattern.path[j]) == 0) {
                         match = true;
                     }
 
@@ -109,7 +111,7 @@ bool globMatch(const char* path, size_t len, const char* pattern, size_t patlen)
 
             default: {
                 // Match the next character in the pattern
-                if (i == len || charCmp<CaseSensitive>(path[i], pattern[j]))
+                if (i == path.length || charCmp<CaseSensitive>(path.path[i], pattern.path[j]))
                     return false;
                 ++i;
                 break;
@@ -118,23 +120,23 @@ bool globMatch(const char* path, size_t len, const char* pattern, size_t patlen)
     }
 
     // If we ran out of pattern and out of path, then we have a complete match.
-    return i == len;
+    return i == path.length;
 }
 
-bool globMatch(const char* path, size_t len, const char* pattern, size_t patlen) {
+bool globMatch(path::Path path, path::Path pattern) {
 #ifdef _WIN32
-    return globMatch<false>(path, len, pattern, patlen);
+    return globMatch<false>(path, pattern);
 #else
-    return globMatch<true>(path, len, pattern, patlen);
+    return globMatch<true>(path, pattern);
 #endif
 }
 
 /**
  * Returns true if the given string contains a glob pattern.
  */
-bool isGlobPattern(const char* s, size_t len) {
-    for (size_t i = 0; i < len; ++i) {
-        switch (s[i]) {
+bool isGlobPattern(path::Path p) {
+    for (size_t i = 0; i < p.length; ++i) {
+        switch (p.path[i]) {
             case '?':
             case '*':
             case '[':
@@ -148,8 +150,8 @@ bool isGlobPattern(const char* s, size_t len) {
 /**
  * Returns true if the given path element is a recursive glob pattern.
  */
-bool isRecursiveGlob(const char* s, size_t len) {
-    return len == 2 && s[0] == '*' && s[1] == '*';
+bool isRecursiveGlob(path::Path p) {
+    return p.length == 2 && p.path[0] == '*' && p.path[1] == '*';
 }
 
 /**
@@ -167,11 +169,10 @@ bool isHiddenDir(const char* s, size_t len) {
     }
 }
 
-typedef void (*GlobCallback)(const char* path, size_t len, bool isDir, void* data);
+typedef void (*GlobCallback)(path::Path path, bool isDir, void* data);
 
 struct GlobClosure {
-    const char* pattern;
-    size_t patternLength;
+    path::Path pattern;
 
     // Next callback
     GlobCallback next;
@@ -182,20 +183,19 @@ struct GlobClosure {
  * Helper function for listing a directory with the given pattern. If the
  * pattern is empty,
  */
-void glob(const char* path, size_t len,
-          const char* pattern, size_t patlen,
+void glob(path::Path path, path::Path pattern,
           GlobCallback callback, void* data) {
 
-    std::string buf(path, len);
+    std::string buf(path.path, path.length);
 
-    if (patlen == 0) {
-        path::join(buf, pattern, patlen);
-        callback(buf.data(), buf.size(), true, data);
+    if (pattern.length == 0) {
+        path::join(buf, pattern.path, pattern.length);
+        callback(path::Path(buf.data(), buf.size()), true, data);
         return;
     }
 
     struct dirent* entry;
-    DIR* dir = opendir(len > 0 ? buf.c_str() : ".");
+    DIR* dir = opendir(path.length > 0 ? buf.c_str() : ".");
     if (!dir)
         return;
 
@@ -208,12 +208,12 @@ void glob(const char* path, size_t len,
         if (isHiddenDir(name, nameLength))
             continue;
 
-        if (globMatch(name, nameLength, pattern, patlen)) {
+        if (globMatch(path::Path(name, nameLength), pattern)) {
             path::join(buf, entry->d_name, nameLength);
 
-            callback(buf.data(), buf.size(), isDir, data);
+            callback(path::Path(buf.data(), buf.size()), isDir, data);
 
-            buf.assign(path, len);
+            buf.assign(path.path, path.length);
         }
     }
 
@@ -243,7 +243,7 @@ void globRecursive(std::string& path, GlobCallback callback, void* data) {
 
         path::join(path, entry->d_name, nameLength);
 
-        callback(path.data(), path.size(), isDir, data);
+        callback(path::Path(path.data(), path.size()), isDir, data);
 
         if (isDir)
             globRecursive(path, callback, data);
@@ -254,48 +254,47 @@ void globRecursive(std::string& path, GlobCallback callback, void* data) {
     closedir(dir);
 }
 
-void globCallback(const char* path, size_t len, bool isDir, void* data) {
+void globCallback(path::Path path, bool isDir, void* data) {
     if (isDir) {
         const GlobClosure* c = (const GlobClosure*)data;
-        glob(path, len, c->pattern, c->patternLength, c->next, c->nextData);
+        glob(path, c->pattern, c->next, c->nextData);
     }
 }
 
 /**
  * Glob a directory.
  */
-void glob(const char* path, size_t len, GlobCallback callback, void* data = NULL) {
+void glob(path::Path path, GlobCallback callback, void* data = NULL) {
 
-    path::Split s = path::split(path, len);
+    path::Split s = path::split(path.path, path.length);
 
-    if (isGlobPattern(s.head, s.headlen)) {
+    if (isGlobPattern(s.head)) {
         // Directory name contains a glob pattern
 
         GlobClosure c;
         c.pattern = s.tail;
-        c.patternLength = s.taillen;
         c.next = callback;
         c.nextData = data;
 
-        glob(s.head, s.headlen, &globCallback, &c);
+        glob(s.head, &globCallback, &c);
     }
-    else if (isRecursiveGlob(s.tail, s.taillen)) {
-        std::string buf(s.head, s.headlen);
+    else if (isRecursiveGlob(s.tail)) {
+        std::string buf(s.head.path, s.head.length);
         globRecursive(buf, callback, data);
     }
-    else if (isGlobPattern(s.tail, s.taillen)) {
+    else if (isGlobPattern(s.tail)) {
         // Only base name contains a glob pattern.
-        glob(s.head, s.headlen, s.tail, s.taillen, callback, data);
+        glob(s.head, s.tail, callback, data);
     }
     else {
         // No glob pattern in this path.
-        if (s.taillen) {
+        if (s.tail.length) {
             // TODO: If file exists, then return it
-            callback(path, len, false, data);
+            callback(path, false, data);
         }
         else {
             // TODO: If directory exists, then return it
-            callback(s.head, s.headlen, true, data);
+            callback(s.head, true, data);
         }
     }
 }
@@ -313,24 +312,24 @@ int fs_globmatch(lua_State* L) {
     size_t len, patlen;
     const char* path = luaL_checklstring(L, 1, &len);
     const char* pattern = luaL_checklstring(L, 2, &patlen);
-    lua_pushboolean(L, globMatch(path, len, pattern, patlen));
+    lua_pushboolean(L, globMatch(path::Path(path, len), path::Path(pattern, patlen)));
     return 1;
 }
 
 /**
  * Callback to put globbed items into a set.
  */
-void fs_globcallback(const char* path, size_t len, bool isDir, void* data) {
+void fs_globcallback(path::Path path, bool isDir, void* data) {
     std::set<std::string>* paths = (std::set<std::string>*)data;
-    paths->insert(std::string(path, len));
+    paths->insert(std::string(path.path, path.length));
 }
 
 /**
  * Callback to remove globbed items from a set.
  */
-void fs_globcallback_exclude(const char* path, size_t len, bool isDir, void* data) {
+void fs_globcallback_exclude(path::Path path, bool isDir, void* data) {
     std::set<std::string>* paths = (std::set<std::string>*)data;
-    paths->erase(std::string(path, len));
+    paths->erase(std::string(path.path, path.length));
 }
 
 /**
@@ -365,9 +364,9 @@ int fs_glob(lua_State* L) {
                 path = lua_tolstring(L, -1, &len);
                 if (path) {
                     if (len > 0 && path[0] == '!')
-                        glob(path+1, len-1, &fs_globcallback_exclude, &paths);
+                        glob(path::Path(path+1, len-1), &fs_globcallback_exclude, &paths);
                     else
-                        glob(path, len, &fs_globcallback, &paths);
+                        glob(path::Path(path, len), &fs_globcallback, &paths);
                 }
 
                 lua_pop(L, 1); // Pop path
@@ -377,9 +376,9 @@ int fs_glob(lua_State* L) {
             path = luaL_checklstring(L, i, &len);
 
             if (len > 0 && path[0] == '!')
-                glob(path+1, len-1, &fs_globcallback_exclude, &paths);
+                glob(path::Path(path+1, len-1), &fs_globcallback_exclude, &paths);
             else
-                glob(path, len, &fs_globcallback, &paths);
+                glob(path::Path(path, len), &fs_globcallback, &paths);
         }
     }
 

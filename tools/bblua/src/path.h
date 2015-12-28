@@ -68,6 +68,15 @@ int cmp(char a, char b);
 int cmp(const char* a, const char* b, size_t len);
 int cmp(const char* a, const char* b, size_t len1, size_t len2);
 
+struct Path {
+
+    Path() : path(NULL), length(0) {}
+    Path(const char* path, size_t length) : path(path), length(length) {}
+
+    const char* path;
+    size_t length;
+};
+
 /**
  * Returns true if the given path is absolute.
  */
@@ -77,11 +86,8 @@ bool isabs(const char* path, size_t len);
  * Helper struct for representing a split path.
  */
 struct Split {
-    const char* head;
-    size_t headlen;
-
-    const char* tail;
-    size_t taillen;
+    Path head;
+    Path tail;
 };
 
 /**

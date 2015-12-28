@@ -100,10 +100,10 @@ Split split(const char* path, size_t len) {
         head_end = tail_start;
 
     Split s;
-    s.head = path;
-    s.headlen = head_end;
-    s.tail = path+tail_start;
-    s.taillen = len-tail_start;
+    s.head.path   = path;
+    s.head.length = head_end;
+    s.tail.path   = path+tail_start;
+    s.tail.length = len-tail_start;
     return s;
 }
 
@@ -167,8 +167,8 @@ static int path_split(lua_State* L) {
 
     path::Split s = path::split(path, len);
 
-    lua_pushlstring(L, s.head, s.headlen);
-    lua_pushlstring(L, s.tail, s.taillen);
+    lua_pushlstring(L, s.head.path, s.head.length);
+    lua_pushlstring(L, s.tail.path, s.tail.length);
 
     return 2;
 }
@@ -178,7 +178,7 @@ static int path_basename(lua_State* L) {
     const char* path = luaL_checklstring(L, 1, &len);
 
     path::Split s = path::split(path, len);
-    lua_pushlstring(L, s.tail, s.taillen);
+    lua_pushlstring(L, s.tail.path, s.tail.length);
     return 1;
 }
 
@@ -187,7 +187,7 @@ static int path_dirname(lua_State* L) {
     const char* path = luaL_checklstring(L, 1, &len);
 
     path::Split s = path::split(path, len);
-    lua_pushlstring(L, s.head, s.headlen);
+    lua_pushlstring(L, s.head.path, s.head.length);
     return 1;
 }
 
