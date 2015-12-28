@@ -8,6 +8,8 @@
  */
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <string>
 
 #include "bblua.h"
 #include "rules.h"
@@ -152,6 +154,12 @@ int execute(lua_State* L, int argc, char** argv) {
     // Pass along the rest of the command line arguments to the Lua script.
     for (int i = 0; i < args.n; ++i)
         lua_pushstring(L, args.argv[i]);
+
+    // Change working directory to the script directory so that globbing and
+    // such will find files relative to the script directory.
+    path::Path dirname = path::Path(opts.script).dirname();
+    if (dirname.length > 0)
+        chdir(dirname.copy().c_str());
 
     if (lua_pcall(L, args.n, LUA_MULTRET, 0) != LUA_OK) {
         print_error(L);

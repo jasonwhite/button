@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stddef.h> // For size_t
+#include <string.h> // for strlen
 #include <string>
 
 struct lua_State;
@@ -71,6 +72,7 @@ int cmp(const char* a, const char* b, size_t len1, size_t len2);
 struct Path {
 
     Path() : path(NULL), length(0) {}
+    Path(const char* path) : path(path), length(strlen(path)) {}
     Path(const char* path, size_t length) : path(path), length(length) {}
 
     const char* path;
@@ -80,6 +82,11 @@ struct Path {
      * Returns true if the given path is absolute.
      */
     bool isabs() const;
+
+    Path dirname() const;
+    Path basename() const;
+
+    std::string copy() const;
 };
 
 /**

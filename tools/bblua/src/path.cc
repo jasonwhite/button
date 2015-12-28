@@ -56,6 +56,18 @@ bool Path::isabs() const {
     return false;
 }
 
+Path Path::dirname() const {
+    return split(*this).head;
+}
+
+Path Path::basename() const {
+    return split(*this).tail;
+}
+
+std::string Path::copy() const {
+    return std::string(path, length);
+}
+
 /**
  * Helper function to get the distance forward to a '/', '\', or to the end of
  * the buffer.
