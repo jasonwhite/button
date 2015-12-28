@@ -353,14 +353,33 @@ int fs_glob(lua_State* L) {
     const char* path;
 
     for (int i = 1; i <= argc; ++i) {
-        path = luaL_checklstring(L, i, &len);
+        const int type = lua_type(L, i);
 
-        if (len > 0 && path[0] == '!') {
-            // Exclude from the list
-            glob(path+1, len-1, &fs_globcallback_exclude, &paths);
+        if (type == LUA_TTABLE) {
+            for (int j = 1; ; ++j) {
+                if (lua_rawgeti(L, i, j) == LUA_TNIL) {
+                    lua_pop(L, 1);
+                    break;
+                }
+
+                path = lua_tolstring(L, -1, &len);
+                if (path) {
+                    if (len > 0 && path[0] == '!')
+                        glob(path+1, len-1, &fs_globcallback_exclude, &paths);
+                    else
+                        glob(path, len, &fs_globcallback, &paths);
+                }
+
+                lua_pop(L, 1); // Pop path
+            }
         }
-        else {
-            glob(path, len, &fs_globcallback, &paths);
+        else if (type == LUA_TSTRING) {
+            path = luaL_checklstring(L, i, &len);
+
+            if (len > 0 && path[0] == '!')
+                glob(path+1, len-1, &fs_globcallback_exclude, &paths);
+            else
+                glob(path, len, &fs_globcallback, &paths);
         }
     }
 
