@@ -148,9 +148,9 @@ bool isGlobPattern(const char* s, size_t len) {
 /**
  * Returns true if the given path element is a recursive glob pattern.
  */
-/*bool isRecursiveGlob(const char* s, size_t len) {
+bool isRecursiveGlob(const char* s, size_t len) {
     return len == 2 && s[0] == '*' && s[1] == '*';
-}*/
+}
 
 /**
  * Returns true if the given path element is a hidden directory (i.e., "." or
@@ -170,8 +170,8 @@ bool isHiddenDir(const char* s, size_t len) {
 typedef void (*GlobCallback)(const char* path, size_t len, bool isDir, void* data);
 
 struct GlobClosure {
-    const char* parent;
-    size_t parentLength;
+    const char* pattern;
+    size_t patternLength;
 
     // Next callback
     GlobCallback next;
@@ -184,24 +184,18 @@ struct GlobClosure {
  */
 void glob(const char* path, size_t len,
           const char* pattern, size_t patlen,
-          GlobCallback cb, void* data) {
+          GlobCallback callback, void* data) {
 
     std::string buf(path, len);
 
     if (patlen == 0) {
         path::join(buf, pattern, patlen);
-        cb(buf.data(), buf.size(), true, data);
+        callback(buf.data(), buf.size(), true, data);
         return;
     }
 
     struct dirent* entry;
-    DIR* dir;
-
-    if (len > 0)
-        dir = opendir(buf.c_str());
-    else
-        dir = opendir(".");
-
+    DIR* dir = opendir(len > 0 ? buf.c_str() : ".");
     if (!dir)
         return;
 
@@ -209,6 +203,7 @@ void glob(const char* path, size_t len,
     while ((entry = readdir(dir))) {
         const char* name = entry->d_name;
         size_t nameLength = strlen(entry->d_name);
+        bool isDir = entry->d_type == DT_DIR;
 
         if (isHiddenDir(name, nameLength))
             continue;
@@ -216,7 +211,7 @@ void glob(const char* path, size_t len,
         if (globMatch(name, nameLength, pattern, patlen)) {
             path::join(buf, entry->d_name, nameLength);
 
-            cb(buf.data(), buf.size(), entry->d_type == DT_DIR, data);
+            callback(buf.data(), buf.size(), isDir, data);
 
             buf.assign(path, len);
         }
@@ -225,17 +220,51 @@ void glob(const char* path, size_t len,
     closedir(dir);
 }
 
+/**
+ * Helper function to recursively yield directories for the given path.
+ */
+void globRecursive(std::string& path, GlobCallback callback, void* data) {
+
+    size_t len = path.size();
+
+    struct dirent* entry;
+    DIR* dir = opendir(len > 0 ? path.c_str() : ".");
+    if (!dir)
+        return;
+
+    // TODO: Implement this for windows, too.
+    while ((entry = readdir(dir))) {
+        const char* name = entry->d_name;
+        size_t nameLength = strlen(entry->d_name);
+        bool isDir = entry->d_type == DT_DIR;
+
+        if (isHiddenDir(name, nameLength))
+            continue;
+
+        path::join(path, entry->d_name, nameLength);
+
+        callback(path.data(), path.size(), isDir, data);
+
+        if (isDir)
+            globRecursive(path, callback, data);
+
+        path.resize(len);
+    }
+
+    closedir(dir);
+}
+
 void globCallback(const char* path, size_t len, bool isDir, void* data) {
     if (isDir) {
         const GlobClosure* c = (const GlobClosure*)data;
-        glob(path, len, c->parent, c->parentLength, c->next, c->nextData);
+        glob(path, len, c->pattern, c->patternLength, c->next, c->nextData);
     }
 }
 
 /**
  * Glob a directory.
  */
-void glob(const char* path, size_t len, GlobCallback cb, void* data = NULL) {
+void glob(const char* path, size_t len, GlobCallback callback, void* data = NULL) {
 
     path::Split s = path::split(path, len);
 
@@ -243,26 +272,30 @@ void glob(const char* path, size_t len, GlobCallback cb, void* data = NULL) {
         // Directory name contains a glob pattern
 
         GlobClosure c;
-        c.parent = s.tail;
-        c.parentLength = s.taillen;
-        c.next = cb;
+        c.pattern = s.tail;
+        c.patternLength = s.taillen;
+        c.next = callback;
         c.nextData = data;
 
         glob(s.head, s.headlen, &globCallback, &c);
     }
+    else if (isRecursiveGlob(s.tail, s.taillen)) {
+        std::string buf(s.head, s.headlen);
+        globRecursive(buf, callback, data);
+    }
     else if (isGlobPattern(s.tail, s.taillen)) {
         // Only base name contains a glob pattern.
-        glob(s.head, s.headlen, s.tail, s.taillen, cb, data);
+        glob(s.head, s.headlen, s.tail, s.taillen, callback, data);
     }
     else {
         // No glob pattern in this path.
         if (s.taillen) {
             // TODO: If file exists, then return it
-            cb(path, len, false, data);
+            callback(path, len, false, data);
         }
         else {
             // TODO: If directory exists, then return it
-            cb(s.head, s.headlen, true, data);
+            callback(s.head, s.headlen, true, data);
         }
     }
 }
@@ -290,6 +323,7 @@ int fs_globmatch(lua_State* L) {
 void fs_globcallback(const char* path, size_t len, bool isDir, void* data) {
     std::set<std::string>* paths = (std::set<std::string>*)data;
     paths->insert(std::string(path, len));
+    printf("debug: %.*s\n", (int)len, path);
 }
 
 /**
@@ -301,6 +335,7 @@ void fs_globcallback(const char* path, size_t len, bool isDir, void* data) {
  * Returns: A table of the matching files.
  *
  * TODO: Cache results of a directory listing and use that for further globs.
+ * TODO: Allow exclusion globs.
  */
 int fs_glob(lua_State* L) {
 
