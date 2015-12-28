@@ -94,7 +94,7 @@ struct Split {
  * Splits a path such that the head is the parent directory (empty if none) and
  * the tail is the basename of the file path.
  */
-Split split(const char* path, size_t len);
+Split split(Path path);
 
 /**
  * Joins two paths.

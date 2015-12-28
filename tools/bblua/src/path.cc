@@ -72,14 +72,14 @@ bool Path::isabs() const {
     return i;
 }*/
 
-Split split(const char* path, size_t len) {
+Split split(Path path) {
 
     // Search backwards for the last path separator
-    size_t tail_start = len;
+    size_t tail_start = path.length;
 
     while (tail_start > 0) {
         --tail_start;
-        if (issep(path[tail_start])) {
+        if (issep(path.path[tail_start])) {
             ++tail_start;
             break;
         }
@@ -90,7 +90,7 @@ Split split(const char* path, size_t len) {
     while (head_end > 0) {
         --head_end;
 
-        if (!issep(path[head_end])) {
+        if (!issep(path.path[head_end])) {
             ++head_end;
             break;
         }
@@ -100,10 +100,10 @@ Split split(const char* path, size_t len) {
         head_end = tail_start;
 
     Split s;
-    s.head.path   = path;
+    s.head.path   = path.path;
     s.head.length = head_end;
-    s.tail.path   = path+tail_start;
-    s.tail.length = len-tail_start;
+    s.tail.path   = path.path+tail_start;
+    s.tail.length = path.length-tail_start;
     return s;
 }
 
@@ -165,7 +165,7 @@ static int path_split(lua_State* L) {
     size_t len;
     const char* path = luaL_checklstring(L, 1, &len);
 
-    path::Split s = path::split(path, len);
+    path::Split s = path::split(path::Path(path, len));
 
     lua_pushlstring(L, s.head.path, s.head.length);
     lua_pushlstring(L, s.tail.path, s.tail.length);
@@ -177,7 +177,7 @@ static int path_basename(lua_State* L) {
     size_t len;
     const char* path = luaL_checklstring(L, 1, &len);
 
-    path::Split s = path::split(path, len);
+    path::Split s = path::split(path::Path(path, len));
     lua_pushlstring(L, s.tail.path, s.tail.length);
     return 1;
 }
@@ -186,7 +186,7 @@ static int path_dirname(lua_State* L) {
     size_t len;
     const char* path = luaL_checklstring(L, 1, &len);
 
-    path::Split s = path::split(path, len);
+    path::Split s = path::split(path::Path(path, len));
     lua_pushlstring(L, s.head.path, s.head.length);
     return 1;
 }

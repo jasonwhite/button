@@ -266,7 +266,7 @@ void globCallback(path::Path path, bool isDir, void* data) {
  */
 void glob(path::Path path, GlobCallback callback, void* data = NULL) {
 
-    path::Split s = path::split(path.path, path.length);
+    path::Split s = path::split(path);
 
     if (isGlobPattern(s.head)) {
         // Directory name contains a glob pattern
