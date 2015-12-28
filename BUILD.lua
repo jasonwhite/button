@@ -11,20 +11,19 @@ local d = require "rules.d.dmd"
 -- Wrap all commands with the bootstrapped wrapper to catch dependencies.
 d.base.prefix = {"./bb-wrap-bootstrap"}
 
-local compiler_opts = {"-release", "-w"}
+-- Compiler flags for all targets
+d.base.compiler_opts = {"-release", "-w"}
 
 d.library {
     name = "io",
     srcs = fs.glob "source/io/source/io/**/*.d",
     imports = {"source/io/source"},
-    compiler_opts = compiler_opts,
 }
 
 d.test {
     name = "io_test",
     srcs = fs.glob "source/io/source/io/**/*.d",
     imports = {"source/io/source"},
-    compiler_opts = compiler_opts,
     linker_opts = {"-main"},
 }
 
@@ -37,7 +36,6 @@ d.binary {
         "source/darg/source/*.d",
         },
     imports = {"source", "source/darg/source", "source/io/source"},
-    compiler_opts = compiler_opts,
     linker_opts = {"-L-lsqlite3"},
 }
 
@@ -50,7 +48,6 @@ d.test {
         "source/darg/source/*.d",
         },
     imports = {"source", "source/darg/source", "source/io/source"},
-    compiler_opts = compiler_opts,
     linker_opts = {"-L-lsqlite3"},
 }
 
@@ -59,7 +56,6 @@ d.binary {
     deps = {"io"},
     srcs = fs.glob "source/wrap/source/wrap/**/*.d",
     imports = {"source/wrap/source", "source/io/source"},
-    compiler_opts = compiler_opts,
 }
 
 d.test {
@@ -67,5 +63,4 @@ d.test {
     deps = {"io"},
     srcs = fs.glob "source/wrap/source/wrap/**/*.d",
     imports = {"source/wrap/source", "source/io/source"},
-    compiler_opts = compiler_opts,
 }
