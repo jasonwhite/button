@@ -26,7 +26,7 @@ end
 --[[
 Base metatable
 ]]
-local _generic = {
+local base = {
 
     -- Path to DMD
     compiler = {"dmd"};
@@ -59,11 +59,11 @@ local _generic = {
 --[[
 Returns the path to the target
 ]]
-function _generic:path()
+function base:path()
     return path.join(self.bindir, self.name)
 end
 
-setmetatable(_generic, {__index = rules.base})
+setmetatable(base, {__index = rules.base})
 
 --[[
 A binary executable.
@@ -77,7 +77,7 @@ local function is_binary(t)
     return getmetatable(t) == _binary_mt
 end
 
-setmetatable(_binary, {__index = _generic})
+setmetatable(_binary, {__index = base})
 
 --[[
 A library. Can be static or dynamic.
@@ -93,7 +93,7 @@ local function is_library(t)
     return getmetatable(t) == _library_mt
 end
 
-setmetatable(_library, {__index = _generic})
+setmetatable(_library, {__index = base})
 
 --[[
 A test.
@@ -105,13 +105,13 @@ local function is_test(t)
     return getmetatable(t) == _test_mt
 end
 
-setmetatable(_test, {__index = _generic})
+setmetatable(_test, {__index = base})
 
 
 --[[
 Generates the low-level rules required to build a generic D library/binary.
 ]]
-function _generic:rules(deps)
+function base:rules(deps)
     local objdir = self.objdir or path.join("obj", self.name)
 
     local args = table.join(self.prefix, self.compiler, self.opts)
@@ -183,9 +183,9 @@ end
 
 function _library:path()
     if self.shared then
-        return path.join(self.bindir, self.name .. ".so")
+        return path.join(self.bindir, "lib".. self.name .. ".so")
     else
-        return path.join(self.bindir, self.name .. ".a")
+        return path.join(self.bindir, "lib".. self.name .. ".a")
     end
 end
 
@@ -196,13 +196,13 @@ function _library:rules(deps)
         table.insert(self.linker_opts, "-lib")
     end
 
-    _generic.rules(self, deps)
+    base.rules(self, deps)
 end
 
 function _test:rules(deps)
-    table.insert(self.compiler_opts, "-unittest")
+    self.compiler_opts = table.join(self.compiler_opts, "-unittest")
 
-    _generic.rules(self, deps)
+    base.rules(self, deps)
 
     local test_runner = self:path()
 
@@ -229,7 +229,7 @@ local function test(opts)
 end
 
 return {
-    _generic = _generic,
+    base = base,
 
     is_binary = is_binary,
     is_library = is_library,
