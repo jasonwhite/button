@@ -11,9 +11,6 @@ cp source/wrap/bb-wrap-bootstrap ./
 make --directory tools/bblua
 cp tools/bblua/bblua ./
 
-
-export PYTHONPATH=tools/python:$PYTHONPATH
-
 echo "Building with the One True Build System..."
 rm -f .*bb.json.state
 ./bb-bootstrap build

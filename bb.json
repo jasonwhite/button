@@ -1,8 +1,8 @@
 [
     {
-        "inputs": ["build.py"],
+        "inputs": ["BUILD.lua"],
         "outputs": ["build.bb.json"],
-        "task": ["./build.py", "build.bb.json"]
+        "task": ["./bblua", "BUILD.lua", "-o", "build.bb.json"]
     },
     {
         "inputs": ["build.bb.json"],
