@@ -144,6 +144,7 @@ function _generic:rules(deps)
     local inputs = {}
     table.append(inputs, sources)
 
+    -- TODO: Allow linking with C/C++ libraries
     for _,dep in ipairs(deps) do
         if is_library(dep) then
             table.insert(inputs, dep:path())
@@ -224,7 +225,7 @@ end
 
 local function test(opts)
     setmetatable(opts, _test_mt)
-    return reles.add(opts)
+    return rules.add(opts)
 end
 
 return {
