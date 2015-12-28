@@ -232,6 +232,9 @@ void globRecursive(std::string& path, GlobCallback callback, void* data) {
     if (!dir)
         return;
 
+    // "**" matches 0 or more directories and thus includes this one.
+    callback(path::Path(path.data(), path.size()), true, data);
+
     // TODO: Implement this for windows, too.
     while ((entry = readdir(dir))) {
         const char* name = entry->d_name;
