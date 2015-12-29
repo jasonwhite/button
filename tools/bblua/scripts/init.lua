@@ -140,3 +140,17 @@ function table.join(...)
     table.append(t, ...)
     return t
 end
+
+--[[
+Checks if the given table contains the given value. Returns true if the value is
+in the table, false otherwise.
+]]
+function table.contains(t, value)
+    for _,v in ipairs(t) do
+        if v == value then
+            return true
+        end
+    end
+
+    return false
+end
