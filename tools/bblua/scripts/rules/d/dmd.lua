@@ -26,7 +26,7 @@ end
 --[[
 Base metatable
 ]]
-local base = {
+local common = {
 
     -- Path to DMD
     compiler = {"dmd"};
@@ -59,17 +59,16 @@ local base = {
 --[[
 Returns the path to the target
 ]]
-function base:path()
+function common:path()
     return path.join(self.bindir, self.name)
 end
 
-setmetatable(base, {__index = rules.base})
+setmetatable(common, {__index = rules.common})
 
 --[[
 A binary executable.
 ]]
-local _binary = {
-}
+local _binary = {}
 
 local _binary_mt = {__index = _binary}
 
@@ -77,7 +76,7 @@ local function is_binary(t)
     return getmetatable(t) == _binary_mt
 end
 
-setmetatable(_binary, {__index = base})
+setmetatable(_binary, {__index = common})
 
 --[[
 A library. Can be static or dynamic.
@@ -93,7 +92,7 @@ local function is_library(t)
     return getmetatable(t) == _library_mt
 end
 
-setmetatable(_library, {__index = base})
+setmetatable(_library, {__index = common})
 
 --[[
 A test.
@@ -105,13 +104,13 @@ local function is_test(t)
     return getmetatable(t) == _test_mt
 end
 
-setmetatable(_test, {__index = base})
+setmetatable(_test, {__index = common})
 
 
 --[[
 Generates the low-level rules required to build a generic D library/binary.
 ]]
-function base:rules(deps)
+function common:rules(deps)
     local objdir = self.objdir or path.join("obj", self.name)
 
     local args = table.join(self.prefix, self.compiler, self.opts)
@@ -196,13 +195,13 @@ function _library:rules(deps)
         table.insert(self.linker_opts, "-lib")
     end
 
-    base.rules(self, deps)
+    common.rules(self, deps)
 end
 
 function _test:rules(deps)
     self.compiler_opts = table.join(self.compiler_opts, "-unittest")
 
-    base.rules(self, deps)
+    common.rules(self, deps)
 
     local test_runner = self:path()
 
@@ -229,7 +228,7 @@ local function test(opts)
 end
 
 return {
-    base = base,
+    common = common,
 
     is_binary = is_binary,
     is_library = is_library,

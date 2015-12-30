@@ -9,10 +9,10 @@ Generates the build description.
 local d = require "rules.d.dmd"
 
 -- Wrap all commands with the bootstrapped wrapper to catch dependencies.
-d.base.prefix = {"./bb-wrap-bootstrap"}
+d.common.prefix = {"./bb-wrap-bootstrap"}
 
 -- Compiler flags for all targets
-d.base.compiler_opts = {"-release", "-w"}
+d.common.compiler_opts = {"-release", "-w"}
 
 d.library {
     name = "io",

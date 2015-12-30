@@ -4,9 +4,9 @@ local t = {}
 t.targets = {}
 
 --[[
-    Base metatable for all rules to "inherit" from.
+    Common table for all rules to "inherit" from.
 ]]
-t.base = {
+t.common = {
     -- Name of the target
     name = "",
 
