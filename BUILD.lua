@@ -6,7 +6,7 @@ Description:
 Generates the build description.
 ]]
 
-local d = require "rules.d.dmd"
+local d = require "rules.d"
 
 -- Wrap all commands with the bootstrapped wrapper to catch dependencies.
 d.common.prefix = {"./bb-wrap-bootstrap"}
