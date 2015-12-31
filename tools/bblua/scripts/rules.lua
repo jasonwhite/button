@@ -1,4 +1,17 @@
--- Mapping of names to targets.
+--[[
+Copyright: Copyright Jason White, 2015
+License:   MIT
+Authors:   Jason White
+
+Description:
+High-level rule resolution. Client scripts add targets that may depend on each
+other. Since these targets can be defined in any order, they are added to a list
+and dependencies are resolved after all targets are defined.
+]]
+
+--[[
+    List of targets.
+]]
 local targets = {}
 
 --[[
