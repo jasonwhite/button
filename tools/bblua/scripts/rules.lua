@@ -21,6 +21,18 @@ t.common = {
 }
 
 --[[
+    Converts the target's name to a usable path. This strips off anything past
+    and including a ':'. This is a useful naming convention where multiple
+    targets share the same base name but eventually get output to separate
+    paths. For example, a shared library "libfoo.so" and a static library
+    "libfoo.a" both have "foo" as the name. With this, the rules can be named
+    "foo:shared" and "foo:static" to avoid a target name clash.
+]]
+function t.common:path()
+    return string.match(self.name, "^[^:]*")
+end
+
+--[[
     Adds a target to the table.
 ]]
 function t.add(target)
