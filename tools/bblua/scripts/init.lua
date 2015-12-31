@@ -133,12 +133,13 @@ function table.append(t, ...)
             table.insert(t, i)
         end
     end
+
+    return t
 end
 
 function table.join(...)
     local t = {}
-    table.append(t, ...)
-    return t
+    return table.append(t, ...)
 end
 
 --[[
