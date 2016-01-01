@@ -1,5 +1,5 @@
 /**
- * Copyright: Copyright Jason White, 2015
+ * Copyright: Copyright Jason White, 2016
  * License:   MIT
  * Authors:   Jason White
  *

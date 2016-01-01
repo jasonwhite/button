@@ -1,5 +1,5 @@
 --[[
-Copyright (c) Jason White, 2015
+Copyright (c) Jason White, 2016
 License: MIT
 
 Description:

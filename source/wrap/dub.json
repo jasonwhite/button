@@ -1,7 +1,7 @@
 {
     "name": "bb-wrap-bootstrap",
     "description": "Wraps commands to provide dependency information.",
-    "copyright": "Copyright © 2015, Jason White",
+    "copyright": "Copyright © 2016, Jason White",
     "authors": ["Jason White"],
     "targetType": "executable",
     "dependencies": {
