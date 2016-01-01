@@ -46,6 +46,8 @@ const Script script_shutdown = SCRIPT("shutdown", "shutdown.lua", shutdown);
  * Modules to embed
  */
 #include "embedded/rules.c"
+#include "embedded/rules/cc.c"
+#include "embedded/rules/cc/gcc.c"
 #include "embedded/rules/d.c"
 #include "embedded/rules/d/dmd.c"
 
@@ -56,6 +58,8 @@ const Script script_shutdown = SCRIPT("shutdown", "shutdown.lua", shutdown);
  */
 const Script embedded[] = {
     SCRIPT("rules", "{embedded}/rules.lua", rules),
+    SCRIPT("rules.cc", "{embedded}/rules/cc.lua", rules_cc),
+    SCRIPT("rules.cc.gcc", "{embedded}/rules/cc/gcc.lua", rules_cc_gcc),
     SCRIPT("rules.d", "{embedded}/rules/d.lua", rules_d),
     SCRIPT("rules.d.dmd", "{embedded}/rules/d/dmd.lua", rules_d_dmd),
 };
