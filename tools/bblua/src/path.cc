@@ -119,6 +119,34 @@ Split split(Path path) {
     return s;
 }
 
+Split splitExtension(Path path) {
+    size_t base = path.length;
+
+    // Find the base name
+    while (base > 0) {
+        --base;
+        if (issep(path.path[base])) {
+            ++base;
+            break;
+        }
+    }
+
+    // Skip past initial dots
+    while (base < path.length && path.path[base] == '.')
+        ++base;
+
+    // Skip past non-dots
+    while (base < path.length && path.path[base] != '.')
+        ++base;
+
+    Split s;
+    s.head.path = path.path;
+    s.head.length = base;
+    s.tail.path = path.path+base;
+    s.tail.length = path.length-base;
+    return s;
+}
+
 std::string& join(std::string& buf, Path path)
 {
     if (path.isabs()) {
@@ -208,33 +236,21 @@ static int path_splitext(lua_State* L) {
     size_t len;
     const char* path = luaL_checklstring(L, 1, &len);
 
-    size_t base = len;
+    path::Split s = path::splitExtension(path::Path(path, len));
 
-    // Find the base name
-    while (base > 0) {
-        --base;
-        if (path::issep(path[base])) {
-            ++base;
-            break;
-        }
-    }
+    lua_pushlstring(L, s.head.path, s.head.length);
+    lua_pushlstring(L, s.tail.path, s.tail.length);
 
-    // Skip past initial dots
-    while (base < len && path[base] == '.')
-        ++base;
-
-    // Skip past non-dots
-    while (base < len && path[base] != '.')
-        ++base;
-
-    lua_pushlstring(L, path, base); // root
-    lua_pushlstring(L, path+base, len-base); // extension
     return 2;
 }
 
 static int path_getext(lua_State* L) {
-    path_splitext(L);
-    lua_remove(L, -2); // Pop off the root
+    size_t len;
+    const char* path = luaL_checklstring(L, 1, &len);
+
+    path::Split s = path::splitExtension(path::Path(path, len));
+
+    lua_pushlstring(L, s.tail.path, s.tail.length);
     return 1;
 }
 

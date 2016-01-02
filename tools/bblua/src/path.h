@@ -104,6 +104,11 @@ struct Split {
 Split split(Path path);
 
 /**
+ * Splits a path into an extension.
+ */
+Split splitExtension(Path path);
+
+/**
  * Joins two paths.
  */
 std::string& join(std::string& buf, Path path);
