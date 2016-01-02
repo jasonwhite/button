@@ -107,7 +107,7 @@ setmetatable(_test, {__index = common})
 --[[
 Generates the low-level rules required to build a generic D library/binary.
 ]]
-function common:rules(deps)
+function common:rules()
     local objdir = self.objdir or path.join("obj", self.name)
 
     local args = table.join(self.prefix, self.compiler, self.opts)
@@ -141,7 +141,7 @@ function common:rules(deps)
     table.append(inputs, sources)
 
     -- TODO: Allow linking with C/C++ libraries
-    for _,dep in ipairs(deps) do
+    for _,dep in ipairs(self.deps) do
         if is_library(dep) then
             table.insert(inputs, dep:path())
         end
@@ -187,20 +187,20 @@ function _library:basename()
     end
 end
 
-function _library:rules(deps)
+function _library:rules()
     if self.shared then
         table.insert(self.linker_opts, "-shared")
     else
         table.insert(self.linker_opts, "-lib")
     end
 
-    common.rules(self, deps)
+    common.rules(self)
 end
 
-function _test:rules(deps)
+function _test:rules()
     self.compiler_opts = table.join(self.compiler_opts, "-unittest")
 
-    common.rules(self, deps)
+    common.rules(self)
 
     local test_runner = self:path()
 

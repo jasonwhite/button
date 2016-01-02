@@ -73,8 +73,10 @@ function resolve()
             table.insert(deps, d)
         end
 
-        print("Generating rules for '".. v.name .."'...")
-        v:rules(deps)
+        -- Replace string dependencies with resolved dependencies.
+        v.deps = deps
+
+        v:rules()
     end
 end
 
