@@ -15,8 +15,7 @@ Helper functions.
 TODO: Alter paths based on platform
 ]]
 local function is_d_source(src)
-    local _,ext = path.splitext(src)
-    return ext == ".d"
+    return path.getext(src) == ".d"
 end
 
 local function to_object(objdir, src)
@@ -35,7 +34,7 @@ local common = {
     opts = {"-color=on"};
 
     -- Path to the bin directory
-    bindir = "./bin";
+    bindir = ".";
 
     -- Build all source on the same command line. Otherwise, each source is
     -- compiled separately and finally linked separately. In general, combined
