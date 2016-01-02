@@ -112,7 +112,7 @@ function common:rules()
 
     local args = table.join(self.prefix, self.compiler, self.opts)
 
-    local compiler_opts = {"-op", "-od".. objdir}
+    local compiler_opts = {"-op"}
 
     for _,v in ipairs(self.imports) do
         table.insert(compiler_opts, "-I" .. v)
@@ -189,9 +189,9 @@ end
 
 function _library:rules()
     if self.shared then
-        table.insert(self.linker_opts, "-shared")
+        self.linker_opts = table.join(self.linker_opts, "-shared")
     else
-        table.insert(self.linker_opts, "-lib")
+        self.linker_opts = table.join(self.linker_opts, "-lib")
     end
 
     common.rules(self)
