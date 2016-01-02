@@ -39,7 +39,7 @@ local common = {
     "libfoo.a" both have "foo" as the name. With this, the rules can be named
     "foo:shared" and "foo:static" to avoid a target name clash.
 ]]
-function common:path()
+function common:basename()
     return string.match(self.name, "^[^:]*")
 end
 

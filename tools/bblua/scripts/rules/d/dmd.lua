@@ -56,11 +56,8 @@ local common = {
     linker_opts = {};
 }
 
---[[
-Returns the path to the target
-]]
 function common:path()
-    return path.join(self.bindir, self.name)
+    return path.join(self.bindir, self:basename())
 end
 
 setmetatable(common, {__index = rules.common})
@@ -180,11 +177,13 @@ function common:rules(deps)
     end
 end
 
-function _library:path()
+function _library:basename()
+    local name = common.basename(self)
+
     if self.shared then
-        return path.join(self.bindir, "lib".. self.name .. ".so")
+        return "lib".. name .. ".so"
     else
-        return path.join(self.bindir, "lib".. self.name .. ".a")
+        return "lib".. name .. ".a"
     end
 end
 
