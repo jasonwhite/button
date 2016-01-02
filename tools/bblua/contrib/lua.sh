@@ -33,6 +33,3 @@ make $OS test || exit $?
 make install INSTALL_TOP=$INSTALL_TOP || exit $?
 
 popd
-
-# Cleanup
-rm -rf lua-$VERSION || exit $?
