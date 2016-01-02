@@ -17,8 +17,5 @@ TODO List
  * Refactor and generalize graph traversal.
    1. Allow different graph traversal strategies (i.e., random, DFS, and BFS).
 
- * Create a Python library for generating build descriptions for various
-   languages.
-
  * Generalize reporting of the build status.
    1. Should be able to output build status to a web page.
