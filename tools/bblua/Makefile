@@ -34,7 +34,7 @@ contrib/lua/lib/liblua.a:
 luaminify: tools/luaminify.cc.o
 	${CXX} $^ -o $@
 
-test:
+test: $(TARGET)
 	@./test
 
 clean:
