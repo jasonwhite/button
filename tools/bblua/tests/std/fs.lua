@@ -1,3 +1,9 @@
+--[[
+Copyright 2016 Jason White. MIT license.
+
+Description:
+Tests the fs library.
+]]
 
 assert(fs.globmatch("", ""))
 assert(fs.globmatch("", "*"))
@@ -20,5 +26,3 @@ assert(not fs.globmatch("zoo", "[bf]oo"))
 assert(not fs.globmatch("zoo", "[!bzf]oo"))
 
 assert(fs.getcwd())
-
-table.print(fs.glob("*/*.cc"))

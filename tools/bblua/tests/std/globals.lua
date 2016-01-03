@@ -1,10 +1,12 @@
 --[[
 Copyright 2016 Jason White. MIT license.
-
-Description:
-Test that certain functions that can affect the file system don't exist.
 ]]
 
+-- Basic checks to see if certain modules exist.
+assert(type(path) == "table")
+assert(type(fs) == "table")
+
+-- Test that certain functions that can affect the file system don't exist.
 assert(io.popen == nil)
 assert(io.tmpfile == nil)
 assert(os.execute == nil)
