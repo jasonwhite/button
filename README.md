@@ -11,17 +11,29 @@ A build system that aims to be correct, scalable, elegantly simple, and robust.
 
 [relevant xkcd]: https://xkcd.com/927/
 
-Because, of the hundreds of build systems out there, the vast majority of them
-are pretty terrible. They tend to suffer from a common set of ailments:
+There are many, *many* other build systems out there. Almost all of them make
+grand claims that they are better than all the rest. However, a single victor
+has yet to emerge. Rest assured, no grand claims of superiority will be made
+here. Time will tell if Brilliant Build is the One True Build System™ or not.
 
- * They don't do correct incremental builds.
- * They don't correctly track changes to the build description.
- * They don't scale well with huge projects.
- * They are language-specific or aren't general enough.
- * They have a horrendous build description language (e.g., Make).
+Most build systems tend to suffer from one or more of the following problems:
 
-Brilliant Build is designed such that it can solve all of these problems.
-However, time will tell if this is actually true in practice.
+ 1. They don't do correct incremental builds 100% of the time.
+ 2. They don't correctly track changes to the build description.
+ 3. They don't scale well with large projects (100,000+ source files).
+ 4. They are language-specific or aren't general enough to be widely used
+    outside of a niche community.
+ 5. They are tied to a domain specific language.
+
+I hypothesize that the reason no single build system has been widely successful
+is because of problem #5. There is a huge number of projects that use Make or
+Visual Studio to build. Nobody wants to rewrite these build descriptions for the
+hot new build system on the block, nor should they when the advantages are not
+worth the cost of translation. Instead, it would be preferable to use these
+legacy build descriptions with a new build system.
+
+Brilliant Build is designed such that it can simultaneously solve all of these
+problems. Read on to find out how.
 
 ## Features
 
@@ -61,21 +73,32 @@ Here is a simple example of a build description:
 
 ### "Ugh! JSON is a terrible language for a build description!"
 
-A build description like the one above is not intended to be written by hand.
-Think of the above file as the fundamental machine language of the build system.
-You almost never want to write your fundamental build description by hand. It is
-simply far too verbose and unmanageable. Instead, as part of the build process,
-the build description is generated. In this recursive fashion, the script(s)
-that generate the build description have their own dependencies just as a build
-task does. If those dependencies change, the build description is regenerated
-and compared with the old build description to see what was added or removed.
+Before you get your knickers in a knot, a build description like the one above
+is not intended to be written by hand. Think of the above JSON file as the
+fundamental machine language of the build system. Like x86 assembly, you almost
+never want to write your fundamental build description by hand. It is simply far
+too verbose and unmanageable. Instead, as part of the build process, the build
+description is generated. In this recursive fashion, the scripts that generate
+the build description have their own dependencies just as any build task does.
+If those dependencies change, the build description is regenerated and fed back
+into the build system for execution.
 
-Generating the build description has the added benefit of being able to write
-your generator in any language you please. It is even possible to write tools to
-automatically translate the build descriptions of other build systems to this
-one. Theoretically, even a `Makefile` or Visual Studio project file could be
-automatically converted. This can greatly aid in migrating away from another
-(inferior) build system used in large, complex projects.
+Generating the fundamental build description has several advantages:
+
+ * The generator can be written in any language (even x86 assembly, if you're a
+   masochist). By default, Brilliant Build comes with a tool to generate build
+   descriptions with Lua scripts.
+ * It cleanly separates configuration and execution. The generator takes care of
+   configuration while the build system takes care of executing build tasks.
+ * Build descriptions from other build systems can be automatically converted.
+   For example, theoretically `Makefile`s or Visual Studio projects can be
+   converted on the fly. This can greatly aid in migrating away from other
+   inferior, yet widely used, build systems that are used in large, complex
+   projects.
+ * Since it is simple JSON, the generated build description can be easily parsed
+   by other tools (e.g., IDEs) for analysis.
+
+Thus, JSON is the *perfect* language for a build description.
 
 ### Visualizing the Build
 
@@ -83,7 +106,7 @@ A visualization of the above build description can be generated using
 [GraphViz][]:
 
 ```bash
-$ bb graph --verbose | dot -Tpng > build_graph.png
+$ bb graph --full | dot -Tpng > build_graph.png
 ```
 ![Simple Task Graph](/docs/examples/basic/build.png)
 
@@ -99,16 +122,29 @@ Suppose this is our first time running the build. In that case, we will see a
 full build:
 
 ```bash
-$ bb update
- > gcc -c bar.c -o bar.o
+$ bb build
+:: Build description changed. Syncing with the database...
+:: Checking for changes...
+ - Found 3 modified resource(s)
+ - Found 3 pending task(s)
+:: Building...
  > gcc -c foo.c -o foo.o
+   ➥ Time taken: 93 ms, 85 μs, and 2 hnsecs
+ > gcc -c bar.c -o bar.o
+   ➥ Time taken: 93 ms, 79 μs, and 3 hnsecs
  > gcc foo.o bar.o -o foobar
+   ➥ Time taken: 58 ms, 318 μs, and 6 hnsecs
+:: Build succeeded
+:: Total time taken: 177 ms, 995 μs, and 3 hnsecs
 ```
 
 If we run it again immediately without changing any files, nothing will happen:
 
 ```bash
 $ bb update
+:: Checking for changes...
+:: Nothing to do. Everything is up to date.
+:: Total time taken: 3 ms, 804 μs, and 9 hnsecs
 ```
 
 Now suppose we make a change to the file `foo.c` and run the build again. Only
@@ -116,16 +152,23 @@ the necessary tasks to bring the outputs up-to-date are executed:
 
 ```bash
 $ echo "// Another comment" >> foo.c
-$ bb update
+$ bb build
+:: Checking for changes...
+ - Found 1 modified resource(s)
+ - Found 0 pending task(s)
+:: Building...
  > gcc -c foo.c -o foo.o
+   ➥ Time taken: 31 ms, 579 μs, and 3 hnsecs
+:: Build succeeded
+:: Total time taken: 41 ms, 448 μs, and 3 hnsecs
 ```
 
 Note that `gcc foo.o bar.o -o foobar` was not executed because its output
 `foo.o` did not change. Indeed, all we did was add a comment. In such a case,
 `gcc` will produce an identical object file.
 
-Changes are determined by the checksum of a file's contents, not just its last
-modification time. Thus, one source of overbuilding is eliminated.
+A file is only determined to be changed if its last modification time changed
+*and* its checksum changed. Thus, one source of overbuilding is eliminated.
 
 ## Building the Build System
 
@@ -234,10 +277,10 @@ This would greatly aid in transitioning away from the build system currently in
 use. It would also potentially allow one to glue together many disparate build
 descriptions into one.
 
-## Inspiration
+## Other Build Systems
 
-The design of Brilliant Build learns from and draws inspiration from several
-other build systems:
+The design of Brilliant Build learns from the successes and failures of many
+other build systems. In no particular order, these include:
 
  * [Tup](http://gittup.org/tup/)
  * [Ninja](https://martine.github.io/ninja/)
@@ -245,6 +288,7 @@ other build systems:
  * [Shake](http://shakebuild.com/)
  * [Bazel](http://bazel.io/)
  * [Buck](https://buckbuild.com/)
+ * [Meson](http://mesonbuild.com/)
 
 ## License
 
