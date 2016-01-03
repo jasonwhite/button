@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 # Downloads and builds Lua.
 
 VERSION=5.3.2
@@ -16,20 +16,18 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 if [[ ! -f lua-$VERSION.tar.gz ]]; then
     echo "Downloading Lua $VERSION ..."
-    curl -R -O http://www.lua.org/ftp/lua-$VERSION.tar.gz || exit $?
-    echo "$SHA256SUM  lua-$VERSION.tar.gz" | sha256sum --check || exit $?
+    curl -R -O http://www.lua.org/ftp/lua-$VERSION.tar.gz
+    echo "$SHA256SUM  lua-$VERSION.tar.gz" | sha256sum --check
 fi
 
 if [[ ! -d lua-$VERSION ]]; then
-    tar zxf lua-$VERSION.tar.gz || exit $?
+    tar zxf lua-$VERSION.tar.gz
 fi
 
 INSTALL_TOP=$(pwd)/lua
 
-pushd lua-$VERSION
+cd lua-$VERSION
 
-make $OS test || exit $?
+make $OS test
 
-make install INSTALL_TOP=$INSTALL_TOP || exit $?
-
-popd
+make install INSTALL_TOP=$INSTALL_TOP
