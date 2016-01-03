@@ -35,7 +35,7 @@ runtest() {
     return $code
 }
 
-export runtest
+export -f runtest
 
 if [[ -n $1 ]]; then
     # Run a single test
