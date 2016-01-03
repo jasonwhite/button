@@ -1,0 +1,50 @@
+#!/bin/sh -e
+# Copyright (c) 2016 Jason White
+# MIT License
+#
+# Description:
+# Runs all tests or a single test if one is specified.
+
+cd $(dirname $0)
+
+if [[ ! -f bblua ]]; then
+    echo "Error: Could not find ./bblua"
+    exit 1
+fi
+
+# Make sure we can find bblua on the path.
+export PATH=$(pwd):$PATH
+
+
+runtest() {
+    name=$(basename $1)
+    echo -n ":: Testing '$name'... "
+
+    if output=$(cd $(dirname $1) && exec ./$name); then
+        code=0
+        echo -e "\033[0;32mSUCCESS\033[0m"
+    else
+        code=$?
+        echo -e "\033[1;31mFAILED\033[0m!"
+    fi
+
+    if [[ -n "$output" ]]; then
+        echo $output
+    fi
+
+    return $code
+}
+
+export runtest
+
+if [[ -n $1 ]]; then
+    # Run a single test
+    runtest $1
+else
+    # Run all tests in the tests/ directory
+    for i in tests/*.sh; do
+        if [ -f "$i" ]; then
+            runtest $i
+        fi
+    done
+fi

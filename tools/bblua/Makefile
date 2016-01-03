@@ -1,4 +1,4 @@
-.PHONY: all clean
+.PHONY: all clean test
 
 SOURCES=$(wildcard src/*.cc)
 OBJECTS=$(addsuffix .o, $(SOURCES))
@@ -33,6 +33,9 @@ contrib/lua/lib/liblua.a:
 
 luaminify: tools/luaminify.cc.o
 	${CXX} $^ -o $@
+
+test:
+	@./test
 
 clean:
 	$(RM) $(TARGET) luaminify $(OBJECTS) $(LUA_SCRIPTS_C)

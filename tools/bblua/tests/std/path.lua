@@ -1,3 +1,9 @@
+--[[
+Copyright 2016 Jason White. MIT license.
+
+Description:
+Tests the path manipulation functions.
+]]
 
 --[[
     path.isabs
