@@ -20,7 +20,9 @@ runtest() {
     name=$(basename $1)
     echo -n ":: Testing '$name'... "
 
-    if output=$(cd $(dirname $1) && exec ./$name); then
+    output=$(mktemp)
+
+    if (cd $(dirname $1) && exec ./$name) > "$output"; then
         code=0
         echo -e "\033[0;32mSUCCESS\033[0m"
     else
@@ -28,10 +30,8 @@ runtest() {
         echo -e "\033[1;31mFAILED\033[0m!"
     fi
 
-    if [[ -n "$output" ]]; then
-        echo $output
-    fi
-
+    cat -- "$output"
+    rm -- "$output"
     return $code
 }
 
