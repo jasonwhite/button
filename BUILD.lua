@@ -7,6 +7,7 @@ Generates the build description.
 ]]
 
 local d = require "rules.d"
+local cc = require "rules.cc"
 
 -- Wrap all commands with the bootstrapped wrapper to catch dependencies.
 d.common.prefix = {"./bb-wrap-bootstrap"}
@@ -63,4 +64,25 @@ d.test {
     deps = {"io"},
     srcs = fs.glob "source/wrap/source/wrap/**/*.d",
     imports = {"source/wrap/source", "source/io/source"},
+}
+
+cc.library {
+    name = "lua:static",
+    static = true,
+    srcs = fs.glob {
+        "tools/bblua/contrib/lua-5.3.2/src/*.c",
+        "!tools/bblua/contrib/lua-5.3.2/src/lua.c",
+        "!tools/bblua/contrib/lua-5.3.2/src/luac.c",
+        },
+    compiler_opts = {"-std=gnu99", "-O2", "-Wall", "-Wextra", "-DLUA_COMPAT_5_2"},
+    defines = {"LUA_USE_LINUX"},
+}
+
+cc.binary {
+    name = "bblua",
+    deps = {"lua:static"},
+    srcs = fs.glob "tools/bblua/src/*.cc",
+    includes = {"tools/bblua/contrib/lua/include"},
+    compiler_opts = {"-g", "-Wall", "-Werror"},
+    linker_opts = {"-dl"},
 }
