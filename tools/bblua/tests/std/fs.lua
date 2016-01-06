@@ -24,5 +24,3 @@ assert(not fs.globmatch("foo.d", "*.c"))
 assert(not fs.globmatch("foo.bar.baz", "f*.f*.f*"))
 assert(not fs.globmatch("zoo", "[bf]oo"))
 assert(not fs.globmatch("zoo", "[!bzf]oo"))
-
-assert(fs.getcwd())

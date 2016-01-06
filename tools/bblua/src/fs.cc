@@ -446,24 +446,10 @@ int fs_listdir(lua_State* L) {
     return 1;
 }
 
-int fs_getcwd(lua_State* L) {
-
-    char* p = getcwd(NULL, 0);
-    if (!p)
-        return luaL_error(L, "getcwd failed");
-
-    lua_pushstring(L, p);
-
-    free(p);
-
-    return 1;
-}
-
 const luaL_Reg fslib[] = {
     {"globmatch", fs_globmatch}, // TODO: Remove this later
     {"glob", fs_glob},
     {"listdir", fs_listdir},
-    {"getcwd", fs_getcwd},
     {NULL, NULL},
 };
 
