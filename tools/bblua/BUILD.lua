@@ -10,8 +10,8 @@ local cc = require "rules.cc"
 
 cc.library {
     name = "lua:static",
-    --shared = true,
-    srcs = fs.glob {
+    static = true,
+    srcs = glob {
         "contrib/lua-5.3.2/src/*.c",
         "!contrib/lua-5.3.2/src/lua.c",
         "!contrib/lua-5.3.2/src/luac.c",
@@ -23,7 +23,7 @@ cc.library {
 cc.binary {
     name = "bblua",
     deps = {"lua:static"},
-    srcs = fs.glob "src/*.cc",
+    srcs = glob "src/*.cc",
     includes = {"contrib/lua/include"},
     compiler_opts = {"-g", "-Wall", "-Werror"},
     linker_opts = {"-dl"},

@@ -33,7 +33,7 @@ local function equal(t1, t2)
 end
 
 assert(equal(
-    fs.glob(p "*/*.c"),
+    glob(p "*/*.c"),
     {
         p "a/foo.c",
         p "b/bar.c",
@@ -41,18 +41,7 @@ assert(equal(
 ))
 
 assert(equal(
-    fs.glob(p "*/*.[ch]"),
-    {
-        p "a/foo.c",
-        p "a/foo.h",
-        p "b/bar.c",
-        p "b/bar.h",
-        p "c/baz.h",
-    }
-))
-
-assert(equal(
-    fs.glob {p "*/*.c", p "*/*.h"},
+    glob(p "*/*.[ch]"),
     {
         p "a/foo.c",
         p "a/foo.h",
@@ -63,7 +52,18 @@ assert(equal(
 ))
 
 assert(equal(
-    fs.glob(p "*/"),
+    glob {p "*/*.c", p "*/*.h"},
+    {
+        p "a/foo.c",
+        p "a/foo.h",
+        p "b/bar.c",
+        p "b/bar.h",
+        p "c/baz.h",
+    }
+))
+
+assert(equal(
+    glob(p "*/"),
     {
         p "a/",
         p "b/",
@@ -72,7 +72,7 @@ assert(equal(
 ))
 
 assert(equal(
-    fs.glob(p "**/"),
+    glob(p "**/"),
     {
         p "",
         p "a/",
@@ -85,7 +85,7 @@ assert(equal(
 ))
 
 assert(equal(
-    fs.glob(p "**"),
+    glob(p "**"),
     {
         tempdir,
         p "a",

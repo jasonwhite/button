@@ -4,7 +4,7 @@
  * MIT License
  *
  * Description:
- * File system module.
+ * Globbing.
  */
 #include <stdlib.h>
 #include <string.h>
@@ -303,23 +303,6 @@ void glob(path::Path path, GlobCallback callback, void* data = NULL) {
 }
 
 /**
- * Checks if a glob pattern matches a string.
- *
- * Arguments:
- *  - path: The path to match
- *  - pattern: The glob pattern
- *
- * Returns: True if it matches, false otherwise.
- */
-int fs_globmatch(lua_State* L) {
-    size_t len, patlen;
-    const char* path = luaL_checklstring(L, 1, &len);
-    const char* pattern = luaL_checklstring(L, 2, &patlen);
-    lua_pushboolean(L, globMatch(path::Path(path, len), path::Path(pattern, patlen)));
-    return 1;
-}
-
-/**
  * Callback to put globbed items into a set.
  */
 void fs_globcallback(path::Path path, bool isDir, void* data) {
@@ -335,17 +318,19 @@ void fs_globcallback_exclude(path::Path path, bool isDir, void* data) {
     paths->erase(std::string(path.path, path.length));
 }
 
-/**
- * Lists files based on a glob expression.
- *
- * Arguments:
- *  - pattern: A pattern string or table of pattern strings
- *
- * Returns: A table of the matching files.
- *
- * TODO: Cache results of a directory listing and use that for further globs.
- */
-int fs_glob(lua_State* L) {
+} // anonymous namespace
+
+int lua_glob_match(lua_State* L) {
+    size_t len, patlen;
+    const char* path = luaL_checklstring(L, 1, &len);
+    const char* pattern = luaL_checklstring(L, 2, &patlen);
+    lua_pushboolean(L, globMatch(path::Path(path, len), path::Path(pattern, patlen)));
+    return 1;
+}
+
+int lua_glob(lua_State* L) {
+
+    // TODO: Cache results of a directory listing and use that for further globs.
 
     std::set<std::string> paths;
 
@@ -395,67 +380,5 @@ int fs_glob(lua_State* L) {
         ++n;
     }
 
-    return 1;
-}
-
-/**
- * Lists files in the given directory.
- *
- * Arguments:
- *  - dir: Directory for which to list files.
- *
- * Returns: A table with the directory listing.
- *
- * TODO: Cache directory listings.
- */
-int fs_listdir(lua_State* L) {
-    size_t len;
-    const char* path = luaL_checklstring(L, 1, &len);
-
-    if (len == 0) {
-        len = 1;
-        path = ".";
-    }
-
-    lua_newtable(L);
-
-    struct dirent* entry;
-
-    lua_Number i = 1;
-    DIR* dir = opendir(path);
-    if (!dir) {
-        lua_pushnil(L);
-        lua_pushfstring(L, "failed to list directory '%s': %s", path, strerror(errno));
-        return 2;
-    }
-
-    while ((entry = readdir(dir))) {
-        // Skip "." and ".."
-        if (isHiddenDir(entry->d_name, strlen(entry->d_name)))
-            continue;
-
-        if (entry->d_type == DT_REG) {
-            lua_pushstring(L, entry->d_name);
-            lua_seti(L, -2, i);
-            ++i;
-        }
-    }
-
-    closedir(dir);
-
-    return 1;
-}
-
-const luaL_Reg fslib[] = {
-    {"globmatch", fs_globmatch}, // TODO: Remove this later
-    {"glob", fs_glob},
-    {"listdir", fs_listdir},
-    {NULL, NULL},
-};
-
-} // anonymous namespace
-
-int luaopen_fs(lua_State* L) {
-    luaL_newlib(L, fslib);
     return 1;
 }

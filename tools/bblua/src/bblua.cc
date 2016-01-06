@@ -14,8 +14,8 @@
 #include "bblua.h"
 #include "rules.h"
 #include "path.h"
-#include "fs.h"
 #include "embedded.h"
+#include "glob.h"
 
 namespace {
 
@@ -86,8 +86,15 @@ int init(lua_State* L) {
     luaL_requiref(L, "path", luaopen_path, 1);
     lua_pop(L, 1);
 
-    luaL_requiref(L, "fs", luaopen_fs, 1);
-    lua_pop(L, 1);
+    lua_pushcfunction(L, lua_glob);
+    lua_setglobal(L, "glob");
+
+    lua_getglobal(L, "string");
+    lua_pushcfunction(L, lua_glob_match);
+    lua_setfield(L, -2, "glob");
+
+    //luaL_requiref(L, "fs", luaopen_fs, 1);
+    //lua_pop(L, 1);
 
     lua_getglobal(L, "package");
     if (lua_getfield(L, -1, "searchers") == LUA_TTABLE) {

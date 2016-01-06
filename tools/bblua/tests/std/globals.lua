@@ -4,7 +4,6 @@ Copyright 2016 Jason White. MIT license.
 
 -- Basic checks to see if certain modules exist.
 assert(type(path) == "table")
-assert(type(fs) == "table")
 
 -- Test that certain functions that can affect the file system don't exist.
 assert(io.popen == nil)

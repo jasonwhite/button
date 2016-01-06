@@ -7,5 +7,5 @@
 
 runtest std/globals.sh
 runtest std/path.sh
-runtest std/fs.sh
+runtest std/string.sh
 runtest std/glob.sh
