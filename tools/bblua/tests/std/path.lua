@@ -24,9 +24,11 @@ assert(path.join("foo") == "foo")
 assert(path.join("foo", "bar") == "foo/bar")
 assert(path.join("foo", "/bar") == "/bar")
 assert(path.join("foo/", "bar") == "foo/bar")
+assert(path.join("foo/", nil, "bar") == "foo/bar")
 assert(path.join("foo//", "bar") == "foo//bar")
 assert(path.join("/", "foo") == "/foo")
 assert(path.join("foo", "") == "foo/")
+assert(path.join("foo", nil) == "foo")
 
 
 --[[
