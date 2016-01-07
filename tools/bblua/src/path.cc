@@ -180,6 +180,9 @@ static int path_join(lua_State* L) {
     luaL_buffinit(L, &b);
 
     for (int i = 1; i <= argc; ++i) {
+        if (lua_isnil(L, i))
+            continue;
+
         size_t len;
         const char* path = luaL_checklstring(L, i, &len);
 
