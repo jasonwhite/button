@@ -5,11 +5,8 @@ Description:
 Tests globbing.
 ]]
 
-local tempdir = ...
-
-local function p(f)
-    return path.join(tempdir, f)
-end
+-- Don't prepend SCRIPT_DIR to glob paths.
+SCRIPT_DIR = nil
 
 local function equal(t1, t2)
     table.sort(t1)
@@ -33,74 +30,74 @@ local function equal(t1, t2)
 end
 
 assert(equal(
-    glob(p "*/*.c"),
+    glob("*/*.c"),
     {
-        p "a/foo.c",
-        p "b/bar.c",
+        "a/foo.c",
+        "b/bar.c",
     }
 ))
 
 assert(equal(
-    glob(p "*/*.[ch]"),
+    glob("*/*.[ch]"),
     {
-        p "a/foo.c",
-        p "a/foo.h",
-        p "b/bar.c",
-        p "b/bar.h",
-        p "c/baz.h",
+        "a/foo.c",
+        "a/foo.h",
+        "b/bar.c",
+        "b/bar.h",
+        "c/baz.h",
     }
 ))
 
 assert(equal(
-    glob {p "*/*.c", p "*/*.h"},
+    glob {"*/*.c", "*/*.h"},
     {
-        p "a/foo.c",
-        p "a/foo.h",
-        p "b/bar.c",
-        p "b/bar.h",
-        p "c/baz.h",
+        "a/foo.c",
+        "a/foo.h",
+        "b/bar.c",
+        "b/bar.h",
+        "c/baz.h",
     }
 ))
 
 assert(equal(
-    glob(p "*/"),
+    glob("*/"),
     {
-        p "a/",
-        p "b/",
-        p "c/",
+        "a/",
+        "b/",
+        "c/",
     }
 ))
 
 assert(equal(
-    glob(p "**/"),
+    glob("**/"),
     {
-        p "",
-        p "a/",
-        p "b/",
-        p "c/",
-        p "c/1/",
-        p "c/2/",
-        p "c/3/",
+        "",
+        "a/",
+        "b/",
+        "c/",
+        "c/1/",
+        "c/2/",
+        "c/3/",
     }
 ))
 
 assert(equal(
-    glob(p "**"),
+    glob("**"),
     {
-        tempdir,
-        p "a",
-        p "a/foo.c",
-        p "a/foo.h",
-        p "b",
-        p "b/bar.c",
-        p "b/bar.h",
-        p "c",
-        p "c/baz.h",
-        p "c/1",
-        p "c/1/foo.cc",
-        p "c/2",
-        p "c/2/bar.cc",
-        p "c/3",
-        p "c/3/baz.cc",
+        "",
+        "a",
+        "a/foo.c",
+        "a/foo.h",
+        "b",
+        "b/bar.c",
+        "b/bar.h",
+        "c",
+        "c/baz.h",
+        "c/1",
+        "c/1/foo.cc",
+        "c/2",
+        "c/2/bar.cc",
+        "c/3",
+        "c/3/baz.cc",
     }
 ))

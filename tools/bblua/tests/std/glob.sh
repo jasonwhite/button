@@ -12,22 +12,28 @@ teardown() {
 # Cleanup on exit
 trap teardown 0
 
-mkdir -- "$tempdir/a" \
-         "$tempdir/b" \
-         "$tempdir/c"
+script=$(pwd)/glob.lua
+
+pushd $tempdir
+
+mkdir -- "a" \
+         "b" \
+         "c"
 
 # Create nested sub directories
-mkdir -- "$tempdir/c/1" \
-         "$tempdir/c/2" \
-         "$tempdir/c/3"
+mkdir -- "c/1" \
+         "c/2" \
+         "c/3"
 
-touch -- "$tempdir/a/foo.c" \
-         "$tempdir/a/foo.h" \
-         "$tempdir/b/bar.c" \
-         "$tempdir/b/bar.h" \
-         "$tempdir/c/baz.h" \
-         "$tempdir/c/1/foo.cc" \
-         "$tempdir/c/2/bar.cc" \
-         "$tempdir/c/3/baz.cc" \
+touch -- "a/foo.c" \
+         "a/foo.h" \
+         "b/bar.c" \
+         "b/bar.h" \
+         "c/baz.h" \
+         "c/1/foo.cc" \
+         "c/2/bar.cc" \
+         "c/3/baz.cc" \
 
-bblua glob.lua -o /dev/null "$tempdir"
+bblua $script -o /dev/null
+
+popd
