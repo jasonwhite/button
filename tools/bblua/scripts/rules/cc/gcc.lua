@@ -1,10 +1,8 @@
 --[[
- Copyright: Copyright Jason White, 2016
- License:   MIT
- Authors:   Jason White
+Copyright 2016 Jason White. MIT license.
 
- Description:
- Generates rules for GCC.
+Description:
+Generates rules for compiling and linking C/C++ with gcc.
 ]]
 
 local rules = require "rules"
@@ -71,7 +69,7 @@ local function compile(self)
     local compiler_opts = {}
 
     for _,v in ipairs(self.includes) do
-        table.append(compiler_opts, {"-I", v})
+        table.append(compiler_opts, {"-I", path.join(SCRIPT_DIR, v)})
     end
 
     for _,v in ipairs(self.defines) do
@@ -187,6 +185,9 @@ function common:rules()
     for _,dep in ipairs(self.deps) do
         if is_library(dep) then
             table.append(linker_opts, {"-l".. common.basename(dep)})
+        else
+            error(string.format("Rule '%s' cannot depend on '%s'",
+                self.name, dep.name))
         end
     end
 

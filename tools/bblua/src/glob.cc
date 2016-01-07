@@ -318,6 +318,27 @@ void fs_globcallback_exclude(path::Path path, bool isDir, void* data) {
     paths->erase(std::string(path.path, path.length));
 }
 
+/**
+ * Lua wrapper to prepend the current script directory to the requested path.
+ */
+void glob(lua_State* L, path::Path path, GlobCallback callback, void* data) {
+
+    // Join the SCRIPT_DIR with this path.
+    lua_getglobal(L, "path");
+    lua_getfield(L, -1, "join");
+    lua_getglobal(L, "SCRIPT_DIR");
+    lua_pushlstring(L, path.path, path.length);
+    lua_call(L, 2, 1);
+
+    size_t len;
+    const char* scriptDir = lua_tolstring(L, -1, &len);
+
+    if (scriptDir)
+        glob(path::Path(scriptDir, len), callback, data);
+
+    lua_pop(L, 2); // Pop new path and path table
+}
+
 } // anonymous namespace
 
 int lua_glob_match(lua_State* L) {
@@ -352,9 +373,9 @@ int lua_glob(lua_State* L) {
                 path = lua_tolstring(L, -1, &len);
                 if (path) {
                     if (len > 0 && path[0] == '!')
-                        glob(path::Path(path+1, len-1), &fs_globcallback_exclude, &paths);
+                        glob(L, path::Path(path+1, len-1), &fs_globcallback_exclude, &paths);
                     else
-                        glob(path::Path(path, len), &fs_globcallback, &paths);
+                        glob(L, path::Path(path, len), &fs_globcallback, &paths);
                 }
 
                 lua_pop(L, 1); // Pop path
@@ -364,9 +385,9 @@ int lua_glob(lua_State* L) {
             path = luaL_checklstring(L, i, &len);
 
             if (len > 0 && path[0] == '!')
-                glob(path::Path(path+1, len-1), &fs_globcallback_exclude, &paths);
+                glob(L, path::Path(path+1, len-1), &fs_globcallback_exclude, &paths);
             else
-                glob(path::Path(path, len), &fs_globcallback, &paths);
+                glob(L, path::Path(path, len), &fs_globcallback, &paths);
         }
     }
 

@@ -1,10 +1,8 @@
 --[[
- Copyright: Copyright Jason White, 2016
- License:   MIT
- Authors:   Jason White
+Copyright 2016 Jason White. MIT license.
 
- Description:
- Generates rules for the DMD compiler.
+Description:
+Generates rules for the DMD compiler.
 ]]
 
 local rules = require "rules"
@@ -114,11 +112,11 @@ function common:rules()
     local compiler_opts = {"-op"}
 
     for _,v in ipairs(self.imports) do
-        table.insert(compiler_opts, "-I" .. v)
+        table.insert(compiler_opts, "-I" .. path.join(SCRIPT_DIR, v))
     end
 
     for _,v in ipairs(self.string_imports) do
-        table.insert(compiler_opts, "-J" .. v)
+        table.insert(compiler_opts, "-J" .. path.join(SCRIPT_DIR, v))
     end
 
     for _,v in ipairs(self.versions) do

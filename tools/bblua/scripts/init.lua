@@ -47,7 +47,7 @@ function import(file)
 
     -- TODO: Send back dependency on this file
 
-    _dofile(file)
+    dofile(file)
 
     SCRIPT_DIR = old_dir
 end
