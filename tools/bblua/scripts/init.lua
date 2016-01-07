@@ -16,6 +16,9 @@ os.tmpname = nil
 os.rename  = nil
 os.remove  = nil
 
+-- The directory that this script is in.
+SCRIPT_DIR = ""
+
 -- Override io.open to prevent writing to files.
 local _open = io.open
 io.open = function(filename, mode)
@@ -29,6 +32,21 @@ io.open = function(filename, mode)
 end
 
 -- TODO: Override 'loadfile', 'dofile', and 'require' to catch dependencies
+
+--[[
+    Import the rules from another build script.
+]]
+function import(file)
+    local old_dir = SCRIPT_DIR
+
+    SCRIPT_DIR = path.dirname(file)
+
+    -- TODO: Send back dependency on this file
+
+    _dofile(file)
+
+    SCRIPT_DIR = old_dir
+end
 
 --[[
  Original Author: Julio Manuel Fernandez-Diaz
