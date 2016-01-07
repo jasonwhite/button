@@ -61,13 +61,11 @@ bool parse_args(Options &opts, Args &args)
     return false;
 }
 
-void print_error(lua_State* L)
-{
+void print_error(lua_State* L) {
     printf("Error: %s\n", lua_tostring(L, -1));
 }
 
-int rule(lua_State *L)
-{
+int rule(lua_State* L) {
     bblua::Rules* rules = (bblua::Rules*)lua_touserdata(L, lua_upvalueindex(1));
     if (rules)
         rules->add(L);
@@ -134,6 +132,11 @@ int execute(lua_State* L, int argc, char** argv) {
         return 1;
     }
 
+    // Set SCRIPT_DIR to the script's directory.
+    path::Path dirname = path::Path(opts.script).dirname();
+    lua_pushlstring(L, dirname.path, dirname.length);
+    lua_setglobal(L, "SCRIPT_DIR");
+
     if (luaL_loadfile(L, opts.script) != LUA_OK) {
         print_error(L);
         return 1;
@@ -161,12 +164,6 @@ int execute(lua_State* L, int argc, char** argv) {
     // Pass along the rest of the command line arguments to the Lua script.
     for (int i = 0; i < args.n; ++i)
         lua_pushstring(L, args.argv[i]);
-
-    // Change working directory to the script directory so that globbing and
-    // such will find files relative to the script directory.
-    path::Path dirname = path::Path(opts.script).dirname();
-    if (dirname.length > 0)
-        chdir(dirname.copy().c_str());
 
     if (lua_pcall(L, args.n, LUA_MULTRET, 0) != LUA_OK) {
         print_error(L);

@@ -20,9 +20,6 @@ os.remove  = nil
 math.random     = nil
 math.randomseed = nil
 
--- The directory that this script is in.
-SCRIPT_DIR = ""
-
 -- Override io.open to prevent writing to files.
 local _open = io.open
 io.open = function(filename, mode)
@@ -39,13 +36,12 @@ end
 
 --[[
     Import the rules from another build script.
+
+    TODO: Send back dependency on this file
 ]]
 function import(file)
     local old_dir = SCRIPT_DIR
-
     SCRIPT_DIR = path.dirname(file)
-
-    -- TODO: Send back dependency on this file
 
     dofile(file)
 
