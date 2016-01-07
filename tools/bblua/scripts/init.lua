@@ -16,6 +16,10 @@ os.tmpname = nil
 os.rename  = nil
 os.remove  = nil
 
+-- Remove functions that can introduce non-determinism.
+math.random     = nil
+math.randomseed = nil
+
 -- The directory that this script is in.
 SCRIPT_DIR = ""
 
