@@ -100,6 +100,26 @@ Generating the fundamental build description has several advantages:
 
 Thus, JSON is the *perfect* language for a build description.
 
+### Generating the build description
+
+Since no one wants to write JSON by hand, the above build description can be
+generated using Lua:
+
+```lua
+local cc = require "rules.cc"
+
+cc.binary {
+    name = "foobar",
+    srcs = {"foo.c", "bar.c"},
+}
+```
+
+If this script is named `BUILD.lua`, we can generate the build description by
+running
+```bash
+$ bblua BUILD.lua -o bb.json
+```
+
 ### Visualizing the Build
 
 A visualization of the above build description can be generated using
