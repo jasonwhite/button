@@ -43,7 +43,7 @@ function import(file)
     local old_dir = SCRIPT_DIR
     SCRIPT_DIR = path.dirname(file)
 
-    dofile(file)
+    dofile(path.join(old_dir, file))
 
     SCRIPT_DIR = old_dir
 end
