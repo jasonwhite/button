@@ -11,6 +11,7 @@
 -- Remove functions that can affect the file system.
 io.popen   = nil
 io.tmpfile = nil
+io.output  = nil
 os.execute = nil
 os.tmpname = nil
 os.rename  = nil
