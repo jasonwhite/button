@@ -6,7 +6,7 @@ Description:
 Generates the build description.
 ]]
 
-import "tools/bblua/BUILD.lua"
+import "source/bblua/BUILD.lua"
 
 local d = require "rules.d"
 
