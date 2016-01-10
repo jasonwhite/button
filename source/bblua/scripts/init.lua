@@ -12,10 +12,13 @@
 io.popen   = nil
 io.tmpfile = nil
 io.output  = nil
+
 os.execute = nil
 os.tmpname = nil
 os.rename  = nil
 os.remove  = nil
+
+package.loadlib = nil
 
 -- Remove functions that can introduce non-determinism.
 math.random     = nil
