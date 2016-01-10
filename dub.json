@@ -1,6 +1,6 @@
 {
     "name": "bb-bootstrap",
-    "description": "A correct, scalable, and elegant build system.",
+    "description": "A build system that aims to be correct, scalable, and robust.",
     "copyright": "Copyright © 2016, Jason White",
     "authors": ["Jason White"],
     "sourcePaths": ["source/bb", "source/util"],
@@ -8,9 +8,7 @@
         "io" : {
             "path": "source/io"
         },
-        "darg" : {
-            "path": "source/darg"
-        }
+        "darg" : ">=0.0.1"
     },
     "libs-posix": ["sqlite3"]
 }

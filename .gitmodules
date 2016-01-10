@@ -1,6 +1,3 @@
 [submodule "source/io"]
 	path = source/io
 	url = git://github.com/jasonwhite/io.git
-[submodule "source/darg"]
-	path = source/darg
-	url = git://github.com/jasonwhite/darg.git
