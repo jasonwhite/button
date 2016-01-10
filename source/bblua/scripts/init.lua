@@ -1,11 +1,9 @@
 --[[
- Copyright: Copyright Jason White, 2016
- License:   MIT
- Authors:   Jason White
+Copyright (c) Jason White. MIT license.
 
- Description:
- This file is the first Lua script that gets executed. Its job is to initialize
- the global Lua state for client scripts.
+Description:
+This file is the first Lua script that gets executed. Its job is to initialize
+the global Lua state for client scripts.
 ]]
 
 -- Remove functions that can affect the file system.

@@ -1,7 +1,5 @@
 --[[
-Copyright: Copyright Jason White, 2016
-License:   MIT
-Authors:   Jason White
+Copyright (c) Jason White. MIT license.
 
 Description:
 High-level rule resolution. Client scripts add targets that may depend on each

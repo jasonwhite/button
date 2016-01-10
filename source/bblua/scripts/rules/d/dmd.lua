@@ -1,5 +1,5 @@
 --[[
-Copyright 2016 Jason White. MIT license.
+Copyright (c) Jason White. MIT license.
 
 Description:
 Generates rules for the DMD compiler.

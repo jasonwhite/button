@@ -1,5 +1,5 @@
 --[[
-Copyright 2016 Jason White. MIT license.
+Copyright (c) Jason White. MIT license.
 
 Description:
 Generates rules for compiling and linking C/C++ with gcc.
@@ -7,6 +7,9 @@ Generates rules for compiling and linking C/C++ with gcc.
 
 local rules = require "rules"
 
+--[[
+    Helper functions.
+]]
 local cc_srcs = {".cc", ".cpp", ".cxx", ".c++.C"}
 local cc_hdrs = {".h", ".hh", ".hpp", ".hxx", ".inc"}
 
