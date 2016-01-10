@@ -16,6 +16,7 @@
 #include "path.h"
 #include "embedded.h"
 #include "glob.h"
+#include "deps.h"
 
 namespace {
 
@@ -72,6 +73,18 @@ int rule(lua_State* L) {
     return 0;
 }
 
+int publish_input(lua_State* L) {
+    ImplicitDeps* deps = (ImplicitDeps*)lua_touserdata(L, lua_upvalueindex(1));
+
+    size_t len;
+    const char* path = luaL_checklstring(L, 1, &len);
+
+    if (deps)
+        deps->addInputFile(path, len);
+
+    return 0;
+}
+
 }
 
 namespace bblua {
@@ -90,9 +103,6 @@ int init(lua_State* L) {
     lua_getglobal(L, "string");
     lua_pushcfunction(L, lua_glob_match);
     lua_setfield(L, -2, "glob");
-
-    //luaL_requiref(L, "fs", luaopen_fs, 1);
-    //lua_pop(L, 1);
 
     lua_getglobal(L, "package");
     if (lua_getfield(L, -1, "searchers") == LUA_TTABLE) {
@@ -154,7 +164,13 @@ int execute(lua_State* L, int argc, char** argv) {
         return 1;
     }
 
+    ImplicitDeps deps;
     Rules rules(output);
+
+    // Register publish_input() function
+    lua_pushlightuserdata(L, &deps);
+    lua_pushcclosure(L, publish_input, 1);
+    lua_setglobal(L, "publish_input");
 
     // Register rule() function
     lua_pushlightuserdata(L, &rules);

@@ -74,13 +74,13 @@ struct Dependency {
  * interface for making implicit inputs and outputs known to the parent build
  * system.
  */
-class DepSender {
+class ImplicitDeps {
 private:
     FILE* _f;
 
 public:
-    DepSender();
-    ~DepSender();
+    ImplicitDeps();
+    ~ImplicitDeps();
 
     /**
      * Returns true if there is a parent build system to send dependencies to.
@@ -88,13 +88,13 @@ public:
     bool hasParent() const;
 
     /**
-     * Sends the given dependency struct.
+     * Adds the given dependency.
      */
-    void send(const Dependency& dep) const;
+    void add(const Dependency& dep);
 
     /**
-     * Sends a dependency by name only.
+     * Adds a dependency by name only.
      */
-    void sendInput(const char* name, size_t length) const;
-    void sendOutput(const char* name, size_t length) const;
+    void addInputFile(const char* name, size_t length);
+    void addOutputFile(const char* name, size_t length);
 };

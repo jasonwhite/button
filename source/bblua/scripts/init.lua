@@ -22,19 +22,62 @@ package.loadlib = nil
 math.random     = nil
 math.randomseed = nil
 
--- Override io.open to prevent writing to files.
+--[[
+    Override io.open to prevent writing to files and to provide dependency
+    information to the host build system.
+]]
 local _open = io.open
 io.open = function(filename, mode)
     if mode ~= "" and mode ~= "r" and mode ~= "rb" then
         error("can only open files in read mode")
     end
 
-    -- TODO: Report dependency on the file
+    publish_input(filename)
 
     return _open(filename, mode)
 end
 
--- TODO: Override 'loadfile', 'dofile', and 'require' to catch dependencies
+--[[
+    Wrap dofile to provide dependency information to the host build system.
+]]
+local _loadfile = loadfile
+function loadfile(...)
+    local filename = ...
+    if filename ~= nil then
+        publish_input(filename)
+    end
+
+    _loadfile(...)
+end
+
+--[[
+    Wrap dofile to provide dependency information to the host build system.
+]]
+local _dofile = dofile
+function dofile(...)
+    local filename = ...
+    if filename ~= nil then
+        publish_input(filename)
+    end
+
+    _dofile(...)
+end
+
+--[[
+    Wrap package.searchers[2] to provide dependency information to the host build
+    system.
+]]
+local _searcher = package.searchers[2]
+package.searchers[2] = function(module)
+    local loader, fname = _searcher(module)
+
+    if type(loader) == "function" then
+        publish_input(fname)
+        return loader, fname
+    end
+
+    return loader
+end
 
 --[[
     Import the rules from another build script.

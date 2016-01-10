@@ -10,7 +10,7 @@
 
 #include <stdlib.h>
 
-DepSender::DepSender() : _f(NULL) {
+ImplicitDeps::ImplicitDeps() : _f(NULL) {
     int fd;
     const char* var = getenv("BB_DEPS");
     if (var && (fd = atoi(var))) {
@@ -18,21 +18,21 @@ DepSender::DepSender() : _f(NULL) {
     }
 }
 
-DepSender::~DepSender() {
+ImplicitDeps::~ImplicitDeps() {
     if (_f) fclose(_f);
 }
 
-bool DepSender::hasParent() const {
+bool ImplicitDeps::hasParent() const {
     return _f != NULL;
 }
 
-void DepSender::send(const Dependency& dep) const {
+void ImplicitDeps::add(const Dependency& dep) {
     if (!_f) return;
 
     fwrite(&dep, sizeof(dep) + dep.length, 1, _f);
 }
 
-void DepSender::sendInput(const char* name, size_t length) const {
+void ImplicitDeps::addInputFile(const char* name, size_t length) {
     if (!_f) return;
 
     if (length > UINT16_MAX)
@@ -46,7 +46,7 @@ void DepSender::sendInput(const char* name, size_t length) const {
     fwrite(name, 1, dep.length, _f);
 }
 
-void DepSender::sendOutput(const char* name, size_t length) const {
+void ImplicitDeps::addOutputFile(const char* name, size_t length) {
     if (!_f) return;
 
     if (length > UINT16_MAX)
