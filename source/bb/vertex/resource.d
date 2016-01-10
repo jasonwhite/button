@@ -62,7 +62,7 @@ struct Resource
 {
     import std.datetime : SysTime;
     import std.digest.digest : DigestType;
-    import std.digest.md : MD5;
+    import std.digest.sha : SHA256;
 
     enum Status
     {
@@ -86,7 +86,7 @@ struct Resource
      *
      * TODO: If this is a directory, checksum the sorted list of its contents.
      */
-    DigestType!MD5 checksum;
+    DigestType!SHA256 checksum;
 
     this(ResourceId path, SysTime lastModified = Status.unknown, const(ubyte[]) checksum = [])
     {
@@ -166,7 +166,7 @@ struct Resource
 
             if (lastModified != Status.notFound)
             {
-                auto checksum = digestFile!MD5(path);
+                auto checksum = digestFile!SHA256(path);
                 if (checksum != this.checksum)
                 {
                     this.checksum = checksum;
