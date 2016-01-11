@@ -1,4 +1,4 @@
-name "bb-bootstrap"
+name "bb"
 description "A build system that aims to be correct, scalable, and robust."
 copyright "Copyright © 2016, Jason White"
 authors "Jason White"
