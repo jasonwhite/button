@@ -5,9 +5,7 @@
     "authors": ["Jason White"],
     "sourcePaths": ["source/bb", "source/util"],
     "dependencies": {
-        "io" : {
-            "path": "source/io"
-        },
+        "io" : ">=0.0.1",
         "darg" : ">=0.0.1"
     },
     "libs-posix": ["sqlite3"]

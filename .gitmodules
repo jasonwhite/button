@@ -1,3 +1,0 @@
-[submodule "source/io"]
-	path = source/io
-	url = git://github.com/jasonwhite/io.git
