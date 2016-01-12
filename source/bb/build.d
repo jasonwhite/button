@@ -613,8 +613,6 @@ void syncStateImplicit(BuildState state, Index!Task v,
     import std.format : format;
     import util.change;
 
-    import io; // FOR TESTING
-
     state.begin();
     scope (success) state.commit();
     scope (failure) state.rollback();
