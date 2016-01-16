@@ -70,7 +70,7 @@ struct TaskResult
     immutable(ubyte)[] stdout;
 
     // NUL-delimited list of implicit dependencies.
-    string inputs, outputs;
+    immutable(ubyte)[] inputs, outputs;
 
     // How long it took the task to run from start to finish.
     Duration duration;
@@ -380,8 +380,8 @@ private version (Posix)
 
         return tuple!("stdout", "inputs", "outputs")(
                 assumeUnique(stdout.data),
-                assumeUnique(cast(string)inputs.data),
-                assumeUnique(cast(string)outputs.data)
+                assumeUnique(inputs.data),
+                assumeUnique(outputs.data)
                 );
     }
 

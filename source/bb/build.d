@@ -605,37 +605,39 @@ void queueChanges(BuildState state, TaskPool pool, TextColor color)
  * Syncs the build state with implicit dependencies.
  */
 void syncStateImplicit(BuildState state, Index!Task v,
-        string inputs, string outputs)
+        immutable(ubyte)[] inputs, immutable(ubyte)[] outputs)
 {
-    import std.algorithm.iteration : splitter, uniq, filter;
+    import std.algorithm.iteration : splitter, uniq, filter, map;
     import std.array : array;
     import std.algorithm.sorting : sort;
     import std.format : format;
     import util.change;
+    import bb.deps;
 
     state.begin();
     scope (success) state.commit();
     scope (failure) state.rollback();
 
     auto inputDiff = changes(
-            state.incoming!ResourceId(v).array.sort(),
-            inputs.splitter('\0').filter!(x => x.length).array.sort().uniq
+            state.incoming!Resource(v).array.sort(),
+            inputs.deps.map!(x => cast(Resource)x).array.sort().uniq
             );
 
     auto outputDiff = changes(
-            state.outgoing!ResourceId(v).array.sort(),
-            outputs.splitter('\0').filter!(x => x.length).array.sort().uniq);
+            state.outgoing!Resource(v).array.sort(),
+            outputs.deps.map!(x => cast(Resource)x).array.sort().uniq
+            );
 
     foreach (c; inputDiff)
     {
         if (c.type == ChangeType.added)
         {
-            auto r = Resource(c.value);
+            auto r = c.value;
 
             // A new implicit input. If the resource is *not* an output
             // resource, then we are fine. Otherwise, it is an error because we
             // are potentially changing the build order with this new edge.
-            auto id = state.find(c.value);
+            auto id = state.find(r.path);
             if (id == Index!Resource.Invalid || state.degreeIn(id) == 0)
             {
                 if (id == Index!Resource.Invalid)
@@ -660,7 +662,9 @@ void syncStateImplicit(BuildState state, Index!Task v,
             // can be either explicit edges that weren't found or removed
             // implicit edges. We only care about the latter case here.
 
-            auto id = state.find(c.value);
+            auto r = c.value;
+
+            auto id = state.find(r.path);
             assert(id != Index!Resource.Invalid);
 
             if (state[id, v] == EdgeType.implicit)
@@ -672,12 +676,12 @@ void syncStateImplicit(BuildState state, Index!Task v,
     {
         if (c.type == ChangeType.added)
         {
-            auto r = Resource(c.value);
+            auto r = c.value;
 
             // A new implicit output. The resource must either not exist or be a
             // dangling resource awaiting garbage collection. Otherwise, it is
             // an error.
-            auto id = state.find(c.value);
+            auto id = state.find(r.path);
             if (id == Index!Resource.Invalid ||
                     (state.degreeIn(id) == 0 && state.degreeOut(id) == 0))
             {
@@ -703,7 +707,9 @@ void syncStateImplicit(BuildState state, Index!Task v,
             // can be either explicit edges that weren't found or removed
             // implicit edges. We only care about the latter case here.
 
-            auto id = state.find(c.value);
+            auto r = c.value;
+
+            auto id = state.find(r.path);
             assert(id != Index!Resource.Invalid);
 
             if (state[v, id] == EdgeType.implicit)
