@@ -200,13 +200,13 @@ A file is only determined to be changed if its last modification time changed
  2. Get the source:
 
     ```bash
-    git clone --recursive https://github.com/jasonwhite/brilliant-build.git
+    git clone https://github.com/jasonwhite/brilliant-build.git
     ```
 
- 3. Bootstrap:
+ 3. Build it:
 
     ```bash
-    ./bootstrap
+    dub build
     ```
 
 There should now be an executable `bb` at the root of the repository. It is
