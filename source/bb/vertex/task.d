@@ -468,8 +468,8 @@ private version (Posix)
         // Let the child know two bits of information: (1) that it is being run
         // under this build system and (2) which file descriptors to use to send
         // back dependency information.
-        setenv("BRILLIANT_BUILD_INPUTS", inputsenv, 1);
-        setenv("BRILLIANT_BUILD_OUTPUTS", outputsenv, 1);
+        setenv("BB_INPUTS", inputsenv, 1);
+        setenv("BB_OUTPUTS", outputsenv, 1);
 
         // Redirect stdout/stderr to the pipe the parent reads from. There is no
         // differentiation between stdout and stderr.
