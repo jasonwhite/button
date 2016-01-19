@@ -620,12 +620,12 @@ void syncStateImplicit(BuildState state, Index!Task v,
 
     auto inputDiff = changes(
             state.incoming!Resource(v).array.sort(),
-            inputs.deps.map!(x => cast(Resource)x).array.sort().uniq
+            inputs.deps.array.sort().uniq
             );
 
     auto outputDiff = changes(
             state.outgoing!Resource(v).array.sort(),
-            outputs.deps.map!(x => cast(Resource)x).array.sort().uniq
+            outputs.deps.array.sort().uniq
             );
 
     foreach (c; inputDiff)

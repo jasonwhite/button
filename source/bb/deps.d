@@ -10,7 +10,7 @@ import bb.vertex.resource;
 /**
  * Format for dependencies received from a task over a pipe.
  */
-struct Dependency
+align(4) struct Dependency
 {
     /**
      * Timestamp of the resource. If unknown, this should be set to 0. In such a
@@ -46,20 +46,6 @@ struct Dependency
      * to the working directory that the child was spawned in.
      */
     char[0] name;
-
-    /**
-     * Converts the dependency to a Resource.
-     */
-    T opCast(T : const(Resource))() inout
-    {
-        import std.exception : assumeUnique;
-        import std.datetime : SysTime;
-        return Resource(
-                assumeUnique(name[0 .. length]),
-                SysTime(cast(long)timestamp),
-                checksum
-                );
-    }
 }
 
 /**
@@ -72,17 +58,19 @@ auto deps(immutable(void)[] buf)
         private
         {
             immutable(void)[] buf;
-            Dependency dep;
+            Resource r;
         }
 
         this(immutable(void)[] buf)
         {
             this.buf = buf;
+            if (!empty)
+                popFront();
         }
 
-        const(Dependency) front() const pure
+        Resource front() inout
         {
-            return dep;
+            return r;
         }
 
         bool empty() const pure nothrow
@@ -92,11 +80,22 @@ auto deps(immutable(void)[] buf)
 
         void popFront()
         {
+            import std.exception : assumeUnique;
+            import std.datetime : SysTime;
+
             assert(buf.length >= Dependency.sizeof);
 
-            dep = *cast(Dependency*)buf[0 .. Dependency.sizeof];
+            auto dep = *cast(Dependency*)buf[0 .. Dependency.sizeof];
 
-            buf = buf[Dependency.sizeof + dep.length .. $];
+            immutable totalSize = Dependency.sizeof + dep.length;
+
+            r = Resource(
+                cast(string)buf[Dependency.sizeof .. totalSize],
+                SysTime(cast(long)dep.timestamp),
+                dep.checksum
+                );
+
+            buf = buf[totalSize .. $];
         }
     }
 
