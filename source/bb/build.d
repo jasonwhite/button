@@ -879,9 +879,10 @@ void publishResources(BuildState state)
     import std.process;
     import std.conv : to;
     import io.file.stream;
+    import bb.deps;
 
-    auto inputsHandle  = environment.get("BRILLIANT_BUILD_INPUTS");
-    auto outputsHandle = environment.get("BRILLIANT_BUILD_OUTPUTS");
+    auto inputsHandle  = environment.get("BB_INPUTS");
+    auto outputsHandle = environment.get("BB_OUTPUTS");
 
     if (inputsHandle is null || outputsHandle is null)
         return;
@@ -897,17 +898,25 @@ void publishResources(BuildState state)
             immutable degreeOut = state.degreeOut(v);
 
             if (degreeIn == 0 && degreeOut == 0)
-                continue;
+                continue; // Dangling resource
+
+            auto r = state[v];
+
+            auto dep = Dependency(
+                    cast(ulong)r.lastModified.stdTime,
+                    r.checksum,
+                    r.path.length.to!uint
+                    );
 
             if (degreeIn == 0)
             {
-                inputs.write(state[v].identifier);
-                inputs.write("\0");
+                inputs.write((&dep)[0 .. 1]);
+                inputs.write(r.path);
             }
             else
             {
-                outputs.write(state[v].identifier);
-                outputs.write("\0");
+                outputs.write((&dep)[0 .. 1]);
+                outputs.write(r.path);
             }
         }
     }
