@@ -82,6 +82,7 @@ auto deps(immutable(void)[] buf)
         {
             import std.exception : assumeUnique;
             import std.datetime : SysTime;
+            import std.path : buildNormalizedPath;
 
             assert(buf.length >= Dependency.sizeof);
 
@@ -89,8 +90,10 @@ auto deps(immutable(void)[] buf)
 
             immutable totalSize = Dependency.sizeof + dep.length;
 
+            string name = cast(string)buf[Dependency.sizeof .. totalSize];
+
             r = Resource(
-                cast(string)buf[Dependency.sizeof .. totalSize],
+                buildNormalizedPath(name),
                 SysTime(cast(long)dep.timestamp),
                 dep.checksum
                 );
