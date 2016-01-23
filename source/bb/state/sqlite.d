@@ -458,6 +458,34 @@ class BuildState : SQLite3
     }
 
     /**
+     * Inserts a vertex into the database unless it already exists.
+     */
+    void add(in Resource resource)
+    {
+        execute(`INSERT OR IGNORE INTO resource` ~
+                ` (path, lastModified, checksum)` ~
+                ` VALUES(?, ?, ?)`,
+                resource.path,
+                resource.lastModified.stdTime,
+                resource.checksum
+                );
+    }
+
+    // Ditto
+    void add(in Task task)
+    {
+        import std.conv : to;
+
+        execute(`INSERT OR IGNORE INTO task` ~
+                ` (command, workDir, lastExecuted)` ~
+                ` VALUES(?, ?, ?)`,
+                task.command.to!string(),
+                task.workingDirectory,
+                task.lastExecuted.stdTime
+                );
+    }
+
+    /**
      * Removes a vertex by the given index. If the vertex does not exist, an
      * exception is thrown.
      */

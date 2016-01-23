@@ -223,8 +223,11 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
 
     foreach (c; resourceDiff)
     {
+        // Add the resource to the database. Note that since we only diffed
+        // against the explicit subgraph of the database, we may be trying to
+        // insert resources that are already in the database.
         if (c.type == ChangeType.added)
-            state.put(c.value);
+            state.add(c.value);
     }
 
     foreach (c; taskDiff)
