@@ -59,13 +59,13 @@ auto deps(immutable(void)[] buf)
         {
             immutable(void)[] buf;
             Resource r;
+            bool _empty;
         }
 
         this(immutable(void)[] buf)
         {
             this.buf = buf;
-            if (!empty)
-                popFront();
+            popFront();
         }
 
         Resource front() inout
@@ -75,7 +75,7 @@ auto deps(immutable(void)[] buf)
 
         bool empty() const pure nothrow
         {
-            return buf.length == 0;
+            return _empty;
         }
 
         void popFront()
@@ -83,6 +83,12 @@ auto deps(immutable(void)[] buf)
             import std.exception : assumeUnique;
             import std.datetime : SysTime;
             import std.path : buildNormalizedPath;
+
+            if (buf.length == 0)
+            {
+                _empty = true;
+                return;
+            }
 
             assert(buf.length >= Dependency.sizeof);
 
