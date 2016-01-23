@@ -10,9 +10,6 @@ import "source/bblua/BUILD.lua"
 
 local d = require "rules.d"
 
--- Wrap all commands with the bootstrapped wrapper to catch dependencies.
-d.common.prefix = {"./bb-wrap-bootstrap"}
-
 -- Compiler flags for all targets
 d.common.compiler_opts = {"-release", "-w"}
 
