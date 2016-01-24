@@ -269,22 +269,6 @@ E parse(E : EdgeType)(SQLite3.Statement s)
 }
 
 /**
- * Deserializes an edge represented as a pair of identifiers.
- */
-E parse(E : Edge!(ResourceId, TaskId))(SQLite3.Statement s)
-{
-    import std.conv : to;
-    return E(s.get!string(0), s.get!string(1).to!(string[]));
-}
-
-/// Ditto
-E parse(E : Edge!(TaskId, ResourceId))(SQLite3.Statement s)
-{
-    import std.conv : to;
-    return E(s.get!string(0).to!(string[]), s.get!string(1));
-}
-
-/**
  * Deserializes a neighbor.
  */
 E parse(E : Neighbor!(Index!Resource, EdgeType))(SQLite3.Statement s)
