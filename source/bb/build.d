@@ -243,10 +243,10 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
         final switch (c.type)
         {
         case ChangeType.added:
-            state.put(c.value.from.identifier, c.value.to.identifier, EdgeType.explicit);
+            state.put(c.value.from.identifier, c.value.to.key, EdgeType.explicit);
             break;
         case ChangeType.removed:
-            state.remove(c.value.from.identifier, c.value.to.identifier);
+            state.remove(c.value.from.identifier, c.value.to.key);
             break;
         case ChangeType.none:
             break;
@@ -258,13 +258,13 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
         final switch (c.type)
         {
         case ChangeType.added:
-            auto taskid = state.find(c.value.from.identifier);
+            auto taskid = state.find(c.value.from.key);
             auto resid = state.find(c.value.to.identifier);
             state.addPending(taskid);
             state.put(taskid, resid, EdgeType.explicit);
             break;
         case ChangeType.removed:
-            auto taskid = state.find(c.value.from.identifier);
+            auto taskid = state.find(c.value.from.key);
             auto resid = state.find(c.value.to.identifier);
 
             // When an edge from a task to a resource is removed, the
@@ -284,7 +284,7 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
     {
         if (c.type == ChangeType.removed)
         {
-            auto taskid = state.find(c.value.identifier);
+            auto taskid = state.find(c.value.key);
 
             // Delete all implicit outputs from this task. Note that any
             // edges associated with this task are automatically removed

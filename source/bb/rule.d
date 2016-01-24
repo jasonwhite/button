@@ -76,7 +76,7 @@ struct Rules
             .array()
             .idup;
 
-        string cwd;
+        string cwd = "";
 
         try
         {

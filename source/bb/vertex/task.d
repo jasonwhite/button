@@ -25,7 +25,7 @@ struct TaskKey
      * directory of the build system. If empty, the current working directory of
      * the build system is used.
      */
-    string workingDirectory;
+    string workingDirectory = "";
 
     /**
      * Text to display when running the command. If this is null, the command
@@ -115,7 +115,7 @@ struct Task
         this.key = key;
     }
 
-    this(immutable(string)[] command, string workDir = null,
+    this(immutable(string)[] command, string workDir = "",
             SysTime lastExecuted = SysTime.min)
     {
         this.command = command;
@@ -217,6 +217,7 @@ struct Task
 
         import io.file.stream : sysEnforce;
 
+        import std.path : buildPath;
         import std.string : toStringz;
         import std.datetime : StopWatch;
         import core.time : Duration;
@@ -238,6 +239,11 @@ struct Task
             argv[i] = toStringz(command[i]);
         argv[$-1] = null;
 
+        // Working directory
+        const(char)* cwd = null;
+        if (workingDirectory.length)
+            cwd = workingDirectory.toStringz();
+
         char[16] inputsenv, outputsenv;
         sprintf(inputsenv.ptr, "%d", inputfds[1]);
         sprintf(outputsenv.ptr, "%d", outputfds[1]);
@@ -252,8 +258,8 @@ struct Task
             close(inputfds[0]);
             close(outputfds[0]);
 
-            executeChild(argv, this.devnull, stdfds[1], inputfds[1], outputfds[1],
-                    inputsenv.ptr, outputsenv.ptr);
+            executeChild(argv, cwd, this.devnull, stdfds[1], inputfds[1],
+                    outputfds[1], inputsenv.ptr, outputsenv.ptr);
         }
 
         // In the parent process
@@ -347,7 +353,7 @@ private version (Posix)
             if (outputsfd != -1)
             {
                 FD_SET(outputsfd, &readfds);
-                nfds = max(nfds,outputsfd);
+                nfds = max(nfds, outputsfd);
             }
 
             if (nfds == 0)
@@ -443,14 +449,16 @@ private version (Posix)
      * NOTE: Memory should not be allocated here. It can cause the child process
      * to hang.
      */
-    void executeChild(const(char*)[] argv,
+    void executeChild(const(char*)[] argv, const(char)* cwd,
             int devnull, int stdfd,
             int inputsfd, int outputsfd,
             const(char)* inputsenv, const(char)* outputsenv)
     {
         import core.sys.posix.unistd;
         import core.sys.posix.stdlib : setenv;
-        import core.sys.posix.stdio : perror;
+        import core.stdc.stdio : perror, stderr, fprintf;
+        import core.stdc.string : strerror;
+        import core.stdc.errno : errno;
 
         import io.file.stream : SysException;
         import io.text;
@@ -486,6 +494,13 @@ private version (Posix)
         }
 
         close(stdfd);
+
+        if (cwd && (chdir(cwd) != 0))
+        {
+            fprintf(stderr, "bb: Error: Invalid working directory '%s' (%s)\n",
+                    cwd, strerror(errno));
+            _exit(1);
+        }
 
         execvp(argv[0], argv.ptr);
 

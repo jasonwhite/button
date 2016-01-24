@@ -507,10 +507,11 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    void remove(TaskId command)
+    void remove(TaskKey key)
     {
         import std.conv : to;
-        execute(`DELETE FROM task WHERE command=?`, command.to!string);
+        execute(`DELETE FROM task WHERE command=? AND workDir=?`,
+                key.command.to!string, key.workingDirectory);
     }
 
     /**
@@ -528,11 +529,12 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Index!Task find(TaskId id)
+    Index!Task find(TaskKey id)
     {
         import std.conv : to;
         import std.exception : enforce;
-        auto s = prepare(`SELECT id FROM task WHERE command=?`, id.to!string);
+        auto s = prepare(`SELECT id FROM task WHERE command=? AND workDir=?`,
+                id.command.to!string, id.workingDirectory);
 
         if (s.step())
             return typeof(return)(s.get!ulong(0));
@@ -589,14 +591,15 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Task opIndex(TaskId command)
+    Task opIndex(TaskKey key)
     {
         import std.exception : enforce;
         import std.conv : to;
 
         auto s = prepare(
-                `SELECT command,workDir,lastExecuted FROM task WHERE command=?`,
-                command.to!string
+                `SELECT command,workDir,lastExecuted FROM task`
+                ` WHERE command=? AND workDir=?`,
+                key.command.to!string, key.workingDirectory
                 );
         enforce(s.step(), "Vertex does not exist.");
 
@@ -622,7 +625,7 @@ class BuildState : SQLite3
         immutable vertex = Task(["foo", "test", "test test"]);
 
         immutable id = state.put(vertex);
-        assert(state[["foo", "test", "test test"]] == vertex);
+        assert(state[TaskKey(["foo", "test", "test test"])] == vertex);
     }
 
     /**
@@ -777,7 +780,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Index!(Edge!(Resource, Task)) put(ResourceId a, TaskId b, EdgeType type)
+    Index!(Edge!(Resource, Task)) put(ResourceId a, TaskKey b, EdgeType type)
     {
         import std.conv : to;
         import std.exception : enforce;
@@ -792,7 +795,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    Index!(Edge!(Task, Resource)) put(TaskId a, ResourceId b, EdgeType type)
+    Index!(Edge!(Task, Resource)) put(TaskKey a, ResourceId b, EdgeType type)
     {
         import std.conv : to;
         import std.exception : enforce;
@@ -840,7 +843,7 @@ class BuildState : SQLite3
         immutable resId = state.put(Resource("foo.c"));
         immutable taskId = state.put(Task(["gcc", "foo.c"]));
 
-        immutable edgeId = state.put("foo.c", ["gcc", "foo.c"],
+        immutable edgeId = state.put("foo.c", TaskKey(["gcc", "foo.c"]),
                 EdgeType.explicit);
         assert(edgeId == 1);
     }
@@ -872,13 +875,13 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    void remove(TaskId from, ResourceId to)
+    void remove(TaskKey from, ResourceId to)
     {
         remove(find(from), find(to));
     }
 
     /// Ditto
-    void remove(ResourceId from, TaskId to)
+    void remove(ResourceId from, TaskKey to)
     {
         remove(find(from), find(to));
     }
@@ -1083,63 +1086,6 @@ class BuildState : SQLite3
     }
 
     /**
-     * Returns a range of edges as pairs of identifiers.
-     */
-    @property auto edgeIdentifiers(From : ResourceId, To : TaskId)()
-    {
-        return prepare(
-            `SELECT resource.path, task.command` ~
-            ` FROM resourceEdge AS e` ~
-            ` JOIN task ON e."from"=resource.id` ~
-            ` JOIN resource ON e."to"=task.id`
-            ).rows!(parse!(Edge!(From, To)));
-    }
-
-    /// Ditto
-    @property auto edgeIdentifiers(From : TaskId, To : ResourceId)()
-    {
-        return prepare(
-            `SELECT task.command, resource.path` ~
-            ` FROM taskEdge AS e` ~
-            ` JOIN resource ON e."from"=task.id` ~
-            ` JOIN task ON e."to"=resource.id`
-            ).rows!(parse!(Edge!(From, To)));
-    }
-
-    /// Ditto
-    @property auto edgeIdentifiersSorted(From : ResourceId, To : TaskId)()
-    {
-        import std.array : array;
-        import std.algorithm : sort;
-
-        return prepare(
-            `SELECT resource.path, task.command` ~
-            ` FROM resourceEdge AS e` ~
-            ` JOIN task ON e."from"=resource.id` ~
-            ` JOIN resource ON e."to"=task.id`)
-            .rows!(parse!(Edge!(From, To)))
-            .array
-            .sort();
-    }
-
-    /// Ditto
-    @property auto edgeIdentifiersSorted(From : TaskId, To : ResourceId)()
-    {
-        import std.array : array;
-        import std.algorithm : sort;
-
-        return prepare(
-            `SELECT task.command, resource.path` ~
-            ` FROM taskEdge AS e` ~
-            ` JOIN resource ON e."from"=task.id` ~
-            ` JOIN task ON e."to"=resource.id` ~
-            ` ORDER BY task.command, resource.path`)
-            .rows!(parse!(Edge!(From, To)))
-            .array
-            .sort();
-    }
-
-    /**
      * Returns the outgoing neighbors of the given node.
      */
     @property auto outgoing(Index!Resource v)
@@ -1261,71 +1207,6 @@ class BuildState : SQLite3
             .rows!(parse!Resource);
     }
 
-    unittest
-    {
-        import std.algorithm : map, equal;
-        import std.array : array;
-
-        auto state = new BuildState;
-
-        auto resources = [
-            // Inputs
-            Resource("foo.c"),
-            Resource("bar.c"),
-
-            // Outputs
-            Resource("foo.o"),
-            Resource("bar.o"),
-            Resource("foobar"),
-            ];
-        auto resourceIds = resources.map!(r => state.put(r)).array;
-
-        auto tasks = [
-            Task(["gcc", "foo.c"]),
-            Task(["gcc", "bar.c"]),
-            Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]),
-            ];
-        auto taskIds = tasks.map!(t => state.put(t)).array;
-
-        alias EIRT = Index!(Resource, Task);
-        alias EITR = Index!(Task, Resource);
-
-        state.put(EIRT(resourceIds[0], taskIds[0]), EdgeType.explicit);
-        state.put(EIRT(resourceIds[1], taskIds[1]), EdgeType.explicit);
-        state.put(EIRT(resourceIds[2], taskIds[2]), EdgeType.explicit);
-        state.put(EIRT(resourceIds[3], taskIds[2]), EdgeType.explicit);
-
-        state.put(EITR(taskIds[0], resourceIds[2]), EdgeType.explicit);
-        state.put(EITR(taskIds[1], resourceIds[3]), EdgeType.explicit);
-        state.put(EITR(taskIds[2], resourceIds[4]), EdgeType.explicit);
-
-        // Edges should come out in the same order as they are inserted
-        assert(equal(state.edgeIdentifiers!(ResourceId, TaskId), [
-            Edge!(ResourceId, TaskId)("foo.c", ["gcc", "foo.c"]),
-            Edge!(ResourceId, TaskId)("bar.c", ["gcc", "bar.c"]),
-            Edge!(ResourceId, TaskId)("foo.o", ["gcc", "foo.o", "bar.o", "-o", "foobar"]),
-            Edge!(ResourceId, TaskId)("bar.o", ["gcc", "foo.o", "bar.o", "-o", "foobar"]),
-            ]));
-        assert(equal(state.edgeIdentifiers!(TaskId, ResourceId), [
-            Edge!(TaskId, ResourceId)(["gcc", "foo.c"], "foo.o"),
-            Edge!(TaskId, ResourceId)(["gcc", "bar.c"], "bar.o"),
-            Edge!(TaskId, ResourceId)(["gcc", "foo.o", "bar.o", "-o", "foobar"], "foobar"),
-            ]));
-
-        // Edges should be sorted by their identifiers
-        assert(equal(state.edgeIdentifiersSorted!(ResourceId, TaskId), [
-            Edge!(ResourceId, TaskId)("bar.c", ["gcc", "bar.c"]),
-            Edge!(ResourceId, TaskId)("bar.o", ["gcc", "foo.o", "bar.o", "-o", "foobar"]),
-            Edge!(ResourceId, TaskId)("foo.c", ["gcc", "foo.c"]),
-            Edge!(ResourceId, TaskId)("foo.o", ["gcc", "foo.o", "bar.o", "-o", "foobar"]),
-            ]));
-        assert(equal(state.edgeIdentifiersSorted!(TaskId, ResourceId), [
-            Edge!(TaskId, ResourceId)(["gcc", "bar.c"], "bar.o"),
-            Edge!(TaskId, ResourceId)(["gcc", "foo.c"], "foo.o"),
-            Edge!(TaskId, ResourceId)(["gcc", "foo.o", "bar.o", "-o", "foobar"], "foobar"),
-            ]));
-    }
-
     /**
      * Adds a vertex to the list of pending vertices. If the vertex is already
      * pending, nothing is done.
@@ -1362,7 +1243,7 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    void removePending(TaskId v)
+    void removePending(TaskKey v)
     {
         removePending(find(v));
     }

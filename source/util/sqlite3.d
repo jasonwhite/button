@@ -144,6 +144,14 @@ class SQLite3
      */
     Statement prepare(T...)(string sql, const auto ref T args)
     {
+        debug (SQLite)
+        {
+            import std.stdio;
+            writeln("Prepared Statement: ", sql);
+            foreach(arg; args)
+                writefln("    %s: %s", typeof(arg).stringof, arg);
+        }
+
         auto s = new Statement(sql);
         if (args.length) s.bind(args);
         return s;
