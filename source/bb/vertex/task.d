@@ -506,7 +506,8 @@ private version (Posix)
 
         // If we get this far, something went wrong. Most likely, the command does
         // not exist.
-        perror("execvp");
+        fprintf(stderr, "bb: Failed executing process '%s' (%s)\n",
+                argv[0], strerror(errno));
         _exit(1);
     }
 }
