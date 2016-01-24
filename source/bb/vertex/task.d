@@ -6,11 +6,6 @@
 module bb.vertex.task;
 
 /**
- * A task identifier.
- */
-alias TaskId = immutable(string)[];
-
-/**
  * A task key must be unique.
  */
 struct TaskKey
@@ -174,14 +169,6 @@ struct Task
             return command[0];
 
         return "";
-    }
-
-    /**
-     * Returns the unique identifier for this vertex.
-     */
-    @property inout(TaskId) identifier() inout pure nothrow
-    {
-        return command;
     }
 
     /**
