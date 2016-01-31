@@ -143,11 +143,6 @@ full build:
 
 ```bash
 $ bb build
-:: Build description changed. Syncing with the database...
-:: Checking for changes...
- - Found 3 modified resource(s)
- - Found 3 pending task(s)
-:: Building...
  > gcc -c foo.c -o foo.o
    ➥ Time taken: 93 ms, 85 μs, and 2 hnsecs
  > gcc -c bar.c -o bar.o
@@ -162,7 +157,6 @@ If we run it again immediately without changing any files, nothing will happen:
 
 ```bash
 $ bb update
-:: Checking for changes...
 :: Nothing to do. Everything is up to date.
 :: Total time taken: 3 ms, 804 μs, and 9 hnsecs
 ```
