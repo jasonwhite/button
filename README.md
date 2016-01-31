@@ -141,41 +141,31 @@ specified with the `-f` option.
 Suppose this is our first time running the build. In that case, we will see a
 full build:
 
-```bash
-$ bb build
- > gcc -c foo.c -o foo.o
-   ➥ Time taken: 93 ms, 85 μs, and 2 hnsecs
- > gcc -c bar.c -o bar.o
-   ➥ Time taken: 93 ms, 79 μs, and 3 hnsecs
- > gcc foo.o bar.o -o foobar
-   ➥ Time taken: 58 ms, 318 μs, and 6 hnsecs
-:: Build succeeded
-:: Total time taken: 177 ms, 995 μs, and 3 hnsecs
-```
+    $ bb build
+     > gcc -c foo.c -o foo.o
+       ➥ Time taken: 93 ms, 85 μs, and 2 hnsecs
+     > gcc -c bar.c -o bar.o
+       ➥ Time taken: 93 ms, 79 μs, and 3 hnsecs
+     > gcc foo.o bar.o -o foobar
+       ➥ Time taken: 58 ms, 318 μs, and 6 hnsecs
+    :: Build succeeded
+    :: Total time taken: 177 ms, 995 μs, and 3 hnsecs
 
 If we run it again immediately without changing any files, nothing will happen:
 
-```bash
-$ bb update
-:: Nothing to do. Everything is up to date.
-:: Total time taken: 3 ms, 804 μs, and 9 hnsecs
-```
+    $ bb update
+    :: Nothing to do. Everything is up to date.
+    :: Total time taken: 3 ms, 804 μs, and 9 hnsecs
 
 Now suppose we make a change to the file `foo.c` and run the build again. Only
 the necessary tasks to bring the outputs up-to-date are executed:
 
-```bash
-$ echo "// Another comment" >> foo.c
-$ bb build
-:: Checking for changes...
- - Found 1 modified resource(s)
- - Found 0 pending task(s)
-:: Building...
- > gcc -c foo.c -o foo.o
-   ➥ Time taken: 31 ms, 579 μs, and 3 hnsecs
-:: Build succeeded
-:: Total time taken: 41 ms, 448 μs, and 3 hnsecs
-```
+    $ echo "// Another comment" >> foo.c
+    $ bb build
+     > gcc -c foo.c -o foo.o
+       ➥ Time taken: 31 ms, 579 μs, and 3 hnsecs
+    :: Build succeeded
+    :: Total time taken: 41 ms, 448 μs, and 3 hnsecs
 
 Note that `gcc foo.o bar.o -o foobar` was not executed because its output
 `foo.o` did not change. Indeed, all we did was add a comment. In such a case,
