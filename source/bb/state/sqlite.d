@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS task (
     id           INTEGER,
     command      TEXT     NOT NULL,
     workDir      TEXT,
+    display      TEXT,
     lastExecuted INTEGER  NOT NULL,
     PRIMARY KEY(id),
     UNIQUE(command, workDir)
@@ -199,7 +200,8 @@ Vertex parse(Vertex : Task)(SQLite3.Statement s)
     return Task(
         s.get!string(0).to!(string[]),
         s.get!string(1),
-        SysTime(s.get!long(2)),
+        s.get!string(2),
+        SysTime(s.get!long(3)),
         );
 }
 
@@ -410,10 +412,11 @@ class BuildState : SQLite3
         import std.conv : to;
 
         execute(`INSERT INTO task` ~
-                ` (command, workDir, lastExecuted)` ~
-                ` VALUES(?, ?, ?)`,
+                ` (command, workDir, display, lastExecuted)` ~
+                ` VALUES(?, ?, ?, ?)`,
                 task.command.to!string(),
                 task.workingDirectory,
+                task.display,
                 task.lastExecuted.stdTime
                 );
 
@@ -461,10 +464,11 @@ class BuildState : SQLite3
         import std.conv : to;
 
         execute(`INSERT OR IGNORE INTO task` ~
-                ` (command, workDir, lastExecuted)` ~
-                ` VALUES(?, ?, ?)`,
+                ` (command, workDir, display, lastExecuted)` ~
+                ` VALUES(?, ?, ?, ?)`,
                 task.command.to!string(),
                 task.workingDirectory,
+                task.display,
                 task.lastExecuted.stdTime
                 );
     }
@@ -548,7 +552,7 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        auto s = prepare("SELECT command,workDir,lastExecuted FROM task WHERE id=?", index);
+        auto s = prepare("SELECT command,workDir,display,lastExecuted FROM task WHERE id=?", index);
         enforce(s.step(), "Vertex does not exist.");
 
         return s.parse!Task();
@@ -581,7 +585,7 @@ class BuildState : SQLite3
         import std.conv : to;
 
         auto s = prepare(
-                `SELECT command,workDir,lastExecuted FROM task`
+                `SELECT command,workDir,display,lastExecuted FROM task`
                 ` WHERE command=? AND workDir=?`,
                 key.command.to!string, key.workingDirectory
                 );
@@ -631,10 +635,10 @@ class BuildState : SQLite3
     {
         import std.conv : to;
         execute(`UPDATE task` ~
-                ` SET command=?,workDir=?,lastExecuted=?` ~
+                ` SET command=?,workDir=?,display=?,lastExecuted=?` ~
                 ` WHERE id=?`,
-                v.command.to!string, v.workingDirectory, v.lastExecuted.stdTime,
-                index
+                v.command.to!string, v.workingDirectory, v.display,
+                v.lastExecuted.stdTime, index
                 );
     }
 
@@ -675,7 +679,7 @@ class BuildState : SQLite3
      */
     @property auto enumerate(T : Task)()
     {
-        return prepare(`SELECT command,workDir,lastExecuted FROM task`)
+        return prepare(`SELECT command,workDir,display,lastExecuted FROM task`)
             .rows!(parse!T);
     }
 

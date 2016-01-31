@@ -78,16 +78,17 @@ struct Rules
 
         string cwd = "";
 
+        // Optional
         try
-        {
             cwd = jsonRule["cwd"].str();
-        }
-        catch(JSONException e)
-        {
-            // Optional.
-        }
+        catch(JSONException e) {}
 
-        rule = Rule(inputs, outputs, Task(command, cwd));
+        string display;
+        try
+            display = jsonRule["display"].str();
+        catch(JSONException e) {}
+
+        rule = Rule(inputs, outputs, Task(command, cwd, display));
 
         rules.popFront();
     }

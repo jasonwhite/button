@@ -23,13 +23,6 @@ struct TaskKey
     string workingDirectory = "";
 
     /**
-     * Text to display when running the command. If this is null, the command
-     * itself will be displayed. This is useful for reducing the amount of
-     * information that is displayed.
-     */
-    //string display;
-
-    /**
      * Compares this key with another.
      */
     int opCmp()(const auto ref typeof(this) that) const pure nothrow
@@ -105,22 +98,24 @@ struct Task
 
     // TODO: Store last execution duration.
 
+    /**
+     * Text to display when running the command. If this is null, the command
+     * itself will be displayed. This is useful for reducing the amount of
+     * information that is displayed.
+     */
+    string display;
+
     this(TaskKey key)
     {
         this.key = key;
     }
 
     this(immutable(string)[] command, string workDir = "",
-            SysTime lastExecuted = SysTime.min)
+            string display = null, SysTime lastExecuted = SysTime.min)
     {
         this.command = command;
+        this.display = display;
         this.workingDirectory = workDir;
-        this.lastExecuted = lastExecuted;
-    }
-
-    this(immutable(string)[] command, SysTime lastExecuted)
-    {
-        this.command = command;
         this.lastExecuted = lastExecuted;
     }
 
@@ -155,7 +150,7 @@ struct Task
         import std.array : join;
         import std.algorithm.iteration : map;
 
-        //if (display) return display;
+        if (display) return display;
 
         return command.map!(arg => arg.escapeShellArg).join(" ");
     }
