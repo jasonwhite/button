@@ -460,7 +460,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
      * Returns the set of changes between the vertices in this graph and the
      * other.
      */
-    auto diffVertices(Vertex)(const ref typeof(this) other) const pure
+    auto diffVertices(Vertex)(const ref typeof(this) other) const
         if (isVertex!Vertex)
     {
         import std.array : array;
