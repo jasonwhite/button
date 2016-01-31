@@ -150,7 +150,8 @@ struct Task
         import std.array : join;
         import std.algorithm.iteration : map;
 
-        if (display) return display;
+        if (display)
+            return display;
 
         return command.map!(arg => arg.escapeShellArg).join(" ");
     }
@@ -160,6 +161,9 @@ struct Task
      */
     @property string shortString() const pure nothrow
     {
+        if (display)
+            return display;
+
         if (command.length > 0)
             return command[0];
 
