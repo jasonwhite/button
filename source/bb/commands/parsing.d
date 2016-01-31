@@ -77,6 +77,11 @@ struct UpdateOptions
     @Help("When to colorize the output.")
     @MetaVar("{auto,never,always}")
     string color = "auto";
+
+    @Option("verbose", "v")
+    @Help("Display additional information such as how long each task took to"~
+          " complete.")
+    OptionFlag verbose;
 }
 
 // TODO: Allow graphing of just the build description.

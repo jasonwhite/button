@@ -655,6 +655,8 @@ struct VisitorContext
 
     bool dryRun;
 
+    bool verbose;
+
     TextColor color;
 }
 
@@ -732,7 +734,7 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         if (succeeded)
             stream.println(color.status, " > ", color.reset, task);
         else
-            stream.println(" > ", color.error, task,
+            stream.println(color.status, " > ", color.error, task,
                     color.reset, color.bold, " (exit code: ", result.status,
                     ")", color.reset);
 
@@ -742,7 +744,8 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         if (result.stdout.length > 0 && result.stdout[$-1] != '\n')
             stream.write("\n");
 
-        stream.println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
+        if (context.verbose)
+            stream.println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
 
         if (succeeded)
             syncStateImplicit(context.state, v, result.inputs, result.outputs);
@@ -769,12 +772,12 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
  * This is the heart of the build system. Everything else is just support code.
  */
 void build(BuildStateGraph graph, BuildState state, TaskPool pool,
-        bool dryRun, TextColor color)
+        bool dryRun, bool verbose, TextColor color)
 {
     import std.algorithm : filter, map;
     import std.array : array;
 
-    auto ctx = VisitorContext(state, dryRun, color);
+    auto ctx = VisitorContext(state, dryRun, verbose, color);
 
     graph.traverse!(visitResource, visitTask)(&ctx, pool);
 }

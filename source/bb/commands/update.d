@@ -28,6 +28,9 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
     import std.parallelism : totalCPUs;
     import std.datetime : StopWatch;
 
+    immutable bool dryRun  = opts.dryRun == OptionFlag.yes;
+    immutable bool verbose = opts.verbose == OptionFlag.yes;
+
     StopWatch sw;
 
     if (opts.threads == 0)
@@ -63,17 +66,19 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
                 // Note that the transaction is not ended if this is a dry run.
                 // We don't want the database to retain changes introduced
                 // during the build.
-                if (opts.dryRun == OptionFlag.no)
+                if (!dryRun)
                     state.commit();
             }
 
-            syncBuildState(state, path, color);
+            syncBuildState(state, path, verbose, color);
 
-            println(color.status, ":: Checking for changes...", color.reset);
+            if (verbose)
+                println(color.status, ":: Checking for changes...", color.reset);
+
             queueChanges(state, pool, color);
         }
 
-        update(state, pool, opts.dryRun == OptionFlag.yes, color);
+        update(state, pool, dryRun, verbose, color);
 
         publishResources(state);
     }
@@ -97,7 +102,7 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
 /**
  * Updates the database with any changes to the build description.
  */
-void syncBuildState(BuildState state, string path, TextColor color)
+void syncBuildState(BuildState state, string path, bool verbose, TextColor color)
 {
     // TODO: Don't store the build description in the database. The parent build
     // system should store the change state of the build description and tell
@@ -106,8 +111,10 @@ void syncBuildState(BuildState state, string path, TextColor color)
     r.path = path;
     if (r.update())
     {
-        println(color.status, ":: Build description changed. Syncing with the database...",
-                color.reset);
+        if (verbose)
+            println(color.status, ":: Build description changed. Syncing with the database...",
+                    color.reset);
+
         path.syncState(state);
 
         // Update the build description resource
@@ -118,7 +125,8 @@ void syncBuildState(BuildState state, string path, TextColor color)
 /**
  * Builds pending vertices.
  */
-void update(BuildState state, TaskPool pool, bool dryRun, TextColor color)
+void update(BuildState state, TaskPool pool, bool dryRun, bool verbose,
+        TextColor color)
 {
     import std.array : array;
     import std.algorithm.iteration : filter;
@@ -134,14 +142,18 @@ void update(BuildState state, TaskPool pool, bool dryRun, TextColor color)
     }
 
     // Print what we found.
-    printfln(" - Found %s%d%s modified resource(s)",
-            color.boldBlue, resources.length, color.reset);
-    printfln(" - Found %s%d%s pending task(s)",
-            color.boldBlue, tasks.length, color.reset);
+    if (verbose)
+    {
+        printfln(" - Found %s%d%s modified resource(s)",
+                color.boldBlue, resources.length, color.reset);
+        printfln(" - Found %s%d%s pending task(s)",
+                color.boldBlue, tasks.length, color.reset);
 
-    println(color.status, ":: Building...", color.reset);
+        println(color.status, ":: Building...", color.reset);
+    }
+
     auto subgraph = state.buildGraph(resources, tasks);
-    subgraph.build(state, pool, dryRun, color);
+    subgraph.build(state, pool, dryRun, verbose, color);
 
     println(color.status, ":: ", color.success, "Build succeeded", color.reset);
 }
