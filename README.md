@@ -143,11 +143,8 @@ full build:
 
     $ bb build
      > gcc -c foo.c -o foo.o
-       ➥ Time taken: 93 ms, 85 μs, and 2 hnsecs
      > gcc -c bar.c -o bar.o
-       ➥ Time taken: 93 ms, 79 μs, and 3 hnsecs
      > gcc foo.o bar.o -o foobar
-       ➥ Time taken: 58 ms, 318 μs, and 6 hnsecs
     :: Build succeeded
     :: Total time taken: 177 ms, 995 μs, and 3 hnsecs
 
@@ -163,7 +160,6 @@ the necessary tasks to bring the outputs up-to-date are executed:
     $ echo "// Another comment" >> foo.c
     $ bb build
      > gcc -c foo.c -o foo.o
-       ➥ Time taken: 31 ms, 579 μs, and 3 hnsecs
     :: Build succeeded
     :: Total time taken: 41 ms, 448 μs, and 3 hnsecs
 
