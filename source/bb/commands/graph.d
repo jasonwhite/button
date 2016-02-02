@@ -17,7 +17,7 @@ import std.getopt;
 import io.text,
        io.file;
 
-import io.stream.types : isSink;
+import io.stream : isSink;
 
 import bb.vertex,
        bb.edgedata,
@@ -99,7 +99,7 @@ void graphviz(Stream)(
     foreach (id; graph.vertices!A)
     {
         immutable v = state[id];
-        immutable name = full ? v.toString : v.shortString;
+        immutable name = full ? v.toString : v.toShortString;
         stream.printfln(`        "r:%s" [label="%s", tooltip="%s"];`, id, name, v);
     }
     stream.println("    }");
@@ -110,7 +110,7 @@ void graphviz(Stream)(
     foreach (id; graph.vertices!B)
     {
         immutable v = state[id];
-        immutable name = full ? v.toString : v.shortString;
+        immutable name = full ? v.toString : v.toShortString;
         stream.printfln(`        "t:%s" [label="%s", tooltip="%s"];`, id, name, v);
     }
     stream.println("    }");
@@ -129,7 +129,7 @@ void graphviz(Stream)(
         stream.println("    }");
     }
 
-    immutable styles = ["solid", "dashed"];
+    static immutable styles = ["solid", "dashed"];
 
     // Edges
     foreach (edge; graph.edges!(A, B))

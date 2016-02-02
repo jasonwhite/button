@@ -145,12 +145,12 @@ struct Task
      * Since commands are specified as arrays, we format it into a string as one
      * would enter into a shell.
      */
-    string toString() const pure nothrow
+    string toString(bool verbose = false) const pure nothrow
     {
         import std.array : join;
         import std.algorithm.iteration : map;
 
-        if (display)
+        if (display && !verbose)
             return display;
 
         return command.map!(arg => arg.escapeShellArg).join(" ");
@@ -159,7 +159,7 @@ struct Task
     /**
      * Returns a short string representation of the command.
      */
-    @property string shortString() const pure nothrow
+    @property string toShortString() const pure nothrow
     {
         if (display)
             return display;

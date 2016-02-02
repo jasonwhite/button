@@ -416,12 +416,12 @@ void checkCycles(Graph!(Resource, Task) graph)
         auto tasks = scc.vertices!(Task);
 
         println("    ", resources[0]);
-        println(" -> ", tasks[0].shortString);
+        println(" -> ", tasks[0].toString);
 
         foreach_reverse(j; 1 .. min(resources.length, tasks.length))
         {
             println(" -> ", resources[j]);
-            println(" -> ", tasks[j].shortString);
+            println(" -> ", tasks[j].toString);
         }
 
         // Make the cycle obvious
@@ -732,11 +732,12 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         auto stream = succeeded ? stdout : stderr;
 
         if (succeeded)
-            stream.println(color.status, " > ", color.reset, task);
+            stream.println(color.status, " > ", color.reset,
+                    task.toString(context.verbose));
         else
-            stream.println(color.status, " > ", color.error, task,
-                    color.reset, color.bold, " (exit code: ", result.status,
-                    ")", color.reset);
+            stream.println(color.status, " > ", color.error,
+                    task.toString(context.verbose), color.reset, color.bold,
+                    " (exit code: ", result.status, ")", color.reset);
 
         stream.write(result.stdout);
 

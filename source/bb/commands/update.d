@@ -45,8 +45,12 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
         import std.conv : to;
         import core.time : Duration;
         sw.stop();
-        println(color.status, ":: Total time taken: ", color.reset,
-                cast(Duration)sw.peek());
+
+        if (verbose)
+        {
+            println(color.status, ":: Total time taken: ", color.reset,
+                    cast(Duration)sw.peek());
+        }
     }
 
     auto pool = new TaskPool(opts.threads - 1);
@@ -136,8 +140,12 @@ void update(BuildState state, TaskPool pool, bool dryRun, bool verbose,
 
     if (resources.length == 0 && tasks.length == 0)
     {
-        println(color.status, ":: ", color.success,
-                "Nothing to do. Everything is up to date.", color.reset);
+        if (verbose)
+        {
+            println(color.status, ":: ", color.success,
+                    "Nothing to do. Everything is up to date.", color.reset);
+        }
+
         return;
     }
 

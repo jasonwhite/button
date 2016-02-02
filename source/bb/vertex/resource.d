@@ -117,7 +117,7 @@ struct Resource
     /**
      * Returns a short string representation of the path.
      */
-    @property string shortString() const pure nothrow
+    @property string toShortString() const pure nothrow
     {
         import std.path : baseName;
         return path.baseName;
