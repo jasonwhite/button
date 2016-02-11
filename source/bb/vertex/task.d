@@ -129,7 +129,7 @@ struct Task
             import io.file.stream : sysEnforce;
             import core.sys.posix.fcntl : open, O_RDONLY;
             devnull = open("/dev/null", O_RDONLY);
-            sysEnforce(devnull != -1);
+            sysEnforce(devnull != -1, "Failed to open /dev/null");
         }
 
         shared static ~this()
