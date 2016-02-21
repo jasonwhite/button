@@ -42,7 +42,7 @@ int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
             path.syncState(state, true);
         }
 
-        auto graph = state.buildGraph;
+        BuildStateGraph graph = state.buildGraph;
 
         if (opts.changes)
         {
@@ -55,13 +55,10 @@ int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
                 .filter!(v => state.degreeIn(v) == 0)
                 .array;
 
-            auto subgraph = graph.subgraph(resourceRoots, taskRoots);
-            subgraph.graphviz(state, stdout, opts.full == OptionFlag.yes);
+            graph = graph.subgraph(resourceRoots, taskRoots);
         }
-        else
-        {
-            graph.graphviz(state, stdout, opts.full == OptionFlag.yes);
-        }
+
+        graph.graphviz(state, stdout, opts.full == OptionFlag.yes);
     }
     catch (BuildException e)
     {
