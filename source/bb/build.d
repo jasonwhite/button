@@ -724,7 +724,7 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
     }
 
     auto result = task.execute();
-    immutable succeeded = result.status == 0;
+    bool succeeded = result.status == 0;
 
     synchronized
     {
@@ -749,11 +749,23 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
             stream.println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
 
         if (succeeded)
-            syncStateImplicit(context.state, v, result.inputs, result.outputs);
+        {
+            try
+            {
+                syncStateImplicit(context.state, v, result.inputs, result.outputs);
+            }
+            catch (BuildException e)
+            {
+                succeeded = false;
+                stderr.println(color.error, "   Error: ", color.reset, e.msg);
+            }
+        }
         else
+        {
             stream.println(color.status, "   ➥ ", color.error, "Error: ", color.reset,
                     "Task failed. Process exited with code ", result.status
                     );
+        }
     }
 
     if (!succeeded)
