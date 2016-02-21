@@ -41,7 +41,7 @@ else
         {
             opts = parseArgs!GlobalOptions(args[1 .. $], Config.ignoreUnknown);
         }
-        catch (ArgParseException e)
+        catch (ArgParseError e)
         {
             // Generate usage string at compile time.
             static immutable usage = usageString!GlobalOptions("bb");
@@ -73,7 +73,7 @@ else
             println(e.msg);
             return 1;
         }
-        catch (ArgParseException e)
+        catch (ArgParseError e)
         {
             println("Error parsing arguments: ", e.msg, "\n");
             displayHelp(opts.command);

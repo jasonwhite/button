@@ -4,7 +4,7 @@ copyright "Copyright © 2016, Jason White"
 authors "Jason White"
 
 dependency "io" version=">=0.0.3"
-dependency "darg" version=">=0.0.1"
+dependency "darg" version=">=0.0.3"
 
 sourcePaths "source/bb" "source/util"
 
