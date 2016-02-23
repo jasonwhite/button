@@ -42,7 +42,7 @@ problems. Read on to find out how.
    project.
  * Detects and displays cyclic dependencies.
  * Detects race conditions (i.e., when multiple tasks output to the same file).
- * Deletes output files that no longer get built.
+ * Deletes output files that should no longer get built.
  * Can generate a build description as part of the build.
 
 ## Quick Example
@@ -120,6 +120,9 @@ running
 $ bblua BUILD.lua -o bb.json
 ```
 
+Note that this requires the separate tool
+[`bblua`](http://github.com/jasonwhite/bblua).
+
 ### Visualizing the Build
 
 A visualization of the above build description can be generated using
@@ -145,14 +148,10 @@ full build:
      > gcc -c foo.c -o foo.o
      > gcc -c bar.c -o bar.o
      > gcc foo.o bar.o -o foobar
-    :: Build succeeded
-    :: Total time taken: 177 ms, 995 μs, and 3 hnsecs
 
 If we run it again immediately without changing any files, nothing will happen:
 
-    $ bb update
-    :: Nothing to do. Everything is up to date.
-    :: Total time taken: 3 ms, 804 μs, and 9 hnsecs
+    $ bb build
 
 Now suppose we make a change to the file `foo.c` and run the build again. Only
 the necessary tasks to bring the outputs up-to-date are executed:
@@ -160,8 +159,6 @@ the necessary tasks to bring the outputs up-to-date are executed:
     $ echo "// Another comment" >> foo.c
     $ bb build
      > gcc -c foo.c -o foo.o
-    :: Build succeeded
-    :: Total time taken: 41 ms, 448 μs, and 3 hnsecs
 
 Note that `gcc foo.o bar.o -o foobar` was not executed because its output
 `foo.o` did not change. Indeed, all we did was add a comment. In such a case,
