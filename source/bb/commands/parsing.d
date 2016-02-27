@@ -89,6 +89,8 @@ struct UpdateOptions
 @Description("Generates a graph for input into GraphViz.")
 struct GraphOptions
 {
+    import bb.edgedata : EdgeType;
+
     @Option("file", "f")
     @Help("Path to the build description.")
     string path;
@@ -105,17 +107,10 @@ struct GraphOptions
     @Help("Display the full name of each vertex.")
     OptionFlag full;
 
-    enum Edges
-    {
-        explicit = 1 << 0,
-        implicit = 1 << 1,
-        both = explicit | implicit,
-    }
-
     @Option("edges", "e")
     @MetaVar("{explicit,implicit,both}")
     @Help("Type of edges to show")
-    Edges edges = Edges.both;
+    EdgeType edges = EdgeType.explicit;
 }
 
 @Command("status")

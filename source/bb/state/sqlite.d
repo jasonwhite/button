@@ -1023,6 +1023,30 @@ class BuildState : SQLite3
     }
 
     /**
+     * Sets the state associated with an edge.
+     */
+    void opIndexAssign(EdgeType type, Index!Task from, Index!Resource to)
+    {
+        execute(
+                `UPDATE taskEdge` ~
+                ` SET "type"=?` ~
+                ` WHERE "from"=? AND "to"=?`,
+                from, to
+                );
+    }
+
+    /// Ditto
+    void opIndexAssign(EdgeType type, Index!Resource from, Index!Task to)
+    {
+        execute(
+                `UPDATE resourceEdge` ~
+                ` SET "type"=?` ~
+                ` WHERE "from"=? AND "to"=?`,
+                from, to
+                );
+    }
+
+    /**
      * Lists all outgoing task edges.
      */
     @property auto edges(From : Task, To : Resource, Data : EdgeType)()

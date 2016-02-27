@@ -17,7 +17,7 @@ enum EdgeType
      * considered a contract that must be fulfilled by the task. If the task
      * does not report that resource as an output, the task is marked as failed.
      */
-    explicit,
+    explicit = 1 << 0,
 
     /**
      * An implicit edge is one that is reported by a task.
@@ -35,5 +35,11 @@ enum EdgeType
      * it an error if the set of explicit edges is not a subset of the set of
      * implicit edges.
      */
-    implicit,
+    implicit = 1 << 1,
+
+    /**
+     * An edge is both explicit and implicit if it is in the build description
+     * and reported by a task.
+     */
+    both = explicit | implicit,
 }

@@ -325,25 +325,35 @@ void syncState(string path, BuildState state, bool dryRun = false)
 }
 
 /**
- * Constructs a graph from the build state.
+ * Constructs a graph from the build state. Only connected resources are added
+ * to the graph.
  */
-BuildStateGraph buildGraph(BuildState state)
+BuildStateGraph buildGraph(BuildState state, EdgeType type = EdgeType.both)
 {
     auto g = new typeof(return)();
 
-    // Add all vertices
-    foreach (v; state.enumerate!(Index!Resource))
-        g.put(v);
-
+    // Add all tasks
     foreach (v; state.enumerate!(Index!Task))
         g.put(v);
 
     // Add all edges
     foreach (v; state.edges!(Resource, Task, EdgeType))
+    {
+        if (v.data != type)
+            continue;
+
+        g.put(v.from);
         g.put(v.from, v.to, v.data);
+    }
 
     foreach (v; state.edges!(Task, Resource, EdgeType))
+    {
+        if (v.data != type)
+            continue;
+
+        g.put(v.to);
         g.put(v.from, v.to, v.data);
+    }
 
     return g;
 }
@@ -570,10 +580,12 @@ void syncStateImplicit(BuildState state, Index!Task v,
                 if (id == Index!Resource.Invalid)
                 {
                     r.update();
-                    id = state.put(r);
+                    state.put(state.put(r), v, EdgeType.implicit);
                 }
-
-                state.put(id, v, EdgeType.implicit);
+                else
+                {
+                    state.put(id, v, EdgeType.both);
+                }
             }
             else
             {
@@ -586,16 +598,28 @@ void syncStateImplicit(BuildState state, Index!Task v,
         else if (c.type == ChangeType.removed)
         {
             // Build state has edges that weren't discovered implicitly. These
-            // can be either explicit edges that weren't found or removed
-            // implicit edges. We only care about the latter case here.
+            // can either be explicit edges that weren't found, removed implicit
+            // edges, or both.
 
             auto r = c.value;
 
             auto id = state.find(r.path);
             assert(id != Index!Resource.Invalid);
 
-            if (state[id, v] == EdgeType.implicit)
+            final switch (state[id, v])
+            {
+            case EdgeType.explicit:
+                // Doesn't make sense to remove an explicit edge.
+                break;
+            case EdgeType.implicit:
+                // Only an implicit edge. Remove it completely.
                 state.remove(id, v);
+                break;
+            case EdgeType.both:
+                // Implicit edge was also explicitly added.
+                state[id, v] = EdgeType.explicit;
+                break;
+            }
         }
     }
 
@@ -615,10 +639,12 @@ void syncStateImplicit(BuildState state, Index!Task v,
                 if (id == Index!Resource.Invalid)
                 {
                     r.update();
-                    id = state.put(r);
+                    state.put(v, state.put(r), EdgeType.implicit);
                 }
-
-                state.put(v, id, EdgeType.implicit);
+                else
+                {
+                    state.put(v, id, EdgeType.both);
+                }
             }
             else
             {
@@ -644,6 +670,24 @@ void syncStateImplicit(BuildState state, Index!Task v,
                 state[id].remove();
                 state.remove(v, id);
                 state.remove(id);
+            }
+
+            final switch (state[v, id])
+            {
+            case EdgeType.explicit:
+                // Doesn't make sense to remove an explicit edge.
+                break;
+            case EdgeType.implicit:
+                // Only an implicit edge. Remove the edge and the output
+                // resource completely, including deleting it from disk.
+                state[id].remove();
+                state.remove(v, id);
+                state.remove(id);
+                break;
+            case EdgeType.both:
+                // Implicit edge was also explicitly added.
+                state[v, id] = EdgeType.explicit;
+                break;
             }
         }
     }

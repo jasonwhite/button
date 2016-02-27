@@ -25,7 +25,6 @@ import bb.vertex,
        bb.state,
        bb.build;
 
-
 int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
 {
     try
@@ -42,7 +41,7 @@ int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
             path.syncState(state, true);
         }
 
-        BuildStateGraph graph = state.buildGraph;
+        BuildStateGraph graph = state.buildGraph(opts.edges);
 
         if (opts.changes)
         {
@@ -126,7 +125,13 @@ void graphviz(Stream)(
         stream.println("    }");
     }
 
-    static immutable styles = ["solid", "dashed"];
+    // Edge style, indexed by EdgeType.
+    static immutable styles = [
+        "invis",  // Should never get indexed
+        "solid",  // Explicit
+        "dashed", // Implicit
+        "bold",   // Both explicit and implicit
+    ];
 
     // Edges
     foreach (edge; graph.edges!(A, B))
