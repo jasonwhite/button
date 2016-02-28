@@ -48,6 +48,11 @@ align(4) struct Dependency
     char[0] name;
 }
 
+unittest
+{
+    static assert(Dependency.sizeof == 44);
+}
+
 /**
  * Range of implicit dependencies received from a child process.
  */
@@ -83,7 +88,6 @@ auto deps(immutable(void)[] buf)
             import std.exception : assumeUnique;
             import std.datetime : SysTime;
             import std.path : buildNormalizedPath;
-            debug import std.format : format;
 
             if (buf.length == 0)
             {
@@ -91,8 +95,7 @@ auto deps(immutable(void)[] buf)
                 return;
             }
 
-            assert(buf.length >= Dependency.sizeof,
-                    "Received partial buffer of length %d".format(buf.length));
+            assert(buf.length >= Dependency.sizeof, "Received partial buffer");
 
             auto dep = *cast(Dependency*)buf[0 .. Dependency.sizeof];
 

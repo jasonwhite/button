@@ -807,7 +807,7 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         else
         {
             stream.println(color.status, "   ➥ ", color.error, "Error: ", color.reset,
-                    "Task failed. Process exited with code ", result.status
+                    "Process exited with code ", result.status
                     );
         }
     }
