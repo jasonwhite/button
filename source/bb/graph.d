@@ -35,6 +35,10 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
     /**
      * Bookkeeping data associated with each vertex.
+     *
+     * FIXME: A class is only used here such that it can be used with the
+     * synchronized statement. A less heavy-weight implementation should be used
+     * instead.
      */
     class Data
     {
@@ -336,7 +340,6 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     {
         import std.parallelism : parallel;
         import core.atomic : atomicOp;
-        import core.sync.mutex : Mutex;
 
         auto data = v in _data!Vertex;
 
@@ -410,12 +413,67 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     {
         import std.parallelism : parallel;
         import std.algorithm.iteration : filter;
+        import core.sync.mutex : Mutex;
+
+        auto mutex = new Mutex();
+
+        Throwable head;
+        Throwable tail;
 
         foreach (v; pool.parallel(vertices!A.filter!(v => degreeIn(v) == 0), 1))
-            traverse!(visitA, visitB)(pool, ctx, v, true);
+        {
+            try
+                traverse!(visitA, visitB)(pool, ctx, v, true);
+            catch (Exception e)
+            {
+                synchronized (mutex)
+                {
+                    if (head is null)
+                    {
+                        head = e;
+                        tail = head;
+                    }
+                    else
+                    {
+                        // Add our (potential) exception chain to the end of the
+                        // linked list
+                        while (tail.next !is null)
+                            tail = tail.next;
+
+                        tail.next = e;
+                    }
+                }
+            }
+        }
 
         foreach (v; pool.parallel(vertices!B.filter!(v => degreeIn(v) == 0), 1))
-            traverse!(visitB, visitA)(pool, ctx, v, true);
+        {
+            try
+                traverse!(visitB, visitA)(pool, ctx, v, true);
+            catch (Exception e)
+            {
+                synchronized (mutex)
+                {
+                    if (head is null)
+                    {
+                        head = e;
+                        tail = head;
+                    }
+                    else
+                    {
+                        // Add our (potential) exception chain to the end of the
+                        // linked list
+                        while (tail.next !is null)
+                            tail = tail.next;
+
+                        tail.next = e;
+                    }
+                }
+            }
+        }
+
+        if (head !is null)
+            throw head;
     }
 
     /**
