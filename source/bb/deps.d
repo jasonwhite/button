@@ -83,6 +83,7 @@ auto deps(immutable(void)[] buf)
             import std.exception : assumeUnique;
             import std.datetime : SysTime;
             import std.path : buildNormalizedPath;
+            debug import std.format : format;
 
             if (buf.length == 0)
             {
@@ -90,7 +91,8 @@ auto deps(immutable(void)[] buf)
                 return;
             }
 
-            assert(buf.length >= Dependency.sizeof);
+            assert(buf.length >= Dependency.sizeof,
+                    "Received partial buffer of length %d".format(buf.length));
 
             auto dep = *cast(Dependency*)buf[0 .. Dependency.sizeof];
 
