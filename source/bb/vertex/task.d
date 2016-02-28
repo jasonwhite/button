@@ -383,17 +383,17 @@ private version (Posix)
         import io.file.stream : sysEnforce, SysException;
 
         immutable len = read(fd, buf.ptr, buf.length);
-        sysEnforce(len >= 0, "read() failed");
 
-        if (len == 0)
+        if (len > 0)
         {
-            // End of file. Don't wait on it again.
-            close(fd);
-            fd = -1;
+            a.put(buf[0 .. len]);
         }
         else
         {
-            a.put(buf[0 .. len]);
+            // Either the other end of the pipe was closed or the end of the
+            // stream was reached.
+            close(fd);
+            fd = -1;
         }
     }
 
