@@ -151,7 +151,7 @@ Graph!(Resource, Task) explicitGraph(BuildState state)
     // FIXME: This isn't very efficient.
     foreach (e; state.edges!(Task, Resource, EdgeType)())
     {
-        if (e.data != EdgeType.explicit)
+        if ((e.data & EdgeType.explicit) != EdgeType.explicit)
             continue;
 
         auto r = state[e.to];
@@ -161,7 +161,7 @@ Graph!(Resource, Task) explicitGraph(BuildState state)
 
     foreach (e; state.edges!(Resource, Task, EdgeType)())
     {
-        if (e.data != EdgeType.explicit)
+        if ((e.data & EdgeType.explicit) != EdgeType.explicit)
             continue;
 
         auto r = state[e.from];
