@@ -179,6 +179,17 @@ alias Other(A : Task) = Resource; /// Ditto
 alias NeighborIndex(V : Index!V) = EdgeIndex!(V, Other!V);
 
 /**
+ * Thrown when an edge does not exist.
+ */
+class InvalidEdge : Exception
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line);
+    }
+}
+
+/**
  * Deserializes a vertex from a SQLite statement. This assumes that the
  * statement has every column of the vertex except the row ID.
  */
@@ -968,7 +979,7 @@ class BuildState : SQLite3
 
         auto s = prepare(
             `SELECT "from","to","type" FROM taskEdge WHERE id=?`, index);
-        enforce(s.step(), "Edge does not exist.");
+        enforce!InvalidEdge(s.step(), "Edge does not exist.");
 
         return s.parse!(typeof(return));
     }
@@ -980,7 +991,7 @@ class BuildState : SQLite3
 
         auto s = prepare(
             `SELECT "from","to","type" FROM resourceEdge WHERE id=?`, index);
-        enforce(s.step(), "Edge does not exist.");
+        enforce!InvalidEdge(s.step(), "Edge does not exist.");
 
         return s.parse!(typeof(return));
     }
@@ -992,7 +1003,7 @@ class BuildState : SQLite3
 
         auto s = prepare(
             `SELECT "type" FROM taskEdge WHERE "from"=? AND "to"=?`, from, to);
-        enforce(s.step(), "Edge does not exist.");
+        enforce!InvalidEdge(s.step(), "Edge does not exist.");
 
         return s.parse!(typeof(return));
     }
@@ -1005,7 +1016,7 @@ class BuildState : SQLite3
         auto s = prepare(
             `SELECT "type" FROM resourceEdge WHERE "from"=? AND "to"=?`,
             from, to);
-        enforce(s.step(), "Edge does not exist.");
+        enforce!InvalidEdge(s.step(), "Edge does not exist.");
 
         return s.parse!(typeof(return));
     }
