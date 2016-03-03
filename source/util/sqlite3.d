@@ -280,7 +280,7 @@ class SQLite3
         }
 
         /// Ditto
-        void opIndexAssign(const(void[]) v, uint i)
+        void opIndexAssign(const(ubyte)[] v, uint i)
         {
             import std.conv : to;
             sqliteEnforce(sqlite3_bind_blob(_stmt, i+1, v.ptr,
@@ -309,7 +309,7 @@ class SQLite3
                     v.length * wchar.sizeof, SQLITE_TRANSIENT, SQLITE_UTF16) == SQLITE_OK, db);
             }
 
-            void opIndexAssign(T : const(void[]))(T v, uint i)
+            void opIndexAssign(in ubyte[] v, uint i)
             {
                 // FIXME: void* has no length property
                 sqliteEnforce(sqlite3_bind_blob64(_stmt, i+1, v,
