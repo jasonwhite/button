@@ -36,14 +36,12 @@ int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
         state.begin();
         scope (exit) state.rollback();
 
-        if (!opts.cached)
-        {
+        if (opts.cached == OptionFlag.no)
             path.syncState(state, true);
-        }
 
         BuildStateGraph graph = state.buildGraph(opts.edges);
 
-        if (opts.changes)
+        if (opts.changes == OptionFlag.yes)
         {
             // Construct the minimal subgraph based on pending vertices
             auto resourceRoots = state.enumerate!(Index!Resource)
