@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS resource (
     id              INTEGER NOT NULL,
     path            TEXT    NOT NULL,
     lastModified    INTEGER NOT NULL,
-    checksum        BLOB NOT NULL,
+    checksum        BLOB    NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (path)
 )}";
@@ -36,7 +36,7 @@ private immutable tasksTable = q"{
 CREATE TABLE IF NOT EXISTS task (
     id           INTEGER,
     command      TEXT     NOT NULL,
-    workDir      TEXT,
+    workDir      TEXT     NOT NULL,
     display      TEXT,
     lastExecuted INTEGER  NOT NULL,
     PRIMARY KEY(id),
