@@ -1039,10 +1039,9 @@ class BuildState : SQLite3
     void opIndexAssign(EdgeType type, Index!Task from, Index!Resource to)
     {
         execute(
-                `UPDATE taskEdge` ~
-                ` SET "type"=?` ~
-                ` WHERE "from"=? AND "to"=?`,
-                from, to
+                `INSERT OR REPLACE INTO taskEdge("from","to","type")` ~
+                ` VALUES(?,?,?)`,
+                from, to, type
                 );
     }
 
@@ -1050,10 +1049,9 @@ class BuildState : SQLite3
     void opIndexAssign(EdgeType type, Index!Resource from, Index!Task to)
     {
         execute(
-                `UPDATE resourceEdge` ~
-                ` SET "type"=?` ~
-                ` WHERE "from"=? AND "to"=?`,
-                from, to
+                `INSERT OR REPLACE INTO resourceEdge("from","to","type")` ~
+                ` VALUES(?,?,?)`,
+                from, to, type
                 );
     }
 
