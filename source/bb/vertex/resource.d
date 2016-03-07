@@ -147,6 +147,13 @@ struct Resource
     }
 
     /**
+     */
+    bool opEquals()(const auto ref Resource rhs) const pure
+    {
+        return opCmp(rhs) == 0;
+    }
+
+    /**
      * Updates the last modified time and checksum of this resource. Returns
      * true if anything changed.
      *

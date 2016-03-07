@@ -28,11 +28,19 @@ struct TaskKey
     int opCmp()(const auto ref typeof(this) that) const pure nothrow
     {
         import std.algorithm.comparison : cmp;
+        import std.path : filenameCmp;
 
         if (immutable result = cmp(this.command, that.command))
             return result;
 
-        return cmp(this.workingDirectory, that.workingDirectory);
+        return filenameCmp(this.workingDirectory, that.workingDirectory);
+    }
+
+    /**
+     */
+    bool opEquals()(const auto ref typeof(this) that) const pure nothrow
+    {
+        return opCmp(that) == 0;
     }
 }
 
@@ -95,8 +103,6 @@ struct Task
      * useful for knowing if a task with no dependencies needs to be executed.
      */
     SysTime lastExecuted = SysTime.min;
-
-    // TODO: Store last execution duration.
 
     /**
      * Text to display when running the command. If this is null, the command
@@ -175,11 +181,7 @@ struct Task
      */
     int opCmp()(const auto ref typeof(this) that) const pure nothrow
     {
-        import std.algorithm.comparison : cmp;
-        if (immutable result = cmp(this.command, that.command))
-            return result;
-
-        return cmp(this.workingDirectory, that.workingDirectory);
+        return this.key.opCmp(that.key);
     }
 
     unittest
@@ -191,6 +193,16 @@ struct Task
         assert(Task(["a", "b"]) > Task(["a", "a"]));
 
         assert(Task(["a", "b"]) == Task(["a", "b"]));
+        assert(Task(["a", "b"], "a") < Task(["a", "b"], "b"));
+        assert(Task(["a", "b"], "b") > Task(["a", "b"], "a"));
+        assert(Task(["a", "b"], "a") == Task(["a", "b"], "a"));
+    }
+
+    /**
+     */
+    bool opEquals()(const auto ref typeof(this) that) const pure nothrow
+    {
+        return opCmp(that) == 0;
     }
 
     /**

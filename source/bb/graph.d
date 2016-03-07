@@ -522,11 +522,12 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         if (isVertex!Vertex)
     {
         import std.array : array;
+        import std.algorithm.iteration : uniq;
         import std.algorithm.sorting : sort;
         import util.change;
 
-        auto theseVertices = this.neighbors!Vertex.byKey().array.sort();
-        auto thoseVertices = other.neighbors!Vertex.byKey().array.sort();
+        auto theseVertices = this.neighbors!Vertex.byKey().array.sort().uniq;
+        auto thoseVertices = other.neighbors!Vertex.byKey().array.sort().uniq;
 
         return changes(theseVertices, thoseVertices);
     }
@@ -538,11 +539,12 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         if (isEdge!(From, To))
     {
         import std.array : array;
+        import std.algorithm.iteration : uniq;
         import std.algorithm.sorting : sort;
         import util.change;
 
-        auto theseEdges = this.edges!(From, To).array.sort();
-        auto thoseEdges = other.edges!(From, To).array.sort();
+        auto theseEdges = this.edges!(From, To).array.sort().uniq;
+        auto thoseEdges = other.edges!(From, To).array.sort().uniq;
 
         return changes(theseEdges, thoseEdges);
     }
