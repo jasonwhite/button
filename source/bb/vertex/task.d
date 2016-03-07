@@ -36,8 +36,7 @@ struct TaskKey
         return filenameCmp(this.workingDirectory, that.workingDirectory);
     }
 
-    /**
-     */
+    /// Ditto
     bool opEquals()(const auto ref typeof(this) that) const pure nothrow
     {
         return opCmp(that) == 0;
@@ -184,6 +183,12 @@ struct Task
         return this.key.opCmp(that.key);
     }
 
+    /// Ditto
+    bool opEquals()(const auto ref typeof(this) that) const pure nothrow
+    {
+        return opCmp(that) == 0;
+    }
+
     unittest
     {
         assert(Task(["a", "b"]) < Task(["a", "c"]));
@@ -196,13 +201,6 @@ struct Task
         assert(Task(["a", "b"], "a") < Task(["a", "b"], "b"));
         assert(Task(["a", "b"], "b") > Task(["a", "b"], "a"));
         assert(Task(["a", "b"], "a") == Task(["a", "b"], "a"));
-    }
-
-    /**
-     */
-    bool opEquals()(const auto ref typeof(this) that) const pure nothrow
-    {
-        return opCmp(that) == 0;
     }
 
     /**

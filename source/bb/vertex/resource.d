@@ -140,17 +140,19 @@ struct Resource
         return filenameCmp(this.path, rhs.path);
     }
 
+    /// Ditto
+    bool opEquals()(const auto ref Resource rhs) const pure
+    {
+        return opCmp(rhs) == 0;
+    }
+
     unittest
     {
         assert(Resource("a") < Resource("b"));
         assert(Resource("b") > Resource("a"));
-    }
 
-    /**
-     */
-    bool opEquals()(const auto ref Resource rhs) const pure
-    {
-        return opCmp(rhs) == 0;
+        assert(Resource("test", SysTime(1)) == Resource("test", SysTime(1)));
+        assert(Resource("test", SysTime(1)) == Resource("test", SysTime(2)));
     }
 
     /**
@@ -188,12 +190,6 @@ struct Resource
         }
 
         return false;
-    }
-
-    unittest
-    {
-        assert(Resource("test", SysTime(1)) == Resource("test", SysTime(1)));
-        assert(Resource("test", SysTime(1)) != Resource("test", SysTime(2)));
     }
 
     /**
