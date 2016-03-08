@@ -73,15 +73,63 @@ struct TaskResult
 
 /**
  * Escapes the argument according to the rules of bash, the most commonly used
- * shell.
- *
- * An argument is surrounded with double quotes if it contains any special
- * characters. A backslash is always escaped with another backslash.
+ * shell. This is mostly used for cosmetic purposes when printing out argument
+ * arrays where they could be copy-pasted into a shell.
  */
-private string escapeShellArg(string arg) pure nothrow
+private string escapeShellArg(string arg) pure
 {
-    // TODO
-    return arg;
+    import std.array : appender;
+    import std.algorithm.searching : findAmong;
+    import std.range : empty;
+    import std.exception : assumeUnique;
+
+    if (arg.empty)
+        return `""`;
+
+    // Characters that require the string to be quoted.
+    static immutable special = " '~*[]?";
+
+    immutable quoted = !arg.findAmong(special).empty;
+
+    auto result = appender!(char[]);
+
+    if (quoted)
+        result.put('"');
+
+    foreach (c; arg)
+    {
+        // Characters to escape
+        if (c == '\\' || c == '"' || c == '$' || c == '`')
+        {
+            result.put("\\");
+            result.put(c);
+        }
+        else
+        {
+            result.put(c);
+        }
+    }
+
+    if (quoted)
+        result.put('"');
+
+    return result.data;
+}
+
+unittest
+{
+    assert(escapeShellArg(``) == `""`);
+    assert(escapeShellArg(`foo`) == `foo`);
+    assert(escapeShellArg(`foo bar`) == `"foo bar"`);
+    assert(escapeShellArg(`foo'bar`) == `"foo'bar"`);
+    assert(escapeShellArg(`foo?bar`) == `"foo?bar"`);
+    assert(escapeShellArg(`foo*.c`) == `"foo*.c"`);
+    assert(escapeShellArg(`foo.[ch]`) == `"foo.[ch]"`);
+    assert(escapeShellArg(`~foobar`) == `"~foobar"`);
+    assert(escapeShellArg(`$PATH`) == `\$PATH`);
+    assert(escapeShellArg(`\`) == `\\`);
+    assert(escapeShellArg(`foo"bar"`) == `foo\"bar\"`);
+    assert(escapeShellArg("`pwd`") == "\\`pwd\\`");
 }
 
 /**
@@ -150,7 +198,7 @@ struct Task
      * Since commands are specified as arrays, we format it into a string as one
      * would enter into a shell.
      */
-    string toString(bool verbose = false) const pure nothrow
+    string toString(bool verbose = false) const pure
     {
         import std.array : join;
         import std.algorithm.iteration : map;
