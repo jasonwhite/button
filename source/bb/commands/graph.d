@@ -67,6 +67,31 @@ int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
 }
 
 /**
+ * Escape a label string to be consumed by GraphViz.
+ */
+private string escapeLabel(string label) pure
+{
+    import std.array : appender;
+    import std.exception : assumeUnique;
+
+    auto result = appender!(char[]);
+
+    foreach (c; label)
+    {
+        if (c == '\\' || c == '"')
+            result.put('\\');
+        result.put(c);
+    }
+
+    return assumeUnique(result.data);
+}
+
+unittest
+{
+    assert(escapeLabel(`gcc -c "foo.c"`) == `gcc -c \"foo.c\"`);
+}
+
+/**
  * Generates input suitable for GraphViz.
  */
 void graphviz(Stream)(
@@ -94,7 +119,8 @@ void graphviz(Stream)(
     {
         immutable v = state[id];
         immutable name = full ? v.toString : v.toShortString;
-        stream.printfln(`        "r:%s" [label="%s", tooltip="%s"];`, id, name, v);
+        stream.printfln(`        "r:%s" [label="%s", tooltip="%s"];`, id,
+                name.escapeLabel, v.toString.escapeLabel);
     }
     stream.println("    }");
 
@@ -105,7 +131,8 @@ void graphviz(Stream)(
     {
         immutable v = state[id];
         immutable name = full ? v.toString : v.toShortString;
-        stream.printfln(`        "t:%s" [label="%s", tooltip="%s"];`, id, name, v);
+        stream.printfln(`        "t:%s" [label="%s", tooltip="%s"];`, id,
+                name.escapeLabel, v.toString.escapeLabel);
     }
     stream.println("    }");
 
@@ -164,7 +191,7 @@ void graphviz(Stream)(Graph!(Resource, Task) graph, Stream stream)
             );
     foreach (v; graph.vertices!Resource)
     {
-        stream.printfln(`        "r:%s"`, v);
+        stream.printfln(`        "r:%s"`, v.escapeLabel);
     }
     stream.println("    }");
 
@@ -173,7 +200,7 @@ void graphviz(Stream)(Graph!(Resource, Task) graph, Stream stream)
             );
     foreach (v; graph.vertices!Task)
     {
-        stream.printfln(`        "t:%s"`, v);
+        stream.printfln(`        "t:%s"`, v.escapeLabel);
     }
     stream.println("    }");
 
@@ -183,10 +210,10 @@ void graphviz(Stream)(Graph!(Resource, Task) graph, Stream stream)
         stream.printfln("    subgraph cluster_%d {", i++);
 
         foreach (v; scc.vertices!Resource)
-            stream.printfln(`        "r:%s";`, v);
+            stream.printfln(`        "r:%s";`, v.escapeLabel);
 
         foreach (v; scc.vertices!Task)
-            stream.printfln(`        "t:%s";`, v);
+            stream.printfln(`        "t:%s";`, v.escapeLabel);
 
         stream.println("    }");
     }
@@ -194,8 +221,10 @@ void graphviz(Stream)(Graph!(Resource, Task) graph, Stream stream)
     // Edges
     // TODO: Style as dashed edge if implicit edge
     foreach (edge; graph.edges!(Resource, Task))
-        stream.printfln(`    "r:%s" -> "t:%s";`, edge.from, edge.to);
+        stream.printfln(`    "r:%s" -> "t:%s";`,
+                edge.from.escapeLabel, edge.to.escapeLabel);
 
     foreach (edge; graph.edges!(Task, Resource))
-        stream.printfln(`    "t:%s" -> "r:%s";`, edge.from, edge.to);
+        stream.printfln(`    "t:%s" -> "r:%s";`,
+                edge.from.escapeLabel, edge.to.escapeLabel);
 }
