@@ -113,7 +113,7 @@ private string escapeShellArg(string arg) pure
     if (quoted)
         result.put('"');
 
-    return result.data;
+    return assumeUnique(result.data);
 }
 
 unittest
