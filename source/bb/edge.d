@@ -28,6 +28,15 @@ struct Edge(From, To)
 
         return 0;
     }
+
+    /**
+     * Returns true if both edges are the same.
+     */
+    bool opEquals()(const auto ref typeof(this) rhs) const pure
+    {
+        return from == rhs.from &&
+               to == rhs.to;
+    }
 }
 
 /// Ditto
@@ -54,5 +63,15 @@ struct Edge(From, To, Data)
             return this.data < rhs.data ? -1 : 1;
 
         return 0;
+    }
+
+    /**
+     * Returns true if both edges are the same.
+     */
+    bool opEquals()(const auto ref typeof(this) rhs) const pure
+    {
+        return from == rhs.from &&
+               to == rhs.to &&
+               data == rhs.data;
     }
 }
