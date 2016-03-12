@@ -177,7 +177,6 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     {
         assert(from in neighbors!A, "Attempted to add edge from non-existent vertex");
         assert(to in neighbors!B, "Attempted to add edge to non-existent vertex");
-        //assert(to !in neighbors!A[from], "Attempted to add duplicate edge");
 
         neighbors!A[from][to] = data;
         ++_data!B[to].degreeIn;
@@ -187,7 +186,6 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     {
         assert(from in neighbors!B, "Attempted to add edge from non-existent vertex");
         assert(to in neighbors!A, "Attempted to add edge to non-existent vertex");
-        //assert(to !in neighbors!B[from], "Attempted to add duplicate edge");
 
         neighbors!B[from][to] = data;
         ++_data!A[to].degreeIn;
