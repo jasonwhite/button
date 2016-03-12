@@ -27,6 +27,14 @@ import bb.vertex,
 
 int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
 {
+    import std.parallelism : TaskPool, totalCPUs;
+
+    if (opts.threads == 0)
+        opts.threads = totalCPUs;
+
+    auto pool = new TaskPool(opts.threads - 1);
+    scope (exit) pool.finish(true);
+
     try
     {
         string path = buildDescriptionPath(opts.path);
@@ -37,7 +45,7 @@ int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
         scope (exit) state.rollback();
 
         if (opts.cached == OptionFlag.no)
-            path.syncState(state, true);
+            path.syncState(state, pool, true);
 
         BuildStateGraph graph = state.buildGraph(opts.edges);
 

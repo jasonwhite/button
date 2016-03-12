@@ -25,6 +25,14 @@ import bb.vertex,
 
 int statusCommand(StatusOptions opts, GlobalOptions globalOpts)
 {
+    import std.parallelism : TaskPool, totalCPUs;
+
+    if (opts.threads == 0)
+        opts.threads = totalCPUs;
+
+    auto pool = new TaskPool(opts.threads - 1);
+    scope (exit) pool.finish(true);
+
     immutable color = TextColor(colorOutput(opts.color));
 
     try
@@ -37,7 +45,7 @@ int statusCommand(StatusOptions opts, GlobalOptions globalOpts)
 
         if (opts.cached == OptionFlag.no)
         {
-            path.syncState(state);
+            path.syncState(state, pool);
 
             //displayResourceDiff(build, state, color);
         }

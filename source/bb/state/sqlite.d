@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS resourceEdge (
     "from"  INTEGER NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
     "to"    INTEGER NOT NULL REFERENCES task(id) ON DELETE CASCADE,
     type    INTEGER NOT NULL,
-    UNIQUE("from", "to")
+    UNIQUE("from", "to", type)
 )}";
 
 /**
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS taskEdge (
     "from"  INTEGER NOT NULL REFERENCES task(id) ON DELETE CASCADE,
     "to"    INTEGER NOT NULL REFERENCES resource(id) ON DELETE CASCADE,
     type    INTEGER NOT NULL,
-    UNIQUE ("from", "to")
+    UNIQUE ("from", "to", type)
 )}";
 
 /**
@@ -862,27 +862,29 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    void remove(Index!Resource from, Index!Task to)
+    void remove(Index!Resource from, Index!Task to, EdgeType type)
     {
-        execute(`DELETE FROM resourceEdge WHERE "from"=? AND "to"=?`, from, to);
+        execute(`DELETE FROM resourceEdge WHERE "from"=? AND "to"=? AND type=?`,
+                from, to, type);
     }
 
     /// Ditto
-    void remove(Index!Task from, Index!Resource to)
+    void remove(Index!Task from, Index!Resource to, EdgeType type)
     {
-        execute(`DELETE FROM taskEdge WHERE "from"=? AND "to"=?`, from, to);
+        execute(`DELETE FROM taskEdge WHERE "from"=? AND "to"=? AND type=?`,
+                from, to, type);
     }
 
     /// Ditto
-    void remove(TaskKey from, ResourceId to)
+    void remove(TaskKey from, ResourceId to, EdgeType type)
     {
-        remove(find(from), find(to));
+        remove(find(from), find(to), type);
     }
 
     /// Ditto
-    void remove(ResourceId from, TaskKey to)
+    void remove(ResourceId from, TaskKey to, EdgeType type)
     {
-        remove(find(from), find(to));
+        remove(find(from), find(to), type);
     }
 
     unittest
@@ -1034,28 +1036,6 @@ class BuildState : SQLite3
     }
 
     /**
-     * Sets the state associated with an edge.
-     */
-    void opIndexAssign(EdgeType type, Index!Task from, Index!Resource to)
-    {
-        execute(
-                `INSERT OR REPLACE INTO taskEdge("from","to","type")` ~
-                ` VALUES(?,?,?)`,
-                from, to, type
-                );
-    }
-
-    /// Ditto
-    void opIndexAssign(EdgeType type, Index!Resource from, Index!Task to)
-    {
-        execute(
-                `INSERT OR REPLACE INTO resourceEdge("from","to","type")` ~
-                ` VALUES(?,?,?)`,
-                from, to, type
-                );
-    }
-
-    /**
      * Lists all outgoing task edges.
      */
     @property auto edges(From : Task, To : Resource, Data : EdgeType)()
@@ -1065,6 +1045,16 @@ class BuildState : SQLite3
     }
 
     /// Ditto
+    @property auto edges(From : Task, To : Resource, Data : EdgeType)
+        (EdgeType type)
+    {
+        return prepare(`SELECT "from","to","type" FROM taskEdge WHERE type=?`,
+                type)
+            .rows!(parse!(EdgeRow!(From, To, Data)));
+    }
+
+    /// Ditto
+    version (none)
     @property auto edges(From : Task, To : Resource, Data : EdgeIndex!(Task, Resource))()
     {
         return prepare(`SELECT "from","to",id FROM taskEdge`)
@@ -1074,15 +1064,16 @@ class BuildState : SQLite3
     /**
      * Checks if an edge exists between two vertices.
      */
-    bool edgeExists(Index!Task from, Index!Resource to)
+    bool edgeExists(Index!Task from, Index!Resource to, EdgeType type)
     {
         auto s = prepare(
-            `SELECT "type" FROM taskEdge WHERE "from"=? AND "to"=?`, from, to);
+            `SELECT "type" FROM taskEdge WHERE "from"=? AND "to"=? AND type=?`,
+            from, to, type);
         return s.step();
     }
 
     /// Ditto
-    bool edgeExists(Index!Resource from, Index!Task to)
+    bool edgeExists(Index!Resource from, Index!Task to, EdgeType type)
     {
         auto s = prepare(
             `SELECT "type" FROM resourceEdge WHERE "from"=? AND "to"=?`,
@@ -1100,6 +1091,17 @@ class BuildState : SQLite3
     }
 
     /// Ditto
+    @property auto edges(From : Resource, To : Task, Data : EdgeType)
+        (EdgeType type)
+    {
+        return prepare(
+                `SELECT "from","to","type" FROM resourceEdge WHERE type=?`,
+                type)
+            .rows!(parse!(EdgeRow!(From, To, Data)));
+    }
+
+    /// Ditto
+    version (none)
     @property auto edges(From : Resource, To : Task, Data : EdgeIndex!(Resource, Task))()
     {
         return prepare(`SELECT "from","to",id FROM resourceEdge`)
@@ -1163,13 +1165,13 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    @property auto outgoing(Data : Resource)(Index!Task v)
+    @property auto outgoing(Data : Resource)(Index!Task v, EdgeType type)
     {
         return prepare(
                 `SELECT resource.path, resource.lastModified, resource.checksum` ~
                 ` FROM taskEdge AS e` ~
                 ` JOIN resource ON e."to"=resource.id` ~
-                ` WHERE e."from"=?`, v
+                ` WHERE e."from"=? AND type=?`, v, type
                 )
             .rows!(parse!Resource);
     }
@@ -1217,13 +1219,13 @@ class BuildState : SQLite3
     }
 
     /// Ditto
-    @property auto incoming(Data : Resource)(Index!Task v)
+    @property auto incoming(Data : Resource)(Index!Task v, EdgeType type)
     {
         return prepare(
                 `SELECT resource.path, resource.lastModified, resource.checksum` ~
                 ` FROM resourceEdge AS e` ~
                 ` JOIN resource ON e."from"=resource.id` ~
-                ` WHERE e."to"=?`, v
+                ` WHERE e."to"=? AND type=?`, v, type
                 )
             .rows!(parse!Resource);
     }

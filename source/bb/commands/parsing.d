@@ -111,6 +111,12 @@ struct GraphOptions
     @MetaVar("{explicit,implicit,both}")
     @Help("Type of edges to show")
     EdgeType edges = EdgeType.explicit;
+
+    @Option("threads", "j")
+    @Help("The number of threads to use. Default is the number of logical
+            cores.")
+    @MetaVar("N")
+    size_t threads;
 }
 
 @Command("status")
@@ -130,6 +136,12 @@ struct StatusOptions
     @Help("When to colorize the output.")
     @MetaVar("{auto,never,always}")
     string color = "auto";
+
+    @Option("threads", "j")
+    @Help("The number of threads to use. Default is the number of logical
+            cores.")
+    @MetaVar("N")
+    size_t threads;
 }
 
 @Command("clean")

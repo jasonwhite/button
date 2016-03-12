@@ -74,7 +74,7 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
                     state.commit();
             }
 
-            syncBuildState(state, path, verbose, color);
+            syncBuildState(state, pool, path, verbose, color);
 
             if (verbose)
                 println(color.status, ":: Checking for changes...", color.reset);
@@ -106,7 +106,7 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
 /**
  * Updates the database with any changes to the build description.
  */
-void syncBuildState(BuildState state, string path, bool verbose, TextColor color)
+void syncBuildState(BuildState state, TaskPool pool, string path, bool verbose, TextColor color)
 {
     // TODO: Don't store the build description in the database. The parent build
     // system should store the change state of the build description and tell
@@ -119,7 +119,7 @@ void syncBuildState(BuildState state, string path, bool verbose, TextColor color
             println(color.status, ":: Build description changed. Syncing with the database...",
                     color.reset);
 
-        path.syncState(state);
+        path.syncState(state, pool);
 
         // Update the build description resource
         state[BuildState.buildDescId] = r;

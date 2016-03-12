@@ -149,21 +149,15 @@ Graph!(Resource, Task) explicitGraph(BuildState state)
 
     // Add all explicit edges.
     // FIXME: This isn't very efficient.
-    foreach (e; state.edges!(Task, Resource, EdgeType)())
+    foreach (e; state.edges!(Task, Resource, EdgeType)(EdgeType.explicit))
     {
-        if ((e.data & EdgeType.explicit) != EdgeType.explicit)
-            continue;
-
         auto r = state[e.to];
         g.put(r);
         g.put(state[e.from], r);
     }
 
-    foreach (e; state.edges!(Resource, Task, EdgeType)())
+    foreach (e; state.edges!(Resource, Task, EdgeType)(EdgeType.explicit))
     {
-        if ((e.data & EdgeType.explicit) != EdgeType.explicit)
-            continue;
-
         auto r = state[e.from];
         g.put(r);
         g.put(r, state[e.to]);
@@ -202,7 +196,7 @@ Rules parseBuildDescription(string path)
  * After the synchronization, the graph created from the set of rules will be a
  * subgraph of the graph created from the build state.
  */
-void syncState(R)(R rules, BuildState state, bool dryRun = false)
+void syncState(R)(R rules, BuildState state, TaskPool pool, bool dryRun = false)
     if (is(ElementType!R : const(Rule)))
 {
     import util.change;
@@ -227,19 +221,14 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
         // against the explicit subgraph of the database, we may be trying to
         // insert resources that are already in the database.
         if (c.type == ChangeType.added)
-        {
             state.add(c.value);
-        }
     }
 
     foreach (c; taskDiff)
     {
         // Any new tasks must be executed.
         if (c.type == ChangeType.added)
-        {
-            auto id = state.put(c.value);
-            state.addPending(id);
-        }
+            state.addPending(state.put(c.value));
     }
 
     // Add new edges and remove old edges.
@@ -251,7 +240,7 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
             state.put(c.value.from.identifier, c.value.to.key, EdgeType.explicit);
             break;
         case ChangeType.removed:
-            state.remove(c.value.from.identifier, c.value.to.key);
+            state.remove(c.value.from.identifier, c.value.to.key, EdgeType.explicit);
             break;
         case ChangeType.none:
             break;
@@ -277,7 +266,7 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
             if (!dryRun)
                 state[resid].remove();
 
-            state.remove(taskid, resid);
+            state.remove(taskid, resid, EdgeType.explicit);
             break;
         case ChangeType.none:
             break;
@@ -289,19 +278,16 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
     {
         if (c.type == ChangeType.removed)
         {
-            auto id = state.find(c.value.key);
+            immutable id = state.find(c.value.key);
 
-            // Delete all implicit outputs from this task. Note that any
-            // edges associated with this task are automatically removed
-            // when the task is removed from the database (because of "ON
-            // CASCADE DELETE").
+            // Delete all outputs from this task. Note that any edges associated
+            // with this task are automatically removed when the task is removed
+            // from the database (because of "ON CASCADE DELETE").
             if (!dryRun)
             {
-                foreach (e; state.outgoing!(EdgeIndex!(Task, Resource))(id))
-                {
-                    auto r = state[e.vertex];
-                    r.remove();
-                }
+                auto outgoing = state.outgoing!(EdgeIndex!(Task, Resource))(id);
+                foreach (e; pool.parallel(outgoing))
+                    state[e.vertex].remove();
             }
 
             state.remove(id);
@@ -314,12 +300,9 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
         // Note that, at this point, there can be no explicit edges left.
         if (c.type == ChangeType.removed)
         {
-            // TODO: Optimize the check for outgoing edges.
-            auto id = state.find(c.value.identifier);
+            immutable id = state.find(c.value.identifier);
             if (state.outgoing(id).empty)
-            {
                 state.remove(id);
-            }
         }
     }
 
@@ -329,9 +312,9 @@ void syncState(R)(R rules, BuildState state, bool dryRun = false)
 }
 
 /// Ditto
-void syncState(string path, BuildState state, bool dryRun = false)
+void syncState(string path, BuildState state, TaskPool pool, bool dryRun = false)
 {
-    syncState(parseBuildDescription(path), state, dryRun);
+    syncState(parseBuildDescription(path), state, pool, dryRun);
 }
 
 /**
@@ -349,20 +332,20 @@ BuildStateGraph buildGraph(BuildState state, EdgeType type = EdgeType.both)
     // Add all edges
     foreach (v; state.edges!(Resource, Task, EdgeType))
     {
-        if (v.data != type)
-            continue;
-
-        g.put(v.from);
-        g.put(v.from, v.to, v.data);
+        if (v.data & type)
+        {
+            g.put(v.from);
+            g.put(v.from, v.to, v.data);
+        }
     }
 
     foreach (v; state.edges!(Task, Resource, EdgeType))
     {
-        if (v.data != type)
-            continue;
-
-        g.put(v.to);
-        g.put(v.from, v.to, v.data);
+        if (v.data & type)
+        {
+            g.put(v.to);
+            g.put(v.from, v.to, v.data);
+        }
     }
 
     return g;
@@ -566,12 +549,12 @@ void syncStateImplicit(BuildState state, Index!Task v,
     scope (failure) state.rollback();
 
     auto inputDiff = changes(
-            state.incoming!Resource(v).array.sort(),
+            state.incoming!Resource(v, EdgeType.implicit).array.sort(),
             inputs.deps.array.sort().uniq
             );
 
     auto outputDiff = changes(
-            state.outgoing!Resource(v).array.sort(),
+            state.outgoing!Resource(v, EdgeType.implicit).array.sort(),
             outputs.deps.array.sort().uniq
             );
 
@@ -592,30 +575,16 @@ void syncStateImplicit(BuildState state, Index!Task v,
                 r.update();
                 state.put(state.put(r), v, EdgeType.implicit);
             }
-            else if (state.degreeIn(id) == 0)
+            else if (state.degreeIn(id) == 0 ||
+                     state.edgeExists(id, v, EdgeType.explicit))
             {
-                // Resource exists, but no task is outputting to it. It is
+                // Resource exists, but no task is outputting to it or an
+                // explicit edge already exists. In these situations it is
                 // impossible to change the build order by adding an edge to it.
-                state[id, v] = EdgeType.both;
+                state.put(id, v, EdgeType.implicit);
             }
             else
             {
-                // The resource exists and is an output. The only scenario in
-                // which it is okay to add an implicit edge here is if an
-                // explicit edge already exists.
-                try
-                {
-                    if ((state[id, v] & EdgeType.explicit) == EdgeType.explicit)
-                    {
-                        state[id, v] = EdgeType.both;
-                        continue;
-                    }
-                }
-                catch (InvalidEdge e)
-                {
-                    // Edge doesn't exist or is an implicit-only edge.
-                }
-
                 throw new BuildException(
                     "Implicit task input '%s' must be explicitly added to the"
                     " build description.".format(r)
@@ -627,26 +596,9 @@ void syncStateImplicit(BuildState state, Index!Task v,
             // Build state has edges that weren't discovered implicitly. These
             // can either be explicit edges that weren't found, removed implicit
             // edges, or both.
-
-            auto r = c.value;
-
-            auto id = state.find(r.path);
+            auto id = state.find(c.value.path);
             assert(id != Index!Resource.Invalid);
-
-            final switch (state[id, v])
-            {
-            case EdgeType.explicit:
-                // Doesn't make sense to remove an explicit edge.
-                break;
-            case EdgeType.implicit:
-                // Only an implicit edge. Remove it completely.
-                state.remove(id, v);
-                break;
-            case EdgeType.both:
-                // Implicit edge was also explicitly added.
-                state[id, v] = EdgeType.explicit;
-                break;
-            }
+            state.remove(id, v, EdgeType.implicit);
         }
     }
 
@@ -667,30 +619,18 @@ void syncStateImplicit(BuildState state, Index!Task v,
                 r.update();
                 state.put(v, state.put(r), EdgeType.implicit);
             }
-            else if (state.degreeIn(id) == 0 && state.degreeOut(id) == 0)
+            else if ((state.degreeIn(id) == 0 && state.degreeOut(id) == 0) ||
+                     state.edgeExists(v, id, EdgeType.explicit))
             {
                 // Resource exists, but it is neither an input nor an output
-                // (i.e., an orphan that hasn't been garbage collected).
-                state.put(v, id, EdgeType.both);
+                // (i.e., an orphan that hasn't been garbage collected), or an
+                // explicit edge already exists. In these situations it is
+                // impossible to change the build order by adding an implicit
+                // edge.
+                state.put(v, id, EdgeType.implicit);
             }
             else
             {
-                // The resource exists and is an input or output. The only
-                // scenario in which it is okay to add an implicit edge here is
-                // if an explicit edge already exists.
-                try
-                {
-                    if ((state[v, id] & EdgeType.explicit) == EdgeType.explicit)
-                    {
-                        state[v, id] = EdgeType.both;
-                        continue;
-                    }
-                }
-                catch (InvalidEdge e)
-                {
-                    // Edge doesn't exist or is an implicit-only edge.
-                }
-
                 throw new BuildException(
                     "Implicit task output '%s' must be explicitly added to the"
                     " build description.".format(r)
@@ -702,36 +642,12 @@ void syncStateImplicit(BuildState state, Index!Task v,
             // Build state has edges that weren't discovered implicitly. These
             // can be either explicit edges that weren't found or removed
             // implicit edges. We only care about the latter case here.
-
-            auto r = c.value;
-
-            auto id = state.find(r.path);
+            auto id = state.find(c.value.path);
             assert(id != Index!Resource.Invalid);
 
-            if (state[v, id] == EdgeType.implicit)
-            {
-                state[id].remove();
-                state.remove(v, id);
-                state.remove(id);
-            }
-
-            final switch (state[v, id])
-            {
-            case EdgeType.explicit:
-                // Doesn't make sense to remove an explicit edge.
-                break;
-            case EdgeType.implicit:
-                // Only an implicit edge. Remove the edge and the output
-                // resource completely, including deleting it from disk.
-                state[id].remove();
-                state.remove(v, id);
-                state.remove(id);
-                break;
-            case EdgeType.both:
-                // Implicit edge was also explicitly added.
-                state[v, id] = EdgeType.explicit;
-                break;
-            }
+            state[id].remove();
+            state.remove(v, id, EdgeType.implicit);
+            state.remove(id);
         }
     }
 }
