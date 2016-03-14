@@ -544,10 +544,6 @@ void syncStateImplicit(BuildState state, Index!Task v,
     import util.change;
     import bb.deps;
 
-    state.begin();
-    scope (success) state.commit();
-    scope (failure) state.rollback();
-
     auto inputDiff = changes(
             state.incoming!Resource(v, EdgeType.implicit).array.sort(),
             inputs.deps.array.sort().uniq

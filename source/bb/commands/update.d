@@ -70,7 +70,9 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
                 // Note that the transaction is not ended if this is a dry run.
                 // We don't want the database to retain changes introduced
                 // during the build.
-                if (!dryRun)
+                if (dryRun)
+                    state.rollback();
+                else
                     state.commit();
             }
 
@@ -82,9 +84,20 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
             queueChanges(state, pool, color);
         }
 
-        update(state, pool, dryRun, verbose, color);
+        {
+            state.begin();
+            scope (failure) state.rollback();
+            scope (success)
+            {
+                if (dryRun)
+                    state.rollback();
+                else
+                    state.commit();
+            }
 
-        publishResources(state);
+            update(state, pool, dryRun, verbose, color);
+            publishResources(state);
+        }
     }
     catch (BuildException e)
     {
