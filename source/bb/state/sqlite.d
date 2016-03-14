@@ -1053,14 +1053,6 @@ class BuildState : SQLite3
             .rows!(parse!(EdgeRow!(From, To, Data)));
     }
 
-    /// Ditto
-    version (none)
-    @property auto edges(From : Task, To : Resource, Data : EdgeIndex!(Task, Resource))()
-    {
-        return prepare(`SELECT "from","to",id FROM taskEdge`)
-            .rows!(parse!(EdgeRow!(From, To, Data)));
-    }
-
     /**
      * Checks if an edge exists between two vertices.
      */
@@ -1097,14 +1089,6 @@ class BuildState : SQLite3
         return prepare(
                 `SELECT "from","to","type" FROM resourceEdge WHERE type=?`,
                 type)
-            .rows!(parse!(EdgeRow!(From, To, Data)));
-    }
-
-    /// Ditto
-    version (none)
-    @property auto edges(From : Resource, To : Task, Data : EdgeIndex!(Resource, Task))()
-    {
-        return prepare(`SELECT "from","to",id FROM resourceEdge`)
             .rows!(parse!(EdgeRow!(From, To, Data)));
     }
 
