@@ -348,6 +348,17 @@ class BuildState : SQLite3
     // The build description is always the first entry in the database.
     static immutable buildDescId = Index!Resource(1);
 
+    private
+    {
+        /*
+         * Prepared SQL statements
+         */
+
+        // Inserts an edge
+        Statement sqlInsertTaskEdge;
+        Statement sqlInsertResourceEdge;
+    }
+
     /**
      * Open or create the build state file.
      */
@@ -379,6 +390,12 @@ class BuildState : SQLite3
             `    VALUES (?,?,?,?)`
             , buildDescId, "", 0, 0
             );
+
+        // Prepare statements
+        sqlInsertTaskEdge = new Statement(
+                `INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`);
+        sqlInsertResourceEdge = new Statement(
+                `INSERT INTO resourceEdge("from", "to", type) VALUES(?, ?, ?)`);
     }
 
     /**
@@ -749,21 +766,19 @@ class BuildState : SQLite3
      * Adds an edge. Throws an exception if the edge already exists. Returns the
      * index of the edge.
      */
-    Index!(Edge!(Task, Resource)) put(Index!Task from, Index!Resource to,
-            EdgeType type)
+    void put(Index!Task from, Index!Resource to, EdgeType type)
     {
-        execute(`INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`,
-                from, to, type);
-        return typeof(return)(lastInsertId);
+        sqlInsertTaskEdge.bind(from, to, type);
+        sqlInsertTaskEdge.step();
+        sqlInsertTaskEdge.reset();
     }
 
     /// Ditto
-    Index!(Edge!(Resource, Task)) put(Index!Resource from, Index!Task to,
-            EdgeType type)
+    void put(Index!Resource from, Index!Task to, EdgeType type)
     {
-        execute(`INSERT INTO resourceEdge("from", "to", type) VALUES(?, ?, ?)`,
-                from, to, type);
-        return typeof(return)(lastInsertId);
+        sqlInsertResourceEdge.bind(from, to, type);
+        sqlInsertResourceEdge.step();
+        sqlInsertResourceEdge.reset();
     }
 
     /// Ditto
