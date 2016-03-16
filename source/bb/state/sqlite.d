@@ -348,17 +348,6 @@ class BuildState : SQLite3
     // The build description is always the first entry in the database.
     static immutable buildDescId = Index!Resource(1);
 
-    private
-    {
-        /*
-         * Prepared SQL statements
-         */
-
-        // Inserts an edge
-        Statement sqlInsertTaskEdge;
-        Statement sqlInsertResourceEdge;
-    }
-
     /**
      * Open or create the build state file.
      */
@@ -390,12 +379,6 @@ class BuildState : SQLite3
             `    VALUES (?,?,?,?)`
             , buildDescId, "", 0, 0
             );
-
-        // Prepare statements
-        sqlInsertTaskEdge = new Statement(
-                `INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`);
-        sqlInsertResourceEdge = new Statement(
-                `INSERT INTO resourceEdge("from", "to", type) VALUES(?, ?, ?)`);
     }
 
     /**
@@ -424,13 +407,18 @@ class BuildState : SQLite3
      */
     Index!Resource put(in Resource resource)
     {
-        execute(`INSERT INTO resource` ~
-                ` (path, lastModified, checksum)` ~
-                ` VALUES(?, ?, ?)`,
-                resource.path,
-                resource.lastModified.stdTime,
-                resource.checksum
-                );
+        enum sql = `INSERT INTO resource(path, lastModified, checksum)` ~
+                   ` VALUES(?, ?, ?)`;
+
+        static Statement s;
+        if (!s) s = new Statement(sql);
+
+        s.bind(resource.path,
+               resource.lastModified.stdTime,
+               resource.checksum);
+        s.step();
+        s.reset();
+
         return Index!Resource(lastInsertId);
     }
 
@@ -439,14 +427,18 @@ class BuildState : SQLite3
     {
         import std.conv : to;
 
-        execute(`INSERT INTO task` ~
-                ` (command, workDir, display, lastExecuted)` ~
-                ` VALUES(?, ?, ?, ?)`,
-                task.command.to!string(),
-                task.workingDirectory,
-                task.display,
-                task.lastExecuted.stdTime
-                );
+        enum sql = `INSERT INTO task (command, workDir, display, lastExecuted)` ~
+                   ` VALUES(?, ?, ?, ?)`;
+
+        static Statement s;
+        if (!s) s = new Statement(sql);
+
+        s.bind(task.command.to!string(),
+               task.workingDirectory,
+               task.display,
+               task.lastExecuted.stdTime);
+        s.step();
+        s.reset();
 
         return Index!Task(lastInsertId);
     }
@@ -768,17 +760,28 @@ class BuildState : SQLite3
      */
     void put(Index!Task from, Index!Resource to, EdgeType type)
     {
-        sqlInsertTaskEdge.bind(from, to, type);
-        sqlInsertTaskEdge.step();
-        sqlInsertTaskEdge.reset();
+        enum sql = `INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`;
+
+        static Statement s;
+        if (!s) s = new Statement(sql);
+
+        s.bind(from, to, type);
+        s.step();
+        s.reset();
     }
 
     /// Ditto
     void put(Index!Resource from, Index!Task to, EdgeType type)
     {
-        sqlInsertResourceEdge.bind(from, to, type);
-        sqlInsertResourceEdge.step();
-        sqlInsertResourceEdge.reset();
+        enum sql = `INSERT INTO resourceEdge("from", "to", type)`
+                   ` VALUES(?, ?, ?)`;
+
+        static Statement s;
+        if (!s) s = new Statement(sql);
+
+        s.bind(from, to, type);
+        s.step();
+        s.reset();
     }
 
     /// Ditto
@@ -920,40 +923,88 @@ class BuildState : SQLite3
     size_t degreeIn(Index!Resource index)
     {
         import std.exception : enforce;
-        auto s = prepare(`SELECT COUNT("to") FROM taskEdge WHERE "to"=?`,
-                index);
-        enforce(s.step(), "Failed to count incoming edges to resource");
-        return s.get!(typeof(return))(0);
+
+        enum sql = `SELECT COUNT("to") FROM taskEdge WHERE "to"=?`;
+        static Statement s;
+
+        if (!s)
+            s = new Statement(sql);
+
+        s.bind(index);
+
+        enforce(s.step(),
+                "Failed to count incoming edges to resource");
+
+        immutable degree = s.get!(typeof(return))(0);
+
+        s.reset();
+
+        return degree;
     }
 
     /// Ditto
     size_t degreeIn(Index!Task index)
     {
         import std.exception : enforce;
-        auto s = prepare(`SELECT COUNT("to") FROM resourceEdge WHERE "to"=?`,
-                index);
-        enforce(s.step(), "Failed to count incoming edges to task");
-        return s.get!(typeof(return))(0);
+
+        enum sql = `SELECT COUNT("to") FROM resourceEdge WHERE "to"=?`;
+        static Statement s;
+
+        if (!s)
+            s = new Statement(sql);
+
+        s.bind(index);
+
+        enforce(s.step(),
+                "Failed to count incoming edges to resource");
+
+        immutable degree = s.get!(typeof(return))(0);
+
+        s.reset();
+
+        return degree;
     }
 
     /// Ditto
     size_t degreeOut(Index!Resource index)
     {
         import std.exception : enforce;
-        auto s = prepare(`SELECT COUNT("to") FROM resourceEdge WHERE "from"=?`,
-                index);
+
+        enum sql = `SELECT COUNT("to") FROM resourceEdge WHERE "from"=?`;
+
+        static Statement s;
+        if (!s) s = new Statement(sql);
+
+        s.bind(index);
+
         enforce(s.step(), "Failed to count outgoing edges from resource");
-        return s.get!(typeof(return))(0);
+
+        immutable degree = s.get!(typeof(return))(0);
+
+        s.reset();
+
+        return degree;
     }
 
     /// Ditto
     size_t degreeOut(Index!Task index)
     {
         import std.exception : enforce;
-        auto s = prepare(`SELECT COUNT("to") FROM taskEdge WHERE "from"=?`,
-                index);
+
+        enum sql = `SELECT COUNT("to") FROM taskEdge WHERE "from"=?`;
+
+        static Statement s;
+        if (!s) s = new Statement(sql);
+
+        s.bind(index);
+
         enforce(s.step(), "Failed to count outgoing edges from task");
-        return s.get!(typeof(return))(0);
+
+        immutable degree = s.get!(typeof(return))(0);
+
+        s.reset();
+
+        return degree;
     }
 
     unittest
