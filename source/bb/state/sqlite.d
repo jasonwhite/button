@@ -528,7 +528,14 @@ class BuildState : SQLite3
     Index!Resource find(ResourceId id)
     {
         import std.exception : enforce;
-        auto s = prepare(`SELECT id FROM resource WHERE path=?`, id);
+
+        enum sql = `SELECT id FROM resource WHERE path=?`;
+
+        static Statement s;
+        if (!s) s = new Statement(sql);
+        scope (exit) s.reset();
+
+        s.bind(id);
 
         if (s.step())
             return typeof(return)(s.get!ulong(0));
@@ -541,8 +548,14 @@ class BuildState : SQLite3
     {
         import std.conv : to;
         import std.exception : enforce;
-        auto s = prepare(`SELECT id FROM task WHERE command=? AND workDir=?`,
-                id.command.to!string, id.workingDirectory);
+
+        enum sql = `SELECT id FROM task WHERE command=? AND workDir=?`;
+
+        static Statement s;
+        if (!s) s = new Statement(sql);
+        scope (exit) s.reset();
+
+        s.bind(id.command.to!string, id.workingDirectory);
 
         if (s.step())
             return typeof(return)(s.get!ulong(0));
