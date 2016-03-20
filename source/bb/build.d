@@ -16,6 +16,7 @@ import bb.vertex, bb.edge, bb.edgedata;
 import bb.state;
 import bb.textcolor;
 import bb.rule;
+import bb.log;
 
 
 alias BuildStateGraph = Graph!(
@@ -32,23 +33,6 @@ class BuildException : Exception
 {
     this(string msg)
     {
-        super(msg);
-    }
-}
-
-/**
- * Thrown if a task fails.
- */
-class TaskError : Exception
-{
-    Index!Task id;
-    int code;
-
-    this(Index!Task id, int code, string msg = "Task failed")
-    {
-        this.id = id;
-        this.code = code;
-
         super(msg);
     }
 }
@@ -657,6 +641,8 @@ struct VisitorContext
     bool verbose;
 
     TextColor color;
+
+    Logger logger;
 }
 
 /**
@@ -701,6 +687,8 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         size_t degreeChanged)
 {
     import io;
+    import std.datetime : StopWatch, AutoStart;
+    import core.time : TickDuration;
 
     immutable pending = context.state.isPending(v);
 
@@ -715,60 +703,40 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
 
     auto task = context.state[v];
 
+    auto taskLogger = context.logger.taskStarted(v, task, context.dryRun);
+
     // Assume the command would succeed in a dryrun
     if (context.dryRun)
     {
-        synchronized println(" > ", color.success, task, color.reset);
+        taskLogger.finished(true, 0, TickDuration.zero);
         return true;
     }
 
-    auto result = task.execute();
+    auto sw = StopWatch(AutoStart.yes);
+    auto result = task.execute(taskLogger);
+    sw.stop();
+
     bool succeeded = result.status == 0;
 
-    synchronized
+    taskLogger.finished(succeeded, result.status, sw.peek());
+
+    if (succeeded)
     {
-        // Print to stderr or stdout depending on if it failed or not.
-        auto stream = succeeded ? stdout : stderr;
-
-        if (succeeded)
-            stream.println(color.status, " > ", color.reset,
-                    task.toString(context.verbose));
-        else
-            stream.println(color.status, " > ", color.error,
-                    task.toString(context.verbose), color.reset, color.bold,
-                    " (exit code: ", result.status, ")", color.reset);
-
-        stream.write(result.stdout);
-
-        // Ensure there is always a line separator after the output
-        if (result.stdout.length > 0 && result.stdout[$-1] != '\n')
-            stream.write("\n");
-
-        if (context.verbose)
-            stream.println(color.status, "   ➥ Time taken: ", color.reset, result.duration);
-
-        if (succeeded)
+        try
         {
-            try
-            {
+            synchronized (context.state)
                 syncStateImplicit(context.state, v, result.inputs, result.outputs);
-            }
-            catch (BuildException e)
-            {
-                succeeded = false;
-                stderr.println(color.error, "   Error: ", color.reset, e.msg);
-            }
         }
-        else
+        catch (BuildException e)
         {
-            stream.println(color.status, "   ➥ ", color.error, "Error: ", color.reset,
-                    "Process exited with code ", result.status
-                    );
+            succeeded = false;
+            stderr.println(color.error, "   Error: ", color.reset, e.msg);
         }
     }
-
-    if (!succeeded)
+    else
+    {
         throw new TaskError(v, result.status);
+    }
 
     // Only remove this from the set of pending tasks if it succeeds completely.
     // If it fails, it should get executed again on the next run such that other
@@ -784,12 +752,12 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
  * This is the heart of the build system. Everything else is just support code.
  */
 void build(BuildStateGraph graph, BuildState state, TaskPool pool,
-        bool dryRun, bool verbose, TextColor color)
+        bool dryRun, bool verbose, TextColor color, Logger logger)
 {
     import std.algorithm : filter, map;
     import std.array : array;
 
-    auto ctx = VisitorContext(state, dryRun, verbose, color);
+    auto ctx = VisitorContext(state, dryRun, verbose, color, logger);
 
     graph.traverse!(visitResource, visitTask)(&ctx, pool);
 }

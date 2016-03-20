@@ -5,6 +5,23 @@
  */
 module bb.vertex.task;
 
+import bb.log;
+
+/**
+ * Thrown if a task fails.
+ */
+class TaskError : Exception
+{
+    int code;
+
+    this(int code, string msg = "Task failed")
+    {
+        this.code = code;
+
+        super(msg);
+    }
+}
+
 /**
  * A task key must be unique.
  */
@@ -56,19 +73,16 @@ unittest
  */
 struct TaskResult
 {
-    import core.time : Duration;
+    import core.time : TickDuration;
 
     // The task exit status code
     int status;
-
-    // The standard output and standard error of the task.
-    immutable(ubyte)[] stdout;
 
     // NUL-delimited list of implicit dependencies.
     immutable(ubyte)[] inputs, outputs;
 
     // How long it took the task to run from start to finish.
-    Duration duration;
+    TickDuration duration;
 }
 
 /**
@@ -254,7 +268,7 @@ struct Task
     /**
      * Executes the task.
      */
-    version (Posix) TaskResult execute() const
+    version (Posix) TaskResult execute(TaskLogger logger) const
     {
         import core.sys.posix.unistd;
         import core.stdc.stdio : sprintf;
@@ -311,8 +325,7 @@ struct Task
         close(inputfds[1]);
         close(outputfds[1]);
 
-        auto output = readOutput(stdfds[0], inputfds[0], outputfds[0]);
-        result.stdout  = output.stdout;
+        auto output = readOutput(stdfds[0], inputfds[0], outputfds[0], logger);
         result.inputs  = output.inputs;
         result.outputs = output.outputs;
 
@@ -321,13 +334,13 @@ struct Task
 
         sw.stop();
 
-        result.duration = cast(Duration)sw.peek();
+        result.duration = sw.peek();
 
         return result;
     }
 
     version (Windows)
-    TaskResult execute() const
+    TaskResult execute(TaskLogger logger) const
     {
         // TODO: Implement implicit dependencies
         import std.process : execute;
@@ -344,9 +357,10 @@ struct Task
 
         sw.stop();
 
+        logger.output(cast(const(ubyte)[])cmd.output);
+
         result.status = cmd.status;
-        result.stdout = cast(const(ubyte)[])cmd.output;
-        result.duration = sw.peek().to!(typeof(result.duration));
+        result.duration = sw.peek();
 
         return result;
     }
@@ -356,7 +370,7 @@ private version (Posix)
 {
     import std.array : Appender;
 
-    auto readOutput(int stdfd, int inputsfd, int outputsfd)
+    auto readOutput(int stdfd, int inputsfd, int outputsfd, TaskLogger logger)
     {
         import std.array : appender;
         import std.algorithm : max;
@@ -372,7 +386,6 @@ private version (Posix)
         ubyte[4096] buf;
         fd_set readfds = void;
 
-        auto stdout  = appender!(ubyte[]);
         auto inputs  = appender!(ubyte[]);
         auto outputs = appender!(ubyte[]);
 
@@ -417,7 +430,18 @@ private version (Posix)
 
             // Read stdout/stderr from child
             if (FD_ISSET(stdfd, &readfds))
-                readFromChild(stdfd, stdout, buf);
+            {
+                immutable len = read(stdfd, buf.ptr, buf.length);
+                if (len > 0)
+                {
+                    logger.output(buf[0 .. len]);
+                }
+                else
+                {
+                    close(stdfd);
+                    stdfd = -1;
+                }
+            }
 
             // Read inputs from child
             if (FD_ISSET(inputsfd, &readfds))
@@ -428,8 +452,7 @@ private version (Posix)
                 readFromChild(outputsfd, outputs, buf);
         }
 
-        return tuple!("stdout", "inputs", "outputs")(
-                assumeUnique(stdout.data),
+        return tuple!("inputs", "outputs")(
                 assumeUnique(inputs.data),
                 assumeUnique(outputs.data)
                 );

@@ -18,7 +18,20 @@ import bb.state,
        bb.graph,
        bb.build,
        bb.vertex,
-       bb.textcolor;
+       bb.textcolor,
+       bb.log;
+
+/**
+ * Returns a build logger based on the command options.
+ */
+Logger buildLogger(in UpdateOptions opts)
+{
+    import bb.log.file;
+
+    immutable verbose = opts.verbose == OptionFlag.yes;
+
+    return new FileLogger(stdout, verbose);
+}
 
 /**
  * Updates the build.
@@ -28,8 +41,10 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
     import std.parallelism : totalCPUs;
     import std.datetime : StopWatch;
 
-    immutable bool dryRun  = opts.dryRun == OptionFlag.yes;
-    immutable bool verbose = opts.verbose == OptionFlag.yes;
+    immutable dryRun  = opts.dryRun == OptionFlag.yes;
+    immutable verbose = opts.verbose == OptionFlag.yes;
+
+    auto logger = buildLogger(opts);
 
     StopWatch sw;
 
@@ -95,7 +110,7 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
                     state.commit();
             }
 
-            update(state, pool, dryRun, verbose, color);
+            update(state, pool, dryRun, verbose, color, logger);
             publishResources(state);
         }
     }
@@ -143,7 +158,7 @@ void syncBuildState(BuildState state, TaskPool pool, string path, bool verbose, 
  * Builds pending vertices.
  */
 void update(BuildState state, TaskPool pool, bool dryRun, bool verbose,
-        TextColor color)
+        TextColor color, Logger logger)
 {
     import std.array : array;
     import std.algorithm.iteration : filter;
@@ -174,7 +189,7 @@ void update(BuildState state, TaskPool pool, bool dryRun, bool verbose,
     }
 
     auto subgraph = state.buildGraph(resources, tasks);
-    subgraph.build(state, pool, dryRun, verbose, color);
+    subgraph.build(state, pool, dryRun, verbose, color, logger);
 
     println(color.status, ":: ", color.success, "Build succeeded", color.reset);
 }
