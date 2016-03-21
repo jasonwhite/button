@@ -56,7 +56,7 @@ final class FileLogger : Logger
 
             // Ensure there is always a line separator after the output
             if (_output.data.length > 0 && _output.data[$-1] != '\n')
-                file.print("\n");
+                file.print("⏎\n");
         }
 
         private void printTail(TickDuration duration)
@@ -84,14 +84,14 @@ final class FileLogger : Logger
             synchronized (this.outer)
             {
                 file.println(color.status, " > ", color.error,
-                        task.toString(verbose), color.reset, color.bold,
-                        " (exit code: ", e.code, ")", color.reset);
+                        task.toString(verbose), color.reset);
 
                 printOutput();
                 printTail(duration);
 
-                file.println(color.status, "   ➥ ", color.error, "Error:",
-                        color.reset, " Process exited with code ", e.code);
+                // TODO: Word wrap the error message
+                file.println(color.status, "   ➥ ", color.error, "Task Error: ",
+                        color.reset, e.msg);
             }
         }
     }

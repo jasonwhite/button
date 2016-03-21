@@ -12,12 +12,8 @@ import bb.log;
  */
 class TaskError : Exception
 {
-    int code;
-
-    this(int code, string msg = "Task failed")
+    this(string msg)
     {
-        this.code = code;
-
         super(msg);
     }
 }

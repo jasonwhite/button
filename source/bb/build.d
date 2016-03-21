@@ -565,9 +565,10 @@ void syncStateImplicit(BuildState state, Index!Task v,
             }
             else
             {
-                throw new BuildException(
-                    "Implicit task input '%s' must be explicitly added to the"
-                    " build description.".format(r)
+                throw new TaskError(
+                    "Implicit task input '%s' would change the build order." ~
+                    " It must be explicitly added to the build description."
+                    .format(r)
                     );
             }
         }
@@ -611,9 +612,10 @@ void syncStateImplicit(BuildState state, Index!Task v,
             }
             else
             {
-                throw new BuildException(
-                    "Implicit task output '%s' must be explicitly added to the"
-                    " build description.".format(r)
+                throw new TaskError(
+                    "Implicit task output '%s' would change the build order." ~
+                    " It must be explicitly added to the build description."
+                    .format(r)
                     );
             }
         }
@@ -689,6 +691,7 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
     import io;
     import std.datetime : StopWatch, AutoStart;
     import core.time : TickDuration;
+    import std.format : format;
 
     immutable pending = context.state.isPending(v);
 
@@ -708,40 +711,34 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
     // Assume the command would succeed in a dryrun
     if (context.dryRun)
     {
-        taskLogger.finished(true, 0, TickDuration.zero);
+        taskLogger.succeeded(TickDuration.zero);
         return true;
     }
 
-    auto sw = StopWatch(AutoStart.yes);
     auto result = task.execute(taskLogger);
-    sw.stop();
 
-    bool succeeded = result.status == 0;
-
-    taskLogger.finished(succeeded, result.status, sw.peek());
-
-    if (succeeded)
+    try
     {
-        try
-        {
-            synchronized (context.state)
-                syncStateImplicit(context.state, v, result.inputs, result.outputs);
-        }
-        catch (BuildException e)
-        {
-            succeeded = false;
-            stderr.println(color.error, "   Error: ", color.reset, e.msg);
-        }
+        if (result.status != 0)
+            throw new TaskError(
+                    "Process exited with code %d".format(result.status)
+                    );
+
+        synchronized (context.state)
+            syncStateImplicit(context.state, v, result.inputs, result.outputs);
     }
-    else
+    catch (TaskError e)
     {
-        throw new TaskError(v, result.status);
+        taskLogger.failed(result.duration, e);
+        throw e;
     }
 
     // Only remove this from the set of pending tasks if it succeeds completely.
     // If it fails, it should get executed again on the next run such that other
     // tasks that depend on this (if any) can be executed.
     context.state.removePending(v);
+
+    taskLogger.succeeded(result.duration);
 
     return true;
 }
