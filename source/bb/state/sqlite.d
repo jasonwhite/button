@@ -348,6 +348,53 @@ class BuildState : SQLite3
     // The build description is always the first entry in the database.
     static immutable buildDescId = Index!Resource(1);
 
+    private
+    {
+        Statement sqlInsertResource;
+        Statement sqlInsertTask;
+
+        Statement sqlAddResource;
+        Statement sqlAddTask;
+
+        Statement sqlRemoveResourceByIndex;
+        Statement sqlRemoveTaskByIndex;
+
+        Statement sqlRemoveResourceByKey;
+        Statement sqlRemoveTaskByKey;
+
+        Statement sqlFindResourceByKey;
+        Statement sqlFindTaskByKey;
+
+        Statement sqlResourceByIndex;
+        Statement sqlTaskByIndex;
+
+        Statement sqlResourceByKey;
+        Statement sqlTaskByKey;
+
+        Statement sqlUpdateResource;
+        Statement sqlUpdateTask;
+
+        Statement sqlInsertTaskEdge;
+        Statement sqlInsertResourceEdge;
+        Statement sqlRemoveTaskEdge;
+        Statement sqlRemoveResourceEdge;
+
+        Statement sqlResourceDegreeIn;
+        Statement sqlTaskDegreeIn;
+        Statement sqlResourceDegreeOut;
+        Statement sqlTaskDegreeOut;
+
+        Statement sqlResourceEdgeExists;
+        Statement sqlTaskEdgeExists;
+
+        Statement sqlAddPendingResource;
+        Statement sqlAddPendingTask;
+        Statement sqlRemovePendingResource;
+        Statement sqlRemovePendingTask;
+        Statement sqlIsPendingResource;
+        Statement sqlIsPendingTask;
+    }
+
     /**
      * Open or create the build state file.
      */
@@ -379,6 +426,127 @@ class BuildState : SQLite3
             `    VALUES (?,?,?,?)`
             , buildDescId, "", 0, 0
             );
+
+        // Prepare SQL statements. This is much faster than preparing +
+        // executing statements for every query. For queries that only run once,
+        // it is not necessary to prepare them here.
+        sqlInsertResource = new Statement(
+                `INSERT INTO resource(path, lastModified, checksum)` ~
+                ` VALUES(?, ?, ?)`
+                );
+        sqlInsertTask = new Statement(
+                `INSERT INTO task (command, workDir, display, lastExecuted)` ~
+                ` VALUES(?, ?, ?, ?)`
+                );
+        sqlAddResource = new Statement(
+                `INSERT OR IGNORE INTO resource` ~
+                ` (path, lastModified, checksum)` ~
+                ` VALUES(?, ?, ?)`
+                );
+        sqlAddTask = new Statement(
+                `INSERT OR IGNORE INTO task` ~
+                ` (command, workDir, display, lastExecuted)` ~
+                ` VALUES(?, ?, ?, ?)`
+                );
+        sqlRemoveResourceByIndex = new Statement(
+                `DELETE FROM resource WHERE id=?`
+                );
+        sqlRemoveTaskByIndex = new Statement(
+                `DELETE FROM task WHERE id=?`
+                );
+        sqlRemoveResourceByKey = new Statement(
+                `DELETE FROM resource WHERE path=?`
+                );
+        sqlRemoveTaskByKey = new Statement(
+                `DELETE FROM task WHERE command=? AND workDir=?`
+                );
+        sqlFindResourceByKey = new Statement(
+                `SELECT id FROM resource WHERE path=?`
+                );
+        sqlFindTaskByKey = new Statement(
+                `SELECT id FROM task WHERE command=? AND workDir=?`
+                );
+        sqlResourceByIndex = new Statement(
+                `SELECT path,lastModified,checksum` ~
+                ` FROM resource WHERE id=?`
+                );
+        sqlTaskByIndex = new Statement(
+                `SELECT command,workDir,display,lastExecuted` ~
+                ` FROM task WHERE id=?`
+                );
+        sqlResourceByKey = new Statement(
+               `SELECT path,lastModified,checksum` ~
+               ` FROM resource WHERE path=?`
+                );
+        sqlTaskByKey = new Statement(
+                `SELECT command,workDir,display,lastExecuted FROM task` ~
+                ` WHERE command=? AND workDir=?`
+                );
+        sqlUpdateResource = new Statement(
+                `UPDATE resource` ~
+                ` SET path=?,lastModified=?,checksum=?` ~
+                ` WHERE id=?`
+                );
+        sqlUpdateTask = new Statement(
+               `UPDATE task` ~
+               ` SET command=?,workDir=?,display=?,lastExecuted=?` ~
+               ` WHERE id=?`
+                );
+        sqlInsertTaskEdge = new Statement(
+                `INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`
+                );
+        sqlInsertResourceEdge = new Statement(
+                `INSERT INTO resourceEdge("from", "to", type)` ~
+                ` VALUES(?, ?, ?)`
+                );
+        sqlRemoveTaskEdge = new Statement(
+                `DELETE FROM taskEdge WHERE "from"=? AND "to"=? AND type=?`
+                );
+        sqlRemoveResourceEdge = new Statement(
+                `DELETE FROM resourceEdge WHERE "from"=? AND "to"=? AND type=?`
+                );
+        sqlResourceDegreeIn = new Statement(
+                `SELECT COUNT("to") FROM taskEdge WHERE "to"=?`
+                );
+        sqlTaskDegreeIn = new Statement(
+                `SELECT COUNT("to") FROM resourceEdge WHERE "to"=?`
+                );
+        sqlResourceDegreeOut = new Statement(
+                `SELECT COUNT("to") FROM resourceEdge WHERE "from"=?`
+                );
+        sqlTaskDegreeOut = new Statement(
+                `SELECT COUNT("to") FROM taskEdge WHERE "from"=?`
+                );
+        sqlResourceEdgeExists = new Statement(
+                `SELECT "type" FROM resourceEdge` ~
+                ` WHERE "from"=? AND "to"=? AND type=?`
+                );
+        sqlTaskEdgeExists = new Statement(
+                `SELECT "type" FROM taskEdge WHERE` ~
+                ` "from"=? AND "to"=? AND type=?`
+                );
+        sqlAddPendingResource = new Statement(
+                `INSERT OR IGNORE INTO pendingResources(resid) VALUES(?)`
+                );
+        sqlAddPendingTask = new Statement(
+                `INSERT OR IGNORE INTO pendingTasks(taskid) VALUES(?)`
+                );
+        sqlRemovePendingResource = new Statement(
+                `DELETE FROM pendingResources WHERE resid=?`
+                );
+        sqlRemovePendingTask = new Statement(
+                `DELETE FROM pendingTasks WHERE taskid=?`
+                );
+        sqlIsPendingResource = new Statement(
+                `SELECT EXISTS(` ~
+                ` SELECT 1 FROM pendingResources WHERE resid=? LIMIT 1` ~
+                `)`
+                );
+        sqlIsPendingTask = new Statement(
+                `SELECT EXISTS(` ~
+                ` SELECT 1 FROM pendingTasks WHERE taskid=? LIMIT 1`~
+                `)`
+                );
     }
 
     /**
@@ -407,17 +575,17 @@ class BuildState : SQLite3
      */
     Index!Resource put(in Resource resource)
     {
-        enum sql = `INSERT INTO resource(path, lastModified, checksum)` ~
-                   ` VALUES(?, ?, ?)`;
+        alias s = sqlInsertResource;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
 
-        s.bind(resource.path,
-               resource.lastModified.stdTime,
-               resource.checksum);
-        s.step();
+            s.bind(resource.path,
+                   resource.lastModified.stdTime,
+                   resource.checksum);
+            s.step();
+        }
 
         return Index!Resource(lastInsertId);
     }
@@ -427,18 +595,18 @@ class BuildState : SQLite3
     {
         import std.conv : to;
 
-        enum sql = `INSERT INTO task (command, workDir, display, lastExecuted)` ~
-                   ` VALUES(?, ?, ?, ?)`;
+        alias s = sqlInsertTask;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
 
-        s.bind(task.command.to!string(),
-               task.workingDirectory,
-               task.display,
-               task.lastExecuted.stdTime);
-        s.step();
+            s.bind(task.command.to!string(),
+                   task.workingDirectory,
+                   task.display,
+                   task.lastExecuted.stdTime);
+            s.step();
+        }
 
         return Index!Task(lastInsertId);
     }
@@ -469,19 +637,17 @@ class BuildState : SQLite3
      */
     void add(in Resource resource)
     {
-        enum sql = `INSERT OR IGNORE INTO resource` ~
-                   ` (path, lastModified, checksum)` ~
-                   ` VALUES(?, ?, ?)`;
+        alias s = sqlAddResource;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
 
-        s.bind(resource.path,
-               resource.lastModified.stdTime,
-               resource.checksum);
-
-        s.step();
+            s.bind(resource.path,
+                   resource.lastModified.stdTime,
+                   resource.checksum);
+            s.step();
+        }
     }
 
     // Ditto
@@ -489,20 +655,18 @@ class BuildState : SQLite3
     {
         import std.conv : to;
 
-        enum sql = `INSERT OR IGNORE INTO task` ~
-                   ` (command, workDir, display, lastExecuted)` ~
-                   ` VALUES(?, ?, ?, ?)`;
+        alias s = sqlAddTask;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
 
-        s.bind(task.command.to!string(),
-               task.workingDirectory,
-               task.display,
-               task.lastExecuted.stdTime);
-
-        s.step();
+            s.bind(task.command.to!string(),
+                   task.workingDirectory,
+                   task.display,
+                   task.lastExecuted.stdTime);
+            s.step();
+        }
     }
 
     /**
@@ -511,40 +675,40 @@ class BuildState : SQLite3
      */
     void remove(Index!Resource index)
     {
-        enum sql = `DELETE FROM resource WHERE id=?`;
+        alias s = sqlRemoveResourceByIndex;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(index);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(index);
+            s.step();
+        }
     }
 
     /// Ditto
     void remove(Index!Task index)
     {
-        enum sql = `DELETE FROM task WHERE id=?`;
+        alias s = sqlRemoveTaskByIndex;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(index);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(index);
+            s.step();
+        }
     }
 
     /// Ditto
     void remove(ResourceId path)
     {
-        enum sql = `DELETE FROM resource WHERE path=?`;
+        alias s = sqlRemoveResourceByKey;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(path);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(path);
+            s.step();
+        }
     }
 
     /// Ditto
@@ -552,14 +716,14 @@ class BuildState : SQLite3
     {
         import std.conv : to;
 
-        enum sql = `DELETE FROM task WHERE command=? AND workDir=?`;
+        alias s = sqlRemoveTaskByKey;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(key.command.to!string, key.workingDirectory);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(key.command.to!string, key.workingDirectory);
+            s.step();
+        }
     }
 
     /**
@@ -567,18 +731,17 @@ class BuildState : SQLite3
      */
     Index!Resource find(ResourceId id)
     {
-        import std.exception : enforce;
+        alias s = sqlFindResourceByKey;
 
-        enum sql = `SELECT id FROM resource WHERE path=?`;
+        synchronized (s)
+        {
+            scope (exit) s.reset();
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
+            s.bind(id);
 
-        s.bind(id);
-
-        if (s.step())
-            return typeof(return)(s.get!ulong(0));
+            if (s.step())
+                return typeof(return)(s.get!ulong(0));
+        }
 
         return typeof(return).Invalid;
     }
@@ -587,18 +750,18 @@ class BuildState : SQLite3
     Index!Task find(TaskKey id)
     {
         import std.conv : to;
-        import std.exception : enforce;
 
-        enum sql = `SELECT id FROM task WHERE command=? AND workDir=?`;
+        alias s = sqlFindTaskByKey;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
 
-        s.bind(id.command.to!string, id.workingDirectory);
+            s.bind(id.command.to!string, id.workingDirectory);
 
-        if (s.step())
-            return typeof(return)(s.get!ulong(0));
+            if (s.step())
+                return typeof(return)(s.get!ulong(0));
+        }
 
         return typeof(return).Invalid;
     }
@@ -610,18 +773,15 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        enum sql = `SELECT path,lastModified,checksum` ~
-                   ` FROM resource WHERE id=?`;
+        alias s = sqlResourceByIndex;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(index);
-
-        enforce(s.step(), "Vertex does not exist.");
-
-        return s.parse!Resource();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(index);
+            enforce(s.step(), "Vertex does not exist.");
+            return s.parse!Resource();
+        }
     }
 
     /// Ditto
@@ -629,17 +789,15 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        enum sql = `SELECT command,workDir,display,lastExecuted` ~
-                   ` FROM task WHERE id=?`;
+        alias s = sqlTaskByIndex;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(index);
-        enforce(s.step(), "Vertex does not exist.");
-
-        return s.parse!Task();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(index);
+            enforce(s.step(), "Vertex does not exist.");
+            return s.parse!Task();
+        }
     }
 
     /**
@@ -652,18 +810,15 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        enum sql = `SELECT path,lastModified,checksum` ~
-                   ` FROM resource WHERE path=?`;
+        alias s = sqlResourceByKey;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(path);
-
-        enforce(s.step(), "Vertex does not exist.");
-
-        return s.parse!Resource();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(path);
+            enforce(s.step(), "Vertex does not exist.");
+            return s.parse!Resource();
+        }
     }
 
     /// Ditto
@@ -672,39 +827,15 @@ class BuildState : SQLite3
         import std.exception : enforce;
         import std.conv : to;
 
-        enum sql = `SELECT command,workDir,display,lastExecuted FROM task`
-                   ` WHERE command=? AND workDir=?`;
+        alias s = sqlTaskByKey;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(key.command.to!string, key.workingDirectory);
-        enforce(s.step(), "Vertex does not exist.");
-
-        return s.parse!Task();
-    }
-
-    unittest
-    {
-        import std.datetime : SysTime;
-
-        auto state = new BuildState;
-
-        immutable vertex = Resource("foo.c", SysTime(9001));
-
-        auto id = state.put(vertex);
-        assert(state["foo.c"] == vertex);
-    }
-
-    unittest
-    {
-        auto state = new BuildState;
-
-        immutable vertex = Task(["foo", "test", "test test"]);
-
-        immutable id = state.put(vertex);
-        assert(state[TaskKey(["foo", "test", "test test"])] == vertex);
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(key.command.to!string, key.workingDirectory);
+            enforce(s.step(), "Vertex does not exist.");
+            return s.parse!Task();
+        }
     }
 
     /**
@@ -713,16 +844,14 @@ class BuildState : SQLite3
      */
     void opIndexAssign(in Resource v, Index!Resource index)
     {
-        enum sql = `UPDATE resource` ~
-                   ` SET path=?,lastModified=?,checksum=?` ~
-                   ` WHERE id=?`;
+        alias s = sqlUpdateResource;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(v.path, v.lastModified.stdTime, v.checksum, index);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(v.path, v.lastModified.stdTime, v.checksum, index);
+            s.step();
+        }
     }
 
     /// Ditto
@@ -730,19 +859,17 @@ class BuildState : SQLite3
     {
         import std.conv : to;
 
-        enum sql = `UPDATE task` ~
-                   ` SET command=?,workDir=?,display=?,lastExecuted=?` ~
-                   ` WHERE id=?`;
+        alias s = sqlUpdateTask;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(v.command.to!string,
-               v.workingDirectory,
-               v.display,
-               v.lastExecuted.stdTime, index);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(v.command.to!string,
+                   v.workingDirectory,
+                   v.display,
+                   v.lastExecuted.stdTime, index);
+            s.step();
+        }
     }
 
     /**
@@ -843,28 +970,27 @@ class BuildState : SQLite3
      */
     void put(Index!Task from, Index!Resource to, EdgeType type)
     {
-        enum sql = `INSERT INTO taskEdge("from", "to", type) VALUES(?, ?, ?)`;
+        alias s = sqlInsertTaskEdge;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(from, to, type);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(from, to, type);
+            s.step();
+        }
     }
 
     /// Ditto
     void put(Index!Resource from, Index!Task to, EdgeType type)
     {
-        enum sql = `INSERT INTO resourceEdge("from", "to", type)`
-                   ` VALUES(?, ?, ?)`;
+        alias s = sqlInsertResourceEdge;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(from, to, type);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(from, to, type);
+            s.step();
+        }
     }
 
     /// Ditto
@@ -879,71 +1005,32 @@ class BuildState : SQLite3
         put(find(a), find(b), type);
     }
 
-    unittest
-    {
-        import std.exception : collectException;
-
-        auto state = new BuildState;
-
-        // Creating an edge to non-existent vertices should fail.
-        immutable edge = Index!(Task, Resource)
-            (Index!Task(4), Index!Resource(8));
-
-        assert(collectException!SQLite3Exception(state.put(edge, EdgeType.explicit)));
-    }
-
-    unittest
-    {
-        auto state = new BuildState;
-
-        // Create a couple of vertices to link together
-        immutable resId = state.put(Resource("foo.c"));
-
-        immutable taskId = state.put(Task(["gcc", "foo.c"]));
-
-        immutable edgeId = state.put(Index!(Resource, Task)(resId, taskId), EdgeType.explicit);
-        assert(edgeId == 1);
-    }
-
-    unittest
-    {
-        auto state = new BuildState;
-
-        // Create a couple of vertices to link together
-        immutable resId = state.put(Resource("foo.c"));
-        immutable taskId = state.put(Task(["gcc", "foo.c"]));
-
-        immutable edgeId = state.put("foo.c", TaskKey(["gcc", "foo.c"]),
-                EdgeType.explicit);
-        assert(edgeId == 1);
-    }
-
     /**
      * Removes an edge. Throws an exception if the edge does not exist.
      */
     void remove(Index!Resource from, Index!Task to, EdgeType type)
     {
-        enum sql = `DELETE FROM resourceEdge WHERE "from"=? AND "to"=? AND type=?`;
+        alias s = sqlRemoveResourceEdge;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(from, to, type);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(from, to, type);
+            s.step();
+        }
     }
 
     /// Ditto
     void remove(Index!Task from, Index!Resource to, EdgeType type)
     {
-        enum sql = `DELETE FROM taskEdge WHERE "from"=? AND "to"=? AND type=?`;
+        alias s = sqlRemoveTaskEdge;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(from, to, type);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(from, to, type);
+            s.step();
+        }
     }
 
     /// Ditto
@@ -964,8 +1051,6 @@ class BuildState : SQLite3
 
         immutable resId  = state.put(Resource("foo.c"));
         immutable taskId = state.put(Task(["gcc", "foo.c"]));
-        immutable edgeId = state.put(Index!(Resource, Task)(resId, taskId), EdgeType.explicit);
-        state.remove(edgeId);
         state.remove(resId);
         state.remove(taskId);
     }
@@ -977,17 +1062,15 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        enum sql = `SELECT COUNT("to") FROM taskEdge WHERE "to"=?`;
+        alias s = sqlResourceDegreeIn;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(index);
-
-        enforce(s.step(), "Failed to count incoming edges to resource");
-
-        return s.get!(typeof(return))(0);
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(index);
+            enforce(s.step(), "Failed to count incoming edges to resource");
+            return s.get!(typeof(return))(0);
+        }
     }
 
     /// Ditto
@@ -995,17 +1078,15 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        enum sql = `SELECT COUNT("to") FROM resourceEdge WHERE "to"=?`;
+        alias s = sqlTaskDegreeIn;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(index);
-
-        enforce(s.step(), "Failed to count incoming edges to resource");
-
-        return s.get!(typeof(return))(0);
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(index);
+            enforce(s.step(), "Failed to count incoming edges to resource");
+            return s.get!(typeof(return))(0);
+        }
     }
 
     /// Ditto
@@ -1013,17 +1094,15 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        enum sql = `SELECT COUNT("to") FROM resourceEdge WHERE "from"=?`;
+        alias s = sqlResourceDegreeOut;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(index);
-
-        enforce(s.step(), "Failed to count outgoing edges from resource");
-
-        return s.get!(typeof(return))(0);
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(index);
+            enforce(s.step(), "Failed to count outgoing edges from resource");
+            return s.get!(typeof(return))(0);
+        }
     }
 
     /// Ditto
@@ -1031,17 +1110,15 @@ class BuildState : SQLite3
     {
         import std.exception : enforce;
 
-        enum sql = `SELECT COUNT("to") FROM taskEdge WHERE "from"=?`;
+        alias s = sqlTaskDegreeOut;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(index);
-
-        enforce(s.step(), "Failed to count outgoing edges from task");
-
-        return s.get!(typeof(return))(0);
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(index);
+            enforce(s.step(), "Failed to count outgoing edges from task");
+            return s.get!(typeof(return))(0);
+        }
     }
 
     unittest
@@ -1076,54 +1153,6 @@ class BuildState : SQLite3
     }
 
     /**
-     * Gets the state associated with an edge.
-     */
-    EdgeType opIndex(Index!Task from, Index!Resource to)
-    {
-        import std.exception : enforce;
-
-        enum sql = `SELECT "type" FROM taskEdge WHERE "from"=? AND "to"=?`;
-
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(from, to);
-        enforce!InvalidEdge(s.step(), "Edge does not exist.");
-
-        return s.parse!(typeof(return));
-    }
-
-    /// Ditto
-    EdgeType opIndex(Index!Resource from, Index!Task to)
-    {
-        import std.exception : enforce;
-
-        enum sql = `SELECT "type" FROM resourceEdge WHERE "from"=? AND "to"=?`;
-
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(from, to);
-        enforce!InvalidEdge(s.step(), "Edge does not exist.");
-
-        return s.parse!(typeof(return));
-    }
-
-    /// Ditto
-    EdgeType opIndex(Index!(Resource, Task) edge)
-    {
-        return opIndex(edge.from, edge.to);
-    }
-
-    /// Ditto
-    EdgeType opIndex(Index!(Task, Resource) edge)
-    {
-        return opIndex(edge.from, edge.to);
-    }
-
-    /**
      * Lists all outgoing task edges.
      */
     @property auto edges(From : Task, To : Resource, Data : EdgeType)()
@@ -1146,29 +1175,27 @@ class BuildState : SQLite3
      */
     bool edgeExists(Index!Task from, Index!Resource to, EdgeType type)
     {
-        enum sql = `SELECT "type" FROM taskEdge WHERE` ~
-                   ` "from"=? AND "to"=? AND type=?`;
+        alias s = sqlTaskEdgeExists;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(from, to, type);
-        return s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(from, to, type);
+            return s.step();
+        }
     }
 
     /// Ditto
     bool edgeExists(Index!Resource from, Index!Task to, EdgeType type)
     {
-        enum sql = `SELECT "type" FROM resourceEdge` ~
-                   ` WHERE "from"=? AND "to"=? AND type=?`;
+        alias s = sqlResourceEdgeExists;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(from, to, type);
-        return s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(from, to, type);
+            return s.step();
+        }
     }
 
     /**
@@ -1316,57 +1343,57 @@ class BuildState : SQLite3
      * Adds a vertex to the list of pending vertices. If the vertex is already
      * pending, nothing is done.
      */
-    void addPending(Vertex : Resource)(Index!Vertex v)
+    void addPending(Index!Resource v)
     {
-        enum sql = `INSERT OR IGNORE INTO pendingResources(resid) VALUES(?)`;
+        alias s = sqlAddPendingResource;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(v);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(v);
+            s.step();
+        }
     }
 
     /// Ditto
-    void addPending(Vertex : Task)(Index!Vertex v)
+    void addPending(Index!Task v)
     {
-        enum sql = `INSERT OR IGNORE INTO pendingTasks(taskid) VALUES(?)`;
+        alias s = sqlAddPendingTask;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(v);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(v);
+            s.step();
+        }
     }
 
     /**
      * Removes a pending vertex.
      */
-    void removePending(Vertex : Resource)(Index!Vertex v)
+    void removePending(Index!Resource v)
     {
-        enum sql = `DELETE FROM pendingResources WHERE resid=?`;
+        alias s = sqlRemovePendingResource;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(v);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(v);
+            s.step();
+        }
     }
 
     /// Ditto
-    void removePending(Vertex : Task)(Index!Vertex v)
+    void removePending(Index!Task v)
     {
-        enum sql = `DELETE FROM pendingTasks WHERE taskid=?`;
+        alias s = sqlRemovePendingTask;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(v);
-        s.step();
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(v);
+            s.step();
+        }
     }
 
     /// Ditto
@@ -1384,45 +1411,35 @@ class BuildState : SQLite3
     /**
      * Returns true if a given vertex is pending.
      */
-    bool isPending(Vertex : Resource)(Index!Vertex v)
+    bool isPending(Index!Resource v)
     {
         import std.exception : enforce;
 
-        enum sql =
-            `SELECT EXISTS(` ~
-            ` SELECT 1 FROM pendingResources WHERE resid=? LIMIT 1` ~
-            `)`;
+        alias s = sqlIsPendingResource;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(v);
-
-        enforce(s.step(), "Failed to check if resource is pending");
-
-        return s.get!uint(0) == 1;
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(v);
+            enforce(s.step(), "Failed to check if resource is pending");
+            return s.get!uint(0) == 1;
+        }
     }
 
     /// Ditto
-    bool isPending(Vertex : Task)(Index!Vertex v)
+    bool isPending(Index!Task v)
     {
         import std.exception : enforce;
 
-        enum sql =
-            `SELECT EXISTS(` ~
-            ` SELECT 1 FROM pendingTasks WHERE taskid=? LIMIT 1`~
-            `)`;
+        alias s = sqlIsPendingTask;
 
-        static Statement s;
-        if (!s) s = new Statement(sql);
-        scope (exit) s.reset();
-
-        s.bind(v);
-
-        enforce(s.step(), "Failed to check if task is pending");
-
-        return s.get!uint(0) == 1;
+        synchronized (s)
+        {
+            scope (exit) s.reset();
+            s.bind(v);
+            enforce(s.step(), "Failed to check if task is pending");
+            return s.get!uint(0) == 1;
+        }
     }
 
     /**
