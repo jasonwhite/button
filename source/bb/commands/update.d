@@ -101,8 +101,7 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
 
         {
             state.begin();
-            scope (failure) state.rollback();
-            scope (success)
+            scope (exit)
             {
                 if (dryRun)
                     state.rollback();
