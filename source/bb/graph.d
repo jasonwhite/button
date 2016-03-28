@@ -380,16 +380,11 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                     if (head is null)
                     {
                         head = e;
-                        tail = head;
                     }
                     else
                     {
-                        // Add our (potential) exception chain to the end of the
-                        // linked list
-                        while (tail.next !is null)
-                            tail = tail.next;
-
-                        tail.next = e;
+                        e.next = head;
+                        head = e;
                     }
                 }
             }
@@ -416,7 +411,6 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         auto mutex = new Mutex();
 
         Throwable head;
-        Throwable tail;
 
         foreach (v; pool.parallel(vertices!A.filter!(v => degreeIn(v) == 0), 1))
         {
@@ -429,16 +423,11 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                     if (head is null)
                     {
                         head = e;
-                        tail = head;
                     }
                     else
                     {
-                        // Add our (potential) exception chain to the end of the
-                        // linked list
-                        while (tail.next !is null)
-                            tail = tail.next;
-
-                        tail.next = e;
+                        e.next = head;
+                        head = e;
                     }
                 }
             }
@@ -455,16 +444,11 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
                     if (head is null)
                     {
                         head = e;
-                        tail = head;
                     }
                     else
                     {
-                        // Add our (potential) exception chain to the end of the
-                        // linked list
-                        while (tail.next !is null)
-                            tail = tail.next;
-
-                        tail.next = e;
+                        e.next = head;
+                        head = e;
                     }
                 }
             }
