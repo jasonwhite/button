@@ -77,41 +77,24 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
 
         auto state = new BuildState(path.stateName);
 
+        state.begin();
+        scope (exit)
         {
-            state.begin();
-            scope (failure) state.rollback();
-            scope (success)
-            {
-                // Note that the transaction is not ended if this is a dry run.
-                // We don't want the database to retain changes introduced
-                // during the build.
-                if (dryRun)
-                    state.rollback();
-                else
-                    state.commit();
-            }
-
-            syncBuildState(state, pool, path, verbose, color);
-
-            if (verbose)
-                println(color.status, ":: Checking for changes...", color.reset);
-
-            queueChanges(state, pool, color);
+            if (dryRun)
+                state.rollback();
+            else
+                state.commit();
         }
 
-        {
-            state.begin();
-            scope (exit)
-            {
-                if (dryRun)
-                    state.rollback();
-                else
-                    state.commit();
-            }
+        syncBuildState(state, pool, path, verbose, color);
 
-            update(state, pool, dryRun, verbose, color, logger);
-            publishResources(state);
-        }
+        if (verbose)
+            println(color.status, ":: Checking for changes...", color.reset);
+
+        queueChanges(state, pool, color);
+
+        update(state, pool, dryRun, verbose, color, logger);
+        publishResources(state);
     }
     catch (BuildException e)
     {
