@@ -178,8 +178,11 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         assert(from in neighbors!A, "Attempted to add edge from non-existent vertex");
         assert(to in neighbors!B, "Attempted to add edge to non-existent vertex");
 
-        neighbors!A[from][to] = data;
-        ++_data!B[to].degreeIn;
+        if (to !in neighbors!A[from])
+        {
+            neighbors!A[from][to] = data;
+            ++_data!B[to].degreeIn;
+        }
     }
 
     void put(B from, A to, EdgeDataBA data = EdgeDataBA.init)
@@ -187,8 +190,11 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         assert(from in neighbors!B, "Attempted to add edge from non-existent vertex");
         assert(to in neighbors!A, "Attempted to add edge to non-existent vertex");
 
-        neighbors!B[from][to] = data;
-        ++_data!A[to].degreeIn;
+        if (to !in neighbors!B[from])
+        {
+            neighbors!B[from][to] = data;
+            ++_data!A[to].degreeIn;
+        }
     }
 
     unittest
@@ -196,6 +202,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
         auto g = new G();
         g.put(X(1));
         g.put(Y(1));
+        g.put(X(1), Y(1));
         g.put(X(1), Y(1));
         assert(g.degreeIn(Y(1)) == 1);
     }
