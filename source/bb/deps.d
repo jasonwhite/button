@@ -54,64 +54,67 @@ unittest
 }
 
 /**
- * Range of implicit dependencies received from a child process.
+ * Range of resources received from a child process.
  */
-auto deps(immutable(void)[] buf)
+struct Deps
 {
-    static struct Deps
+    private
     {
-        private
-        {
-            immutable(void)[] buf;
-            Resource r;
-            bool _empty;
-        }
-
-        this(immutable(void)[] buf)
-        {
-            this.buf = buf;
-            popFront();
-        }
-
-        Resource front() inout
-        {
-            return r;
-        }
-
-        bool empty() const pure nothrow
-        {
-            return _empty;
-        }
-
-        void popFront()
-        {
-            import std.exception : assumeUnique;
-            import std.datetime : SysTime;
-            import std.path : buildNormalizedPath;
-
-            if (buf.length == 0)
-            {
-                _empty = true;
-                return;
-            }
-
-            assert(buf.length >= Dependency.sizeof, "Received partial buffer");
-
-            auto dep = *cast(Dependency*)buf[0 .. Dependency.sizeof];
-
-            immutable totalSize = Dependency.sizeof + dep.length;
-
-            string name = cast(string)buf[Dependency.sizeof .. totalSize];
-
-            r = Resource(
-                buildNormalizedPath(name),
-                SysTime(cast(long)dep.timestamp),
-                dep.checksum
-                );
-
-            buf = buf[totalSize .. $];
-        }
+        immutable(void)[] buf;
+        Resource r;
+        bool _empty;
     }
 
+    this(immutable(void)[] buf)
+    {
+        this.buf = buf;
+        popFront();
+    }
+
+    Resource front() inout
+    {
+        return r;
+    }
+
+    bool empty() const pure nothrow
+    {
+        return _empty;
+    }
+
+    void popFront()
+    {
+        import std.exception : assumeUnique;
+        import std.datetime : SysTime;
+        import std.path : buildNormalizedPath;
+
+        if (buf.length == 0)
+        {
+            _empty = true;
+            return;
+        }
+
+        assert(buf.length >= Dependency.sizeof, "Received partial buffer");
+
+        auto dep = *cast(Dependency*)buf[0 .. Dependency.sizeof];
+
+        immutable totalSize = Dependency.sizeof + dep.length;
+
+        string name = cast(string)buf[Dependency.sizeof .. totalSize];
+
+        r = Resource(
+            buildNormalizedPath(name),
+            SysTime(cast(long)dep.timestamp),
+            dep.checksum
+            );
+
+        buf = buf[totalSize .. $];
+    }
+}
+
+/**
+ * Convenience function for returning a range of resources.
+ */
+Deps deps(immutable(void)[] buf)
+{
     return Deps(buf);
 }
