@@ -113,6 +113,14 @@ struct Deps
 
         Resource _current;
         bool _empty;
+
+        static string buildDir;
+    }
+
+    static this()
+    {
+        import std.file : getcwd;
+        buildDir = getcwd();
     }
 
     this(immutable(void)[] buf, string taskDir)
@@ -154,7 +162,7 @@ struct Deps
         string name = cast(string)buf[Dependency.sizeof .. totalSize];
 
         _current = Resource(
-            normalizePath(getcwd(), taskDir, name),
+            normalizePath(buildDir, taskDir, name),
             SysTime(cast(long)dep.timestamp),
             dep.checksum
             );
