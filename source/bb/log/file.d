@@ -81,6 +81,8 @@ final class FileLogger : Logger
 
         void failed(TickDuration duration, TaskError e)
         {
+            import std.string : wrap;
+
             synchronized (this.outer)
             {
                 file.println(color.status, " > ", color.error,
@@ -89,9 +91,10 @@ final class FileLogger : Logger
                 printOutput();
                 printTail(duration);
 
-                // TODO: Word wrap the error message
-                file.println(color.status, "   ➥ ", color.error, "Task Error: ",
-                        color.reset, e.msg);
+                enum indent = "                 ";
+
+                file.print(color.status, "   ➥ ", color.error, "Task Error: ",
+                        color.reset, wrap(e.msg, 80, "", indent, 4));
             }
         }
     }
