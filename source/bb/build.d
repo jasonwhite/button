@@ -518,7 +518,7 @@ void queueChanges(BuildState state, TaskPool pool, TextColor color)
 /**
  * Syncs the build state with implicit dependencies.
  */
-void syncStateImplicit(BuildState state, Index!Task v,
+void syncStateImplicit(BuildState state, Index!Task v, string workDir,
         immutable(ubyte)[] inputs, immutable(ubyte)[] outputs)
 {
     import std.algorithm.iteration : splitter, uniq, filter, map;
@@ -530,12 +530,12 @@ void syncStateImplicit(BuildState state, Index!Task v,
 
     auto inputDiff = changes(
             state.incoming!Resource(v, EdgeType.implicit).array.sort(),
-            inputs.deps.array.sort().uniq
+            inputs.deps(workDir).array.sort().uniq
             );
 
     auto outputDiff = changes(
             state.outgoing!Resource(v, EdgeType.implicit).array.sort(),
-            outputs.deps.array.sort().uniq
+            outputs.deps(workDir).array.sort().uniq
             );
 
     foreach (c; inputDiff)
@@ -566,8 +566,8 @@ void syncStateImplicit(BuildState state, Index!Task v,
             else
             {
                 throw new TaskError(
-                    "Implicit task input '%s' would change the build order." ~
-                    " It must be explicitly added to the build description."
+                    ("Implicit task input '%s' would change the build order." ~
+                    " It must be explicitly added to the build description.")
                     .format(r)
                     );
             }
@@ -725,7 +725,8 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
                     );
 
         synchronized (context.state)
-            syncStateImplicit(context.state, v, result.inputs, result.outputs);
+            syncStateImplicit(context.state, v, task.workingDirectory,
+                    result.inputs, result.outputs);
     }
     catch (TaskError e)
     {
