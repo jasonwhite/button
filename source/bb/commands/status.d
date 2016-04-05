@@ -43,7 +43,7 @@ int statusCommand(StatusOptions opts, GlobalOptions globalOpts)
         state.begin();
         scope (exit) state.rollback();
 
-        if (opts.cached == OptionFlag.no)
+        if (!opts.cached)
         {
             path.syncState(state, pool);
 

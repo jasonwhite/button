@@ -44,12 +44,12 @@ int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
         state.begin();
         scope (exit) state.rollback();
 
-        if (opts.cached == OptionFlag.no)
+        if (!opts.cached)
             path.syncState(state, pool, true);
 
         BuildStateGraph graph = state.buildGraph(opts.edges);
 
-        if (opts.changes == OptionFlag.yes)
+        if (opts.changes)
         {
             // Construct the minimal subgraph based on pending vertices
             auto resourceRoots = state.enumerate!(Index!Resource)
@@ -63,7 +63,7 @@ int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
             graph = graph.subgraph(resourceRoots, taskRoots);
         }
 
-        graph.graphviz(state, stdout, opts.full == OptionFlag.yes);
+        graph.graphviz(state, stdout, opts.full);
     }
     catch (BuildException e)
     {

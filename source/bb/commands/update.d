@@ -27,10 +27,7 @@ import bb.state,
 Logger buildLogger(in UpdateOptions opts)
 {
     import bb.log.file;
-
-    immutable verbose = opts.verbose == OptionFlag.yes;
-
-    return new FileLogger(stdout, verbose);
+    return new FileLogger(stdout, opts.verbose);
 }
 
 /**
@@ -40,9 +37,6 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
 {
     import std.parallelism : totalCPUs;
     import std.datetime : StopWatch;
-
-    immutable dryRun  = opts.dryRun == OptionFlag.yes;
-    immutable verbose = opts.verbose == OptionFlag.yes;
 
     auto logger = buildLogger(opts);
 
@@ -61,7 +55,7 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
         import core.time : Duration;
         sw.stop();
 
-        if (verbose)
+        if (opts.verbose)
         {
             println(color.status, ":: Total time taken: ", color.reset,
                     cast(Duration)sw.peek());
@@ -80,20 +74,20 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
         state.begin();
         scope (exit)
         {
-            if (dryRun)
+            if (opts.dryRun)
                 state.rollback();
             else
                 state.commit();
         }
 
-        syncBuildState(state, pool, path, verbose, color);
+        syncBuildState(state, pool, path, opts.verbose, color);
 
-        if (verbose)
+        if (opts.verbose)
             println(color.status, ":: Checking for changes...", color.reset);
 
         queueChanges(state, pool, color);
 
-        update(state, pool, dryRun, verbose, color, logger);
+        update(state, pool, opts.dryRun, opts.verbose, color, logger);
         publishResources(state);
     }
     catch (BuildException e)

@@ -52,7 +52,7 @@ else
         }
 
         // Rewrite to "help" command.
-        if (opts.help == OptionFlag.yes)
+        if (opts.help)
         {
             opts.args = (opts.command ? opts.command : "help") ~ opts.args;
             opts.command = "help";
