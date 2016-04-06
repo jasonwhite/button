@@ -729,7 +729,7 @@ class BuildState : SQLite3
     /**
      * Returns the index of the given vertex.
      */
-    Index!Resource find(ResourceId id)
+    Index!Resource find(const(char)[] key)
     {
         alias s = sqlFindResourceByKey;
 
@@ -737,7 +737,7 @@ class BuildState : SQLite3
         {
             scope (exit) s.reset();
 
-            s.bind(id);
+            s.bind(key);
 
             if (s.step())
                 return typeof(return)(s.get!ulong(0));
@@ -938,7 +938,7 @@ class BuildState : SQLite3
     @property auto enumerate(T : ResourceKey)()
     {
         return prepare(`SELECT path FROM resource WHERE id>1`)
-            .rows!(parse!Type);
+            .rows!(parse!T);
     }
 
     /// Ditto

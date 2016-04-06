@@ -272,7 +272,7 @@ class SQLite3
         }
 
         /// Ditto
-        void opIndexAssign(T : const(string))(T v, uint i)
+        void opIndexAssign(T : const(char)[])(T v, uint i)
         {
             import std.conv : to;
             sqliteEnforce(sqlite3_bind_text(_stmt, i+1, toStringz(v),
