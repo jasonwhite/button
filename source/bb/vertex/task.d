@@ -271,7 +271,6 @@ struct Task
 
         import io.file.stream : sysEnforce;
 
-        import std.path : buildPath;
         import std.string : toStringz;
         import std.datetime : StopWatch;
         import core.time : Duration;
@@ -457,7 +456,6 @@ private version (Posix)
     void readFromChild(ref int fd, ref Appender!(ubyte[]) a, ubyte[] buf)
     {
         import core.sys.posix.unistd : read, close;
-        import io.file.stream : sysEnforce, SysException;
 
         immutable len = read(fd, buf.ptr, buf.length);
 
@@ -479,7 +477,6 @@ private version (Posix)
         import core.sys.posix.sys.wait;
         import core.stdc.errno;
         import io.file.stream : SysException;
-        import core.sys.posix.stdio : perror;
 
         while (true)
         {
@@ -522,9 +519,6 @@ private version (Posix)
         import core.stdc.stdio : perror, stderr, fprintf;
         import core.stdc.string : strerror;
         import core.stdc.errno : errno;
-
-        import io.file.stream : SysException;
-        import io.text;
 
         // Get standard input from /dev/null. With potentially multiple tasks
         // executing in parallel, the child cannot use standard input.
