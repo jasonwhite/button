@@ -4,7 +4,7 @@
  * Authors:   Jason White
  *
  * Description:
- * Handles command line arguments.
+ * Handles the 'update' or 'build' command.
  */
 module bb.commands.update;
 
@@ -21,6 +21,8 @@ import bb.state,
        bb.textcolor,
        bb.log;
 
+import util.inotify;
+
 /**
  * Returns a build logger based on the command options.
  */
@@ -32,22 +34,43 @@ Logger buildLogger(in UpdateOptions opts)
 
 /**
  * Updates the build.
+ *
+ * All outputs are brought up-to-date based on their inputs. If '--autopilot' is
+ * specified, once the build finishes, we watch for changes to inputs and run
+ * another build.
  */
 int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
 {
     import std.parallelism : totalCPUs;
-    import std.datetime : StopWatch;
 
     auto logger = buildLogger(opts);
-
-    StopWatch sw;
 
     if (opts.threads == 0)
         opts.threads = totalCPUs;
 
+    auto pool = new TaskPool(opts.threads - 1);
+    scope (exit) pool.finish(true);
+
     immutable color = TextColor(colorOutput(opts.color));
 
-    sw.start();
+    if (!opts.autopilot)
+    {
+        return doBuild(opts, pool, logger, color);
+    }
+    else
+    {
+        // Do the initial build, checking for changes the old-fashioned way.
+        doBuild(opts, pool, logger, color);
+
+        return doAutoBuild(opts, pool, logger, color);
+    }
+}
+
+int doBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor color)
+{
+    import std.datetime : StopWatch, AutoStart;
+
+    auto sw = StopWatch(AutoStart.yes);
 
     scope (exit)
     {
@@ -62,12 +85,9 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
         }
     }
 
-    auto pool = new TaskPool(opts.threads - 1);
-    scope (exit) pool.finish(true);
-
     try
     {
-        string path = buildDescriptionPath(opts.path);
+        auto path = buildDescriptionPath(opts.path);
 
         auto state = new BuildState(path.stateName);
 
@@ -103,6 +123,88 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
                 " See the output above for details.");
         return 1;
     }
+
+    return 0;
+}
+
+int doAutoBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor color)
+{
+    string path;
+    BuildState state;
+
+    try
+    {
+        path = buildDescriptionPath(opts.path);
+        state = new BuildState(path.stateName);
+    }
+    catch (BuildException e)
+    {
+        stderr.println(color.status, ":: ", color.error,
+                "Error", color.reset, ": ", e.msg);
+        return 1;
+    }
+
+    if (opts.verbose)
+        println(color.status, ":: Waiting for changes...", color.reset);
+
+    state.begin();
+    scope (exit)
+    {
+        if (opts.dryRun)
+            state.rollback();
+        else
+            state.commit();
+    }
+
+    foreach (changes; ChangeChunks(state))
+    {
+        scope (exit)
+        {
+            if (opts.verbose)
+                println(color.status, ":: Waiting for changes...", color.reset);
+        }
+
+        try
+        {
+            size_t changed = 0;
+
+            foreach (v; changes)
+            {
+                // Check if the resource contents actually changed
+                auto r = state[v];
+
+                if (r.update())
+                {
+                    state[v] = r;
+                    state.addPending(v);
+                    ++changed;
+                    println("Changed: ", r);
+                }
+            }
+
+            if (changed > 0)
+            {
+                syncBuildState(state, pool, path, opts.verbose, color);
+                update(state, pool, opts.dryRun, opts.verbose, color, logger);
+            }
+        }
+        catch (BuildException e)
+        {
+            stderr.println(color.status, ":: ", color.error,
+                    "Error", color.reset, ": ", e.msg);
+            continue;
+        }
+        catch (TaskError e)
+        {
+            stderr.println(color.status, ":: ", color.error,
+                    "Build failed!", color.reset,
+                    " See the output above for details.");
+            //return 1;
+            continue;
+        }
+    }
+
+    publishResources(state);
 
     return 0;
 }
@@ -168,4 +270,104 @@ void update(BuildState state, TaskPool pool, bool dryRun, bool verbose,
     subgraph.build(state, pool, dryRun, verbose, color, logger);
 
     println(color.status, ":: ", color.success, "Build succeeded", color.reset);
+}
+
+/**
+ * An infinite input range of chunks of changes. Each item in the range is an
+ * array of changed resources. That is, for each item in the range, a new build
+ * should be started. Changed files are accumulated over a short period of time.
+ * If many files are changed over short period of time, they will be included in
+ * one chunk.
+ */
+struct ChangeChunks
+{
+    private
+    {
+        import std.array : Appender;
+
+        enum maxEvents = 32;
+
+        BuildState state;
+        Watcher watcher;
+        Events!maxEvents events;
+
+        Appender!(Index!Resource[]) current;
+
+        // Mapping of watches to directories. This is needed to find the path to
+        // the directory that is being watched.
+        string[Watch] watches;
+    }
+
+    this(BuildState state)
+    {
+        import std.path : filenameCmp, dirName;
+        import std.container.rbtree;
+        import std.file : exists;
+        import core.sys.linux.sys.inotify;
+
+        this.state = state;
+
+        watcher = Watcher.init();
+
+        alias less = (a,b) => filenameCmp(a, b) < 0;
+
+        auto rbt = redBlackTree!(less, string)();
+
+        // Find all directories.
+        foreach (key; state.enumerate!ResourceKey)
+            rbt.insert(dirName(key.path));
+
+        // Watch each (unique) directory. Note that we only watch directories
+        // instead of individual files so that we are less likely to run out of
+        // file descriptors. Later, we filter out events for files we are not
+        // interested in.
+        foreach (dir; rbt[])
+        {
+            if (exists(dir))
+            {
+                auto watch = watcher.put(dir, IN_CREATE | IN_DELETE);
+                watches[watch] = dir;
+            }
+        }
+
+        events = watcher.events!maxEvents;
+    }
+
+    const(Index!Resource)[] front()
+    {
+        return current.data;
+    }
+
+    void popFront()
+    {
+        import std.path : buildPath;
+
+        current.clear();
+
+        // TODO: Use timeouts to watch for changes. When a change is received,
+        // add it to the list and wait x milliseconds. If no changes are seen
+        // during that time, let the popFront function finish. If another change
+        // is seen, add it to the list and start over. This will require
+        // asynchronous reads in the underlying inotify wrapper.
+        for (; !events.empty; events.popFront())
+        {
+            auto event = events.front;
+            auto path = buildPath(watches[event.watch], event.name);
+
+            // Since we monitor directories and not specific files, we must
+            // check if we received a change that we are actually interested in.
+            auto id = state.find(path);
+            if (id != Index!Resource.Invalid)
+            {
+                current.put(id);
+                events.popFront();
+                break;
+            }
+        }
+    }
+
+    bool empty()
+    {
+        return events.empty;
+    }
 }

@@ -82,6 +82,11 @@ struct UpdateOptions
     @Help("Display additional information such as how long each task took to"~
           " complete.")
     OptionFlag verbose;
+
+    @Option("autopilot")
+    @Help("After building, continue watching for changes to inputs and"~
+          " building again as necessary.")
+    OptionFlag autopilot;
 }
 
 // TODO: Allow graphing of just the build description.
