@@ -144,8 +144,7 @@ int doAutoBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor colo
         return 1;
     }
 
-    if (opts.verbose)
-        println(color.status, ":: Waiting for changes...", color.reset);
+    println(color.status, ":: Waiting for changes...", color.reset);
 
     state.begin();
     scope (exit)
@@ -159,10 +158,7 @@ int doAutoBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor colo
     foreach (changes; ChangeChunks(state))
     {
         scope (exit)
-        {
-            if (opts.verbose)
-                println(color.status, ":: Waiting for changes...", color.reset);
-        }
+            println(color.status, ":: Waiting for changes...", color.reset);
 
         try
         {
@@ -175,10 +171,9 @@ int doAutoBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor colo
 
                 if (r.update())
                 {
-                    state[v] = r;
                     state.addPending(v);
+                    state[v] = r;
                     ++changed;
-                    println("Changed: ", r);
                 }
             }
 
@@ -199,7 +194,6 @@ int doAutoBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor colo
             stderr.println(color.status, ":: ", color.error,
                     "Build failed!", color.reset,
                     " See the output above for details.");
-            //return 1;
             continue;
         }
     }
@@ -269,7 +263,8 @@ void update(BuildState state, TaskPool pool, bool dryRun, bool verbose,
     auto subgraph = state.buildGraph(resources, tasks);
     subgraph.build(state, pool, dryRun, verbose, color, logger);
 
-    println(color.status, ":: ", color.success, "Build succeeded", color.reset);
+    if (verbose)
+        println(color.status, ":: ", color.success, "Build succeeded", color.reset);
 }
 
 /**
@@ -340,7 +335,7 @@ struct ChangeChunks
 
     void popFront()
     {
-        import std.path : buildPath;
+        import std.path : buildNormalizedPath;
 
         current.clear();
 
@@ -349,10 +344,14 @@ struct ChangeChunks
         // during that time, let the popFront function finish. If another change
         // is seen, add it to the list and start over. This will require
         // asynchronous reads in the underlying inotify wrapper.
-        for (; !events.empty; events.popFront())
+        while (!events.empty)
         {
             auto event = events.front;
-            auto path = buildPath(watches[event.watch], event.name);
+
+            scope (success)
+                events.popFront();
+
+            auto path = buildNormalizedPath(watches[event.watch], event.name);
 
             // Since we monitor directories and not specific files, we must
             // check if we received a change that we are actually interested in.
@@ -360,7 +359,6 @@ struct ChangeChunks
             if (id != Index!Resource.Invalid)
             {
                 current.put(id);
-                events.popFront();
                 break;
             }
         }
