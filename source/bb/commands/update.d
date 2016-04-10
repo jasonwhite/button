@@ -53,20 +53,36 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
 
     immutable color = TextColor(colorOutput(opts.color));
 
+    string path;
+    BuildState state;
+
+    try
+    {
+        path = buildDescriptionPath(opts.path);
+        state = new BuildState(path.stateName);
+    }
+    catch (BuildException e)
+    {
+        stderr.println(color.status, ":: ", color.error,
+                "Error", color.reset, ": ", e.msg);
+        return 1;
+    }
+
     if (!opts.autopilot)
     {
-        return doBuild(opts, pool, logger, color);
+        return doBuild(path, state, opts, pool, logger, color);
     }
     else
     {
         // Do the initial build, checking for changes the old-fashioned way.
-        doBuild(opts, pool, logger, color);
+        doBuild(path, state, opts, pool, logger, color);
 
-        return doAutoBuild(opts, pool, logger, color);
+        return doAutoBuild(path, state, opts, pool, logger, color);
     }
 }
 
-int doBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor color)
+int doBuild(string path, BuildState state, UpdateOptions opts, TaskPool pool,
+        Logger logger, TextColor color)
 {
     import std.datetime : StopWatch, AutoStart;
 
@@ -87,10 +103,6 @@ int doBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor color)
 
     try
     {
-        auto path = buildDescriptionPath(opts.path);
-
-        auto state = new BuildState(path.stateName);
-
         state.begin();
         scope (exit)
         {
@@ -127,23 +139,9 @@ int doBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor color)
     return 0;
 }
 
-int doAutoBuild(UpdateOptions opts, TaskPool pool, Logger logger, TextColor color)
+int doAutoBuild(string path, BuildState state, UpdateOptions opts,
+        TaskPool pool, Logger logger, TextColor color)
 {
-    string path;
-    BuildState state;
-
-    try
-    {
-        path = buildDescriptionPath(opts.path);
-        state = new BuildState(path.stateName);
-    }
-    catch (BuildException e)
-    {
-        stderr.println(color.status, ":: ", color.error,
-                "Error", color.reset, ": ", e.msg);
-        return 1;
-    }
-
     println(color.status, ":: Waiting for changes...", color.reset);
 
     state.begin();
