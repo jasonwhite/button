@@ -98,7 +98,7 @@ struct UpdateOptions
     @Help("Used with `--autopilot`. The number of milliseconds to wait for"~
           " additional changes after receiving a change event before starting"~
           " a build.")
-    size_t delay = 0;
+    size_t delay = 50;
 }
 
 // TODO: Allow graphing of just the build description.

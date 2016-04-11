@@ -17,6 +17,7 @@ version (Windows)
 }
 
 import core.sys.posix.unistd;
+import core.sys.posix.poll;
 import core.sys.linux.sys.inotify;
 
 extern (C) {
@@ -49,9 +50,8 @@ struct Event
 /**
  * An infinite input range of chunks of changes. Each item in the range is an
  * array of changed resources. That is, for each item in the range, a new build
- * should be started. Changed files are accumulated over a short period of time.
- * If many files are changed over short period of time, they will be included in
- * one chunk.
+ * should be started. If many files are changed over short period of time
+ * (depending on the delay), they will be included in one chunk.
  */
 struct ChangeChunks
 {
@@ -72,8 +72,8 @@ struct ChangeChunks
         // the directory that is being watched.
         string[int] watches;
 
-        // Number of milliseconds to wait
-        size_t delay;
+        // Number of milliseconds to wait. Wait indefinitely by default.
+        int delay = -1;
     }
 
     // This is an infinite range.
@@ -86,11 +86,16 @@ struct ChangeChunks
         import std.file : exists, buildNormalizedPath;
         import core.sys.linux.sys.inotify;
         import io.file.stream : sysEnforce;
+        import std.conv : to;
 
         this.state = state;
-        this.delay = delay;
 
-        fd = inotify_init();
+        if (delay == 0)
+            this.delay = -1;
+        else
+            this.delay = delay.to!int;
+
+        fd = inotify_init1(IN_NONBLOCK);
         sysEnforce(fd != -1, "Failed to initialize inotify");
 
         alias less = (a,b) => filenameCmp(a, b) < 0;
@@ -161,29 +166,32 @@ struct ChangeChunks
     }
 
     /**
-     * Waits for changes.
+     * Called when events are ready to be read.
      */
-    void popFront()
+    private void handleEvents(ubyte[] buf)
     {
         import std.path : buildNormalizedPath;
-        import io.file.stream : sysEnforce;
-
-        // Buffer to hold the events. Multiple events can be read at a time.
-        ubyte[maxEvents * Event.max] buf;
+        import io.file.stream : SysException;
+        import core.stdc.errno : errno, EAGAIN;
 
         // Window into the valid region of the buffer.
         ubyte[] window;
 
-        current.clear();
-
-        while (current.data.length == 0)
+        while (true)
         {
             immutable len = read(fd, buf.ptr, buf.length);
-            sysEnforce(len != -1, "Failed to read inotify event");
+            if (len == -1)
+            {
+                // Nothing more to read, break out of the loop.
+                if (errno == EAGAIN)
+                    break;
 
-            // Loop over the events that were read in
+                throw new SysException("Failed to read inotify events");
+            }
+
             window = buf[0 .. len];
 
+            // Loop over the events
             while (window.length)
             {
                 auto e = cast(inotify_event*)window.ptr;
@@ -198,6 +206,51 @@ struct ChangeChunks
                     current.put(id);
 
                 window = window[inotify_event.sizeof + e.len .. $];
+            }
+        }
+    }
+
+    /**
+     * Waits for changes.
+     */
+    void popFront()
+    {
+        import io.file.stream : SysException;
+        import core.stdc.errno : errno, EINTR;
+
+        pollfd[1] pollFds = [pollfd(fd, POLLIN)];
+
+        // Buffer to hold the events. Multiple events can be read at a time.
+        ubyte[maxEvents * Event.max] buf;
+
+        current.clear();
+
+        import io;
+
+        while (true)
+        {
+            immutable n = poll(pollFds.ptr, pollFds.length, delay);
+            if (n == -1)
+            {
+                if (errno == EINTR)
+                    continue;
+
+                throw new SysException("Failed to poll for inotify events");
+            }
+            else if (n == 0)
+            {
+                // Poll timed out and we've got events, so lets use them.
+                if (current.data.length > 0)
+                    break;
+            }
+            else if (n > 0)
+            {
+                if (pollFds[0].revents & POLLIN)
+                    handleEvents(buf);
+
+                // Can't ever time out. Yield any events we have.
+                if (delay == -1 && current.data.length > 0)
+                    break;
             }
         }
     }
