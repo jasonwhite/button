@@ -2,7 +2,7 @@
 TODO List
 =========
 
-* Add current working directory option to tasks.
+* Add current working directory option to tasks. ✓
 
 * Add implicit dependencies.
 
