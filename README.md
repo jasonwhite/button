@@ -167,7 +167,7 @@ Note that `gcc foo.o bar.o -o foobar` was not executed because its output
 A file is only determined to be changed if its last modification time changed
 *and* its checksum changed. Thus, one source of overbuilding is eliminated.
 
-## Automatic Builds
+### Automatic Builds
 
 Brilliant Build can run builds automatically when changes are made. This allows
 you to write code in your text editor, hit save, and watch your changes get
