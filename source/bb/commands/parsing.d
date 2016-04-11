@@ -87,6 +87,12 @@ struct UpdateOptions
     @Help("After building, continue watching for changes to inputs and"~
           " building again as necessary.")
     OptionFlag autopilot;
+
+    @Option("watchdir")
+    @Help("Used with `--autopilot`. Directory to watch for changes in. Since"~
+          " FUSE does not work with inotify, this is useful to use when"~
+          " building in a union file system.")
+    string watchDir = ".";
 }
 
 // TODO: Allow graphing of just the build description.

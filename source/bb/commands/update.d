@@ -153,11 +153,8 @@ int doAutoBuild(string path, BuildState state, UpdateOptions opts,
             state.commit();
     }
 
-    foreach (changes; ChangeChunks(state))
+    foreach (changes; ChangeChunks(state, opts.watchDir))
     {
-        scope (exit)
-            println(color.status, ":: Waiting for changes...", color.reset);
-
         try
         {
             size_t changed = 0;
@@ -179,6 +176,7 @@ int doAutoBuild(string path, BuildState state, UpdateOptions opts,
             {
                 syncBuildState(state, pool, path, opts.verbose, color);
                 update(state, pool, opts.dryRun, opts.verbose, color, logger);
+                println(color.status, ":: Waiting for changes...", color.reset);
             }
         }
         catch (BuildException e)
@@ -291,11 +289,11 @@ struct ChangeChunks
         string[Watch] watches;
     }
 
-    this(BuildState state)
+    this(BuildState state, string watchDir)
     {
         import std.path : filenameCmp, dirName;
         import std.container.rbtree;
-        import std.file : exists;
+        import std.file : exists, buildNormalizedPath;
         import core.sys.linux.sys.inotify;
 
         this.state = state;
@@ -316,9 +314,12 @@ struct ChangeChunks
         // interested in.
         foreach (dir; rbt[])
         {
-            if (exists(dir))
+            auto realDir = buildNormalizedPath(watchDir, dir);
+
+            if (exists(realDir))
             {
-                auto watch = watcher.put(dir, IN_CREATE | IN_DELETE);
+                auto watch = watcher.put(realDir,
+                        IN_CREATE | IN_DELETE | IN_CLOSE_WRITE);
                 watches[watch] = dir;
             }
         }
