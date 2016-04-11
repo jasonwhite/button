@@ -93,6 +93,12 @@ struct UpdateOptions
           " FUSE does not work with inotify, this is useful to use when"~
           " building in a union file system.")
     string watchDir = ".";
+
+    @Option("delay")
+    @Help("Used with `--autopilot`. The number of milliseconds to wait for"~
+          " additional changes after receiving a change event before starting"~
+          " a build.")
+    size_t delay = 0;
 }
 
 // TODO: Allow graphing of just the build description.

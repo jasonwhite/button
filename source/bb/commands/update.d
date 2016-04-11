@@ -19,9 +19,8 @@ import bb.state,
        bb.build,
        bb.vertex,
        bb.textcolor,
-       bb.log;
-
-import util.inotify;
+       bb.log,
+       bb.watcher;
 
 /**
  * Returns a build logger based on the command options.
@@ -153,7 +152,7 @@ int doAutoBuild(string path, BuildState state, UpdateOptions opts,
             state.commit();
     }
 
-    foreach (changes; ChangeChunks(state, opts.watchDir))
+    foreach (changes; ChangeChunks(state, opts.watchDir, opts.delay))
     {
         try
         {
@@ -194,9 +193,9 @@ int doAutoBuild(string path, BuildState state, UpdateOptions opts,
         }
     }
 
-    publishResources(state);
+    //publishResources(state);
 
-    return 0;
+    //return 0;
 }
 
 /**
@@ -261,110 +260,4 @@ void update(BuildState state, TaskPool pool, bool dryRun, bool verbose,
 
     if (verbose)
         println(color.status, ":: ", color.success, "Build succeeded", color.reset);
-}
-
-/**
- * An infinite input range of chunks of changes. Each item in the range is an
- * array of changed resources. That is, for each item in the range, a new build
- * should be started. Changed files are accumulated over a short period of time.
- * If many files are changed over short period of time, they will be included in
- * one chunk.
- */
-struct ChangeChunks
-{
-    private
-    {
-        import std.array : Appender;
-
-        enum maxEvents = 32;
-
-        BuildState state;
-        Watcher watcher;
-        Events!maxEvents events;
-
-        Appender!(Index!Resource[]) current;
-
-        // Mapping of watches to directories. This is needed to find the path to
-        // the directory that is being watched.
-        string[Watch] watches;
-    }
-
-    this(BuildState state, string watchDir)
-    {
-        import std.path : filenameCmp, dirName;
-        import std.container.rbtree;
-        import std.file : exists, buildNormalizedPath;
-        import core.sys.linux.sys.inotify;
-
-        this.state = state;
-
-        watcher = Watcher.init();
-
-        alias less = (a,b) => filenameCmp(a, b) < 0;
-
-        auto rbt = redBlackTree!(less, string)();
-
-        // Find all directories.
-        foreach (key; state.enumerate!ResourceKey)
-            rbt.insert(dirName(key.path));
-
-        // Watch each (unique) directory. Note that we only watch directories
-        // instead of individual files so that we are less likely to run out of
-        // file descriptors. Later, we filter out events for files we are not
-        // interested in.
-        foreach (dir; rbt[])
-        {
-            auto realDir = buildNormalizedPath(watchDir, dir);
-
-            if (exists(realDir))
-            {
-                auto watch = watcher.put(realDir,
-                        IN_CREATE | IN_DELETE | IN_CLOSE_WRITE);
-                watches[watch] = dir;
-            }
-        }
-
-        events = watcher.events!maxEvents;
-    }
-
-    const(Index!Resource)[] front()
-    {
-        return current.data;
-    }
-
-    void popFront()
-    {
-        import std.path : buildNormalizedPath;
-
-        current.clear();
-
-        // TODO: Use timeouts to watch for changes. When a change is received,
-        // add it to the list and wait x milliseconds. If no changes are seen
-        // during that time, let the popFront function finish. If another change
-        // is seen, add it to the list and start over. This will require
-        // asynchronous reads in the underlying inotify wrapper.
-        while (!events.empty)
-        {
-            auto event = events.front;
-
-            scope (success)
-                events.popFront();
-
-            auto path = buildNormalizedPath(watches[event.watch], event.name);
-
-            // Since we monitor directories and not specific files, we must
-            // check if we received a change that we are actually interested in.
-            auto id = state.find(path);
-            if (id != Index!Resource.Invalid)
-            {
-                current.put(id);
-                break;
-            }
-        }
-    }
-
-    bool empty()
-    {
-        return events.empty;
-    }
 }
