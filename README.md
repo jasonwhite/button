@@ -167,6 +167,25 @@ Note that `gcc foo.o bar.o -o foobar` was not executed because its output
 A file is only determined to be changed if its last modification time changed
 *and* its checksum changed. Thus, one source of overbuilding is eliminated.
 
+## Automatic Builds
+
+Brilliant Build can run builds automatically when changes are made. This allows
+you to write code in your text editor, hit save, and watch your changes get
+built automatically.
+
+Simply pass in the `--autopilot` option, to enable it:
+
+    $ bb build --autopilot
+     > gcc -c foo.c -o foo.o
+     > gcc -c bar.c -o bar.o
+     > gcc foo.o bar.o -o foobar
+    :: Waiting for changes...
+
+An initial build will be done in order to ensure the build is fully up-to-date.
+If no changes have been made, this should be a quick no-op build. After the
+initial build, Brilliant Build will wait for changes and perform additional
+builds as needed. Simply exit with `CTRL-C`.
+
 ## Building the Build System
 
  1. Get the dependencies:
@@ -204,12 +223,6 @@ Commonly used tools such as `gcc`, `dmd`, `javac`, `lualatex`, etc. should be
 wrapped in order to provide accurate dependency information. As a fallback,
 `LD_PRELOAD` or `strace` can be used to discover all possible inputs/outputs for
 a task.
-
-### File system monitoring
-
-Since the set of input files is known, these can be monitored for changes. When
-one such file changes, a build can be started automatically to bring the outputs
-up to date. There should be one daemon per build description.
 
 ### Caching
 
