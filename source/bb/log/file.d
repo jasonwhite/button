@@ -8,9 +8,12 @@
  */
 module bb.log.file;
 
+import core.time : TickDuration;
+
 import bb.log;
 import bb.vertex;
 import bb.state;
+
 import io.file.stream;
 import io.text;
 

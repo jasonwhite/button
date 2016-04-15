@@ -8,6 +8,8 @@
  */
 module bb.commands.update;
 
+import std.parallelism : TaskPool;
+
 import bb.commands.parsing;
 
 import io.text,

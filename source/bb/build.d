@@ -163,6 +163,8 @@ Rules parseBuildDescription(string path)
     import io.range : byBlock;
     import bb.rule;
 
+    import std.exception : ErrnoException;
+
     try
     {
         auto r = File(path).byBlock!char;
