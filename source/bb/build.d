@@ -835,39 +835,25 @@ void publishResources(BuildState state)
 /**
  * Finds the path to the build description.
  *
- * Throws BuildException if no path is given and none could be found.
+ * Throws: BuildException if no build description could be found.
  */
-string findBuildPath(string path)
+string findBuildPath(string root)
 {
-    import std.file : isFile, FileException;
-    import std.format : format;
+    import std.file : exists, isFile;
+    import std.path : buildPath, dirName;
 
-    if (path is null)
-    {
-        // TODO: Search for "bb.json" in the current directory and all parent
-        // directories.
-        //
-        // If none is found, throw BuildException.
-        path = "bb.json";
-    }
+    auto path = buildPath(root, "bb.json");
+    if (exists(path) && isFile(path))
+        return path;
 
-    try
-    {
-        if (!path.isFile)
-            throw new BuildException(
-                "Build description `%s` is not a file."
-                .format(path)
-                );
-    }
-    catch (FileException e)
-    {
-        throw new BuildException(
-            "Build description `%s` does not exist."
-            .format(path)
-            );
-    }
+    // Search in the parent directory, if any
+    auto parent = dirName(root);
 
-    return path;
+    // Can't go any further up.
+    if (parent == root)
+        throw new BuildException("Could not find a build description.");
+
+    return findBuildPath(parent);
 }
 
 /**
@@ -897,5 +883,10 @@ string changeToBuildPath(string path)
  */
 string buildDescriptionPath(string path)
 {
-    return path.findBuildPath.changeToBuildPath;
+    import std.file : getcwd;
+
+    if (path is null)
+        path = findBuildPath(getcwd());
+
+    return path.changeToBuildPath;
 }
