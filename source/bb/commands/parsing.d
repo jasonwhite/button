@@ -189,6 +189,15 @@ struct CleanOptions
     OptionFlag purge;
 }
 
+@Command("init")
+@Description("Initializes a directory with an initial build description.")
+struct InitOptions
+{
+    @Argument("dir", Multiplicity.optional)
+    @Help("Directory to initialize")
+    string dir = ".";
+}
+
 @Command("gc")
 @Description("EXPERIMENTAL")
 struct GCOptions
@@ -217,6 +226,7 @@ alias OptionsList = AliasSeq!(
         GraphOptions,
         StatusOptions,
         CleanOptions,
+        InitOptions,
         GCOptions
         );
 

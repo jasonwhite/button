@@ -11,4 +11,5 @@ public import bb.commands.graph;
 public import bb.commands.help;
 public import bb.commands.status;
 public import bb.commands.clean;
+public import bb.commands.init;
 public import bb.commands.gc;
