@@ -270,8 +270,7 @@ correctly implementing caching. With implicit dependencies, how can we correctly
 compute the task key? Implicit dependencies are not known until the task is
 executed for the first time. Bazel and Buck get around this by not even having
 implicit dependencies -- all task dependencies must be specified up-front. It
-may turn out that is this is impossible to do correctly with implicit
-dependencies.
+may turn out that this is impossible to do correctly with implicit dependencies.
 
 [Bazel]: http://bazel.io/
 [Buck]: https://buckbuild.com/
