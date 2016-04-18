@@ -217,12 +217,30 @@ completely self-contained. Put it in a directory that is on your `$PATH` and run
 All of the above is already implemented. Below gives rough details on what will
 eventually be implemented in order of descending priority.
 
-### Wrap common tools
+### Windows Support
 
-Commonly used tools such as `gcc`, `dmd`, `javac`, `lualatex`, etc. should be
-wrapped in order to provide accurate dependency information. As a fallback,
-`LD_PRELOAD` or `strace` can be used to discover all possible inputs/outputs for
-a task.
+Currently, it only runs on Unix platforms. However, there is nothing inherently
+Unix-specific about how it is designed. Adding Windows support should not be
+difficult.
+
+### Thorough documentation
+
+A website hosting documentation on all things related to building software. This
+includes:
+
+ * Starting build descriptions for certain types of projects
+ * Fundamental concepts of how it works
+ * Tutorials on various use-cases
+
+### Tool to translate other build descriptions to this one
+
+Since the JSON build description is very general, theoretically a build
+description from another build system (e.g., Make, MSBuild) could be translated
+automatically.
+
+This would greatly aid in transitioning away from the build system currently in
+use. It would also potentially allow one to glue together many disparate build
+descriptions into one.
 
 ### Caching
 
@@ -247,17 +265,16 @@ uploaded with an HTTP `POST` using the output's key. Similarly, an output is
 retrieved with an HTTP `GET` using the output's key. A `404` error code should
 be returned if it doesn't exist in the cache.
 
+Unfortunately, due to Brilliant Build's design, there is a difficulty in
+correctly implementing caching. With implicit dependencies, how can we correctly
+compute the task key? Implicit dependencies are not known until the task is
+executed for the first time. Bazel and Buck get around this by not even having
+implicit dependencies -- all task dependencies must be specified up-front. It
+may turn out that is this is impossible to do correctly with implicit
+dependencies.
+
 [Bazel]: http://bazel.io/
 [Buck]: https://buckbuild.com/
-
-### Thorough documentation
-
-A website hosting documentation on all things related to building software. This
-includes:
-
- * Starting build descriptions for certain types of projects
- * Fundamental concepts of a build system
- * Tutorials on various topics
 
 ### Web interface
 
@@ -267,16 +284,6 @@ build. A graph of the build should be displayed and updated in real time. A
 search function should be available for finding nodes in the graph. One should
 also be able to "walk" the nodes in the graph. Clicking on a node should display
 its `stderr` and `stdout` log.
-
-### Tool to translate other build descriptions to this one
-
-Since the JSON build description is very general, theoretically a build
-description from another build system (e.g., Make, MSBuild) could be translated
-automatically.
-
-This would greatly aid in transitioning away from the build system currently in
-use. It would also potentially allow one to glue together many disparate build
-descriptions into one.
 
 ## Other Build Systems
 
