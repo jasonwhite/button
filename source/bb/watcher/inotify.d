@@ -2,19 +2,13 @@
  * Copyright: Copyright Jason White, 2016
  * License:   MIT
  * Authors:   Jason White
- *
- * Description:
- * High-level interface for using inotify to watch changes to files.
  */
-module bb.watcher;
+module bb.watcher.inotify;
+
+version (linux):
 
 import bb.state;
 import bb.vertex.resource;
-
-version (Windows)
-{
-    static assert(false, "Not implemented yet.");
-}
 
 import core.sys.posix.unistd;
 import core.sys.posix.poll;
@@ -27,7 +21,7 @@ extern (C) {
 /**
  * Wrapper for an inotify_event.
  */
-struct Event
+private struct Event
 {
     // Maximum size that an inotify_event can b. This is used to determine a
     // good buffer size.
