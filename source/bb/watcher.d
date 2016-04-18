@@ -229,7 +229,11 @@ struct ChangeChunks
 
         while (true)
         {
-            immutable n = poll(pollFds.ptr, pollFds.length, delay);
+            // Wait for more events. If we haven't received any yet, wait
+            // indefinitely. Otherwise, give up after a certain delay and return
+            // what we've received.
+            immutable n = poll(pollFds.ptr, pollFds.length,
+                    current.data.length ? delay : -1);
             if (n == -1)
             {
                 if (errno == EINTR)
