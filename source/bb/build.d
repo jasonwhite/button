@@ -690,8 +690,6 @@ bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn,
 bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
         size_t degreeChanged)
 {
-    import io;
-    import std.datetime : StopWatch, AutoStart;
     import core.time : TickDuration;
     import std.format : format;
 
@@ -699,8 +697,6 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
 
     if (degreeChanged == 0 && !pending)
         return false;
-
-    immutable color = context.color;
 
     // We add this as pending if it isn't already just in case the build is
     // interrupted or if it fails.
