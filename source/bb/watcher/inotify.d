@@ -44,7 +44,7 @@ private struct Event
 /**
  * An infinite input range of chunks of changes. Each item in the range is an
  * array of changed resources. That is, for each item in the range, a new build
- * should be started. If many files are changed over short period of time
+ * should be started. If many files are changed over a short period of time
  * (depending on the delay), they will be included in one chunk.
  */
 struct ChangeChunks
@@ -205,7 +205,7 @@ struct ChangeChunks
     }
 
     /**
-     * Waits for changes.
+     * Accumulates changes.
      */
     void popFront()
     {
@@ -218,8 +218,6 @@ struct ChangeChunks
         ubyte[maxEvents * Event.max] buf;
 
         current.clear();
-
-        import io;
 
         while (true)
         {
