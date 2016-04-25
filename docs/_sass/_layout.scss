@@ -1,0 +1,74 @@
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+body > .container {
+    padding-top: 30px;
+}
+
+@media (min-width: $content-width) {
+    .container {
+        max-width: $content-width;
+    }
+}
+
+.navbar {
+    margin-bottom: 0;
+    border-width: 0;
+}
+
+.navbar-inverse a.navbar-brand {
+    font-weight: bold;
+    font-size: 22px;
+    line-height: 22px;
+    color: #fff;
+}
+
+.navbar-inverse .navbar-nav > li > a {
+    color: #fff;
+}
+
+.navbar-inverse .navbar-nav > li > a:hover {
+    background-color: #4c4c4c;
+}
+
+li.github-icon a {
+    background-image: url(/assets/img/github-icon.svg);
+    background-repeat: no-repeat;
+    background-size: 30px;
+    background-position: right 10px center;
+    padding-right: 50px;
+    display: inline-block;
+}
+
+.jumbotron .container {
+    max-width: $content-width;
+    text-align: center;
+}
+
+#sidebar li.active a {
+    border-right: 3px solid #337ab7;
+}
+
+.page-header {
+    margin-top: 0;
+}
+
+.page-header > h1 {
+    margin-top: 0;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 60px;
+    background-color: #f3f3f3;
+    padding: 20px 15px;
+    border-top: 1px solid #ccc;
+}

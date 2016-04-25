@@ -1,0 +1,10 @@
+---
+# blah
+---
+@charset "utf-8";
+
+// Width of the content area
+$content-width: 1100px;
+
+// Import partials from `sass_dir` (defaults to `_sass`)
+@import "base", "layout", "syntax-highlighting";

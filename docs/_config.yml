@@ -1,0 +1,12 @@
+title: Brilliant Build
+description: >
+    A recursive, universal build system.
+baseurl: ""
+url: "https://jasonwhite.github.io" # the base hostname & protocol for your site
+github: "https://github.com/jasonwhite/brilliant-build"
+
+collections:
+    docs:
+        output: true
+
+markdown: kramdown
