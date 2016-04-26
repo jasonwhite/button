@@ -12,5 +12,15 @@ before_install:
  - sudo apt-get install -y ruby
 
 install:
- - cd docs && bundle install --path vender/bundle
+ - pushd docs && bundle install --path vender/bundle && popd
 
+deploy:
+ - cd docs
+ - git clone --branch gh-pages $GH_REF _site
+ - bundle exec jekyll build
+ - cd _site
+ - git config user.name "${GH_USER_NAME}"
+ - git config user.email "${GH_USER_EMAIL}"
+ - git config push.default simple
+ - git add . && git commit -m "Auto update docs from travis-ci build #$TRAVIS_BUILD_NUMBER"
+ - git push "https://${GH_TOKEN}@${GH_REF}" gh-pages:gh-pages
