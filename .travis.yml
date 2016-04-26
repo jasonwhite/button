@@ -4,3 +4,12 @@ language: d
 
 d:
  - dmd
+
+# Ruby is needed to build the Jekyll docs
+before_install:
+ - sudo apt-get -qq update
+ - sudo apt-get install -y ruby
+
+install:
+ - cd docs && bundle install --path vender/bundle
+
