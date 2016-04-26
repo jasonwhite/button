@@ -15,7 +15,7 @@ body > .container { padding-top: 30px; }
 
 .navbar-inverse .navbar-nav > li > a:hover { background-color: #4c4c4c; }
 
-li.github-icon a { background-image: url(/assets/img/github-icon.svg); background-repeat: no-repeat; background-size: 30px; background-position: right 10px center; padding-right: 50px; display: inline-block; }
+li.github-icon a { background-image: url(/brilliant-build/assets/img/github-icon.svg); background-repeat: no-repeat; background-size: 30px; background-position: right 10px center; padding-right: 50px; display: inline-block; }
 
 .jumbotron .container { max-width: 1100px; text-align: center; }
 
