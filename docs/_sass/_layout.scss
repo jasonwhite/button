@@ -38,7 +38,7 @@ body > .container {
 }
 
 li.github-icon a {
-    background-image: url(/assets/img/github-icon.svg);
+    background-image: url(#{$baseurl}/assets/img/github-icon.svg);
     background-repeat: no-repeat;
     background-size: 30px;
     background-position: right 10px center;

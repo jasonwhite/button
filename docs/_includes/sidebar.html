@@ -3,9 +3,9 @@
     {% assign intro = site.docs | where: 'category', 'intro' | sort 'order' %}
     {% for doc in intro %}
         {% if doc.url == page.url %}
-            <li class="active"><a href="{{ doc.url }}">{{ doc.title }}</a></li>
+            <li class="active"><a href="{{ doc.url | prepend: site.baseurl }}">{{ doc.title }}</a></li>
         {% else %}
-            <li><a href="{{ doc.url }}">{{ doc.title }}</a></li>
+            <li><a href="{{ doc.url | prepend: site.baseurl }}">{{ doc.title }}</a></li>
         {% endif %}
     {% endfor %}
 
@@ -13,9 +13,9 @@
     {% assign intro = site.docs | where: 'category', 'commands' | sort 'title' %}
     {% for doc in intro %}
         {% if doc.url == page.url %}
-            <li class="active"><a href="{{ doc.url }}">{{ doc.title }}</a></li>
+            <li class="active"><a href="{{ doc.url | prepend: site.baseurl }}">{{ doc.title }}</a></li>
         {% else %}
-            <li><a href="{{ doc.url }}">{{ doc.title }}</a></li>
+            <li><a href="{{ doc.url | prepend: site.baseurl }}">{{ doc.title }}</a></li>
         {% endif %}
     {% endfor %}
 </ul>
