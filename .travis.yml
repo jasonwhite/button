@@ -14,7 +14,7 @@ before_install:
 install:
  - pushd docs && bundle install --path vender/bundle && popd
 
-deploy:
+after_success:
  - cd docs
  - git clone --branch gh-pages $GH_REF _site
  - bundle exec jekyll build
