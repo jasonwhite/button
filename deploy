@@ -1,0 +1,27 @@
+#!/bin/bash -e
+
+# Used by the Travis-CI build to build the documentation and push the generated
+# HTML to the gh-pages branch.
+
+if [ "$TRAVIS_REPO_SLUG" == "jasonwhite/brilliant-build" ] && \
+   [ "$TRAVIS_PULL_REQUEST" == "false" ] && \
+   [ "$TRAVIS_BRANCH" == "master" ]; then
+
+    # Get the current state of the docs
+    git clone --branch gh-pages https://github.com/${TRAVIS_REPO_SLUG}.git _site
+
+    # Build the docs
+    bundle install --path ~/.gem
+    bundle exec jekyll build
+
+    # Push the updated HTML
+    cd _site
+    git config credential.helper "store --file=.git/credentials"
+    echo "https://${GH_TOKEN}:@github.com" > .git/credentials
+    git config user.name "$GH_USER_NAME"
+    git config user.email "$GH_USER_EMAIL"
+    git config push.default simple
+    git add .
+    git commit -m "Auto update docs from travis-ci build $TRAVIS_BUILD_NUMBER"
+    git push
+fi
