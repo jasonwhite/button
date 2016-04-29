@@ -16,6 +16,7 @@ if [ "$TRAVIS_REPO_SLUG" == "jasonwhite/brilliant-build" ] && \
 
     # Push the updated HTML
     cd _site
+    git config credential.helper "store --file=.git/credentials"
     echo "https://${GH_TOKEN}:@github.com" > .git/credentials
     git config user.name "$GH_USER_NAME"
     git config user.email "$GH_USER_EMAIL"
