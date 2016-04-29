@@ -11,6 +11,7 @@ if [ "$TRAVIS_REPO_SLUG" == "jasonwhite/brilliant-build" ] && \
     git clone --branch gh-pages $GH_REF _site
 
     # Build the docs
+    bundle install --path ~/.gem
     bundle exec jekyll build
 
     # Push the updated HTML

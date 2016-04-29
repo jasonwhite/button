@@ -11,8 +11,5 @@ before_install:
  - sudo apt-get -qq update
  - sudo apt-get install -y ruby
 
-install:
- - bundle install --path ~/.gem
-
 after_success:
  - cd docs && ./deploy
