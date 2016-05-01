@@ -9,11 +9,13 @@ body > .container { padding-top: 30px; }
 @media (min-width: 1100px) { .container { max-width: 1100px; } }
 .navbar { margin-bottom: 0; border-width: 0; }
 
+.navbar-inverse { background-color: #186fab; }
+
 .navbar-inverse a.navbar-brand { font-weight: bold; font-size: 22px; line-height: 22px; color: #fff; }
 
 .navbar-inverse .navbar-nav > li > a { color: #fff; }
 
-.navbar-inverse .navbar-nav > li > a:hover { background-color: #4c4c4c; }
+.navbar-inverse .navbar-nav > li > a.active, .navbar-inverse .navbar-nav > li > a:hover { /*background-color: rgba(255, 255, 255, 0.15);*/ background-color: #135a8a; }
 
 li.github-icon a { background-image: url(/brilliant-build/assets/img/github-icon.svg); background-repeat: no-repeat; background-size: 30px; background-position: right 10px center; padding-right: 50px; display: inline-block; }
 
