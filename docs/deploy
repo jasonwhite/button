@@ -20,7 +20,7 @@ if [ "$TRAVIS_BRANCH" == "master" ]; then
         git config user.name "$GH_USER_NAME"
         git config user.email "$GH_USER_EMAIL"
         git config push.default simple
-        git add .
+        git add --all .
         git commit -m "Auto update docs from travis-ci build $TRAVIS_BUILD_NUMBER"
         git push
     fi
