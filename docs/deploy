@@ -4,12 +4,13 @@
 # HTML to the gh-pages branch.
 
 if [ "$TRAVIS_BRANCH" == "master" ]; then
+    # Install dependencies required for building
+    bundle install --path ~/.gem
 
     # Get the current state of the docs
     git clone --branch gh-pages https://github.com/${TRAVIS_REPO_SLUG}.git _site
 
     # Build the docs
-    bundle install --path ~/.gem
     bundle exec jekyll build
 
     # Push the updated HTML
