@@ -9,14 +9,16 @@ Brings the build state up-to-date. This includes:
 
  * Updating the internal task graph based on structural changes to the build
    description.
+
  * Deleting outputs that should no longer get built. For example, if the task
    `gcc -c foo.c -o foo.o` was removed, the output `foo.o` will be deleted from
    disk.
+
  * Running tasks based on changed inputs.
 
-This will be the command you will use 99% of the time. It is the equivalent to
-an "incremental build". You should never need to do a complete rebuild, but if
-you do, run `bb clean` followed by a `bb update`.
+This will be the command you will use 99% of the time. It equivalent to an
+"incremental build". Although you should never need to do a complete rebuild,
+you can do so by running `bb clean` followed by `bb update`.
 
 ## Example
 
@@ -36,7 +38,7 @@ of the root build description before running the build.
 ## Optional Arguments
 
  * `--file`, `-f <string>`
-    
+
     Specifies the path to the build description. If not specified, Brilliant
     Build searches for a file named `bb.json` in the current directory and all
     parent directories. Thus, you can invoke this command in any subdirectory
@@ -53,17 +55,17 @@ of the root build description before running the build.
     By default, the number of logical cores is used.
 
  * `--color {auto,never,always}`
- 
+
     When to colorize the output. If set to `auto` (the default), output is
     colorized if the standard output pipe [refers to a terminal][isatty].
 
  * `--verbose`, `-v`
-    
+
     Display additional information such as how long each task took to complete
     or the full command line to tasks.
 
  * `--autopilot`
- 
+
     After completing the initial build, continue watching for changes to inputs
     and building again as necessary. This can be very useful to speed up the
     edit-compile-test cycle of development.
@@ -75,7 +77,8 @@ of the root build description before running the build.
     in a union file system where the "lower" file system contains source code
     and the "upper" file system is where output files are written to. If
     building in the upper file system, inotify cannot receive change events.
-    However, watching the lower file system will work.
+    However, setting `--watchdir` to the lower file system (so long as it isn't
+    also a FUSE file system) will work as expected.
 
  * `--delay <ulong>`
 
