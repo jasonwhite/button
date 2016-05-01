@@ -22,6 +22,10 @@ body > .container {
     border-width: 0;
 }
 
+.navbar-inverse {
+    background-color: #186fab;
+}
+
 .navbar-inverse a.navbar-brand {
     font-weight: bold;
     font-size: 22px;
@@ -33,8 +37,11 @@ body > .container {
     color: #fff;
 }
 
-.navbar-inverse .navbar-nav > li > a:hover {
-    background-color: #4c4c4c;
+.navbar-inverse .navbar-nav > li > {
+    a.active, a:hover {
+        /*background-color: rgba(255, 255, 255, 0.15);*/
+        background-color: #135a8a;
+    }
 }
 
 li.github-icon a {

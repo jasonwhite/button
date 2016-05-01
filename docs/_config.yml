@@ -5,8 +5,18 @@ baseurl: "/brilliant-build"
 url: "https://jasonwhite.github.io" # the base hostname & protocol for your site
 github: "https://github.com/jasonwhite/brilliant-build"
 
+permalink: /:path/:basename
+
 collections:
     docs:
         output: true
+
+defaults:
+  - scope:
+      path: ""
+      type: docs
+    values:
+      layout: doc
+      category: intro
 
 markdown: kramdown
