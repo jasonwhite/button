@@ -131,7 +131,7 @@ A visualization of the above build description can be generated using
 ```bash
 $ bb graph --full | dot -Tpng > build_graph.png
 ```
-![Simple Task Graph](/docs/examples/basic/build.png)
+![Simple Task Graph](/examples/basic/build.png)
 
 [GraphViz]: http://www.graphviz.org/
 
