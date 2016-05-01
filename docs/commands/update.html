@@ -73,17 +73,23 @@
 <p>Brings the build state up-to-date. This includes:</p>
 
 <ul>
-  <li>Updating the internal task graph based on structural changes to the build
-description.</li>
-  <li>Deleting outputs that should no longer get built. For example, if the task
+  <li>
+    <p>Updating the internal task graph based on structural changes to the build
+description.</p>
+  </li>
+  <li>
+    <p>Deleting outputs that should no longer get built. For example, if the task
 <code class="highlighter-rouge">gcc -c foo.c -o foo.o</code> was removed, the output <code class="highlighter-rouge">foo.o</code> will be deleted from
-disk.</li>
-  <li>Running tasks based on changed inputs.</li>
+disk.</p>
+  </li>
+  <li>
+    <p>Running tasks based on changed inputs.</p>
+  </li>
 </ul>
 
-<p>This will be the command you will use 99% of the time. It is the equivalent to
-an “incremental build”. You should never need to do a complete rebuild, but if
-you do, run <code class="highlighter-rouge">bb clean</code> followed by a <code class="highlighter-rouge">bb update</code>.</p>
+<p>This will be the command you will use 99% of the time. It equivalent to an
+“incremental build”. Although you should never need to do a complete rebuild,
+you can do so by running <code class="highlighter-rouge">bb clean</code> followed by <code class="highlighter-rouge">bb update</code>.</p>
 
 <h2 id="example">Example</h2>
 
@@ -154,7 +160,8 @@ of the root build description before running the build.</p>
  in a union file system where the “lower” file system contains source code
  and the “upper” file system is where output files are written to. If
  building in the upper file system, inotify cannot receive change events.
- However, watching the lower file system will work.</p>
+ However, setting <code class="highlighter-rouge">--watchdir</code> to the lower file system (so long as it isn’t
+ also a FUSE file system) will work as expected.</p>
   </li>
   <li>
     <p><code class="highlighter-rouge">--delay &lt;ulong&gt;</code></p>

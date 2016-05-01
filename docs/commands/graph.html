@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>bb graph - Brilliant Build</title>
-  <meta name="description" content="TODO">
+  <meta name="description" content="Produces output to be consumed by GraphViz. This is useful for visualisingthe build graph.">
 
   <link rel="stylesheet" href="/brilliant-build/assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="/brilliant-build/assets/css/main.css">
@@ -68,7 +68,61 @@
                 <div class="col-lg-10 col-md-9">
                     <article>
                         <div class="page-header"><h1>bb graph</h1></div>
-                        <p>TODO</p>
+                        <p>Produces output to be consumed by <a href="http://www.graphviz.org/">GraphViz</a>. This is useful for visualising
+the build graph.</p>
+
+<h2 id="example">Example</h2>
+
+<p>To generate a PNG image of your build graph, run:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ bb graph | dot -Tpng &gt; build_graph.png
+</code></pre>
+</div>
+
+<p>Note that <code class="highlighter-rouge">dot</code> is part of <a href="http://www.graphviz.org/">GraphViz</a>.</p>
+
+<h2 id="optional-arguments">Optional Arguments</h2>
+
+<ul>
+  <li>
+    <p><code class="highlighter-rouge">--file</code>, <code class="highlighter-rouge">-f &lt;string&gt;</code></p>
+
+    <p>Specifies the path to the build description.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--changes</code>, <code class="highlighter-rouge">-C</code></p>
+
+    <p>Only display the subgraph that will be traversed in the next build.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--cached</code></p>
+
+    <p>Displays the cached graph from the previous build. By default, changes to
+ the build description are represented in the graph.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--full</code></p>
+
+    <p>Displays the full name of each vertex. By default, the names of vertices
+ are shown in condensed form. That is, resource paths are shortened to their
+ basename and the display name of tasks (if available) are shown. If this
+ option is specified, resource paths are shown in full and the full command
+ line for a task is shown. This is off by default because it often makes
+ vertices in the graph quite large.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--edges</code>, <code class="highlighter-rouge">-e {explicit,implicit,both}</code></p>
+
+    <p>Type of edges to show.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--threads</code>, <code class="highlighter-rouge">-j N</code></p>
+
+    <p>The number of threads to use. By default, the number of logical cores is
+ used.</p>
+  </li>
+</ul>
+
 
                     </article>
                 </div>
