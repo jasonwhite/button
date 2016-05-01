@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>bb update - Brilliant Build</title>
-  <meta name="description" content="TODO">
+  <meta name="description" content="Aliases: build">
 
   <link rel="stylesheet" href="/brilliant-build/assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="/brilliant-build/assets/css/main.css">
@@ -68,7 +68,111 @@
                 <div class="col-lg-10 col-md-9">
                     <article>
                         <div class="page-header"><h1>bb update</h1></div>
-                        <p>TODO</p>
+                        <p><strong>Aliases</strong>: <code class="highlighter-rouge">build</code></p>
+
+<p>Brings the build state up-to-date. This includes:</p>
+
+<ul>
+  <li>Updating the internal task graph based on structural changes to the build
+description.</li>
+  <li>Deleting outputs that should no longer get built. For example, if the task
+<code class="highlighter-rouge">gcc -c foo.c -o foo.o</code> was removed, the output <code class="highlighter-rouge">foo.o</code> will be deleted from
+disk.</li>
+  <li>Running tasks based on changed inputs.</li>
+</ul>
+
+<p>This will be the command you will use 99% of the time. It is the equivalent to
+an “incremental build”. You should never need to do a complete rebuild, but if
+you do, run <code class="highlighter-rouge">bb clean</code> followed by a <code class="highlighter-rouge">bb update</code>.</p>
+
+<h2 id="example">Example</h2>
+
+<p>If your root build description <code class="highlighter-rouge">bb.json</code> is in the current working directory or
+one of its parent directories, simply run:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ bb update
+</code></pre>
+</div>
+
+<p>If instead your root build description is named something other than <code class="highlighter-rouge">bb.json</code>,
+such as <code class="highlighter-rouge">my_build_description.json</code>, run:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ bb update --file my_build_description.json
+</code></pre>
+</div>
+
+<p>Note that the working directory of Brilliant Build will change to the directory
+of the root build description before running the build.</p>
+
+<h2 id="optional-arguments">Optional Arguments</h2>
+
+<ul>
+  <li>
+    <p><code class="highlighter-rouge">--file</code>, <code class="highlighter-rouge">-f &lt;string&gt;</code></p>
+
+    <p>Specifies the path to the build description. If not specified, Brilliant
+ Build searches for a file named <code class="highlighter-rouge">bb.json</code> in the current directory and all
+ parent directories. Thus, you can invoke this command in any subdirectory
+ of your project.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--dryrun</code>, <code class="highlighter-rouge">-n</code></p>
+
+    <p>Don’t make any functional changes; just print what might happen. This can
+ be useful when refactoring the build description.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--threads</code>, <code class="highlighter-rouge">-j N</code></p>
+
+    <p>The number of threads to use when executing tasks or checking for changes.
+ By default, the number of logical cores is used.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--color {auto,never,always}</code></p>
+
+    <p>When to colorize the output. If set to <code class="highlighter-rouge">auto</code> (the default), output is
+ colorized if the standard output pipe <a href="http://linux.die.net/man/3/isatty">refers to a terminal</a>.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--verbose</code>, <code class="highlighter-rouge">-v</code></p>
+
+    <p>Display additional information such as how long each task took to complete
+ or the full command line to tasks.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--autopilot</code></p>
+
+    <p>After completing the initial build, continue watching for changes to inputs
+ and building again as necessary. This can be very useful to speed up the
+ edit-compile-test cycle of development.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--watchdir &lt;string&gt;</code></p>
+
+    <p>Directory to watch for changes in. Used in conjunction with <code class="highlighter-rouge">--autopilot</code>.
+ Since FUSE does not work with inotify, this is useful to use when building
+ in a union file system where the “lower” file system contains source code
+ and the “upper” file system is where output files are written to. If
+ building in the upper file system, inotify cannot receive change events.
+ However, watching the lower file system will work.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--delay &lt;ulong&gt;</code></p>
+
+    <p>Used in conjunction with <code class="highlighter-rouge">--autopilot</code>. The number of milliseconds to wait
+ for additional changes. That is, if after an initial change notification is
+ received, the number of milliseconds to wait before starting a build.</p>
+
+    <p>For example, suppose you have <code class="highlighter-rouge">bb update --autopilot</code> running and do a <code class="highlighter-rouge">git
+ pull</code>. Instead of running a build for every file Git changes, the changes
+ are <em>accumulated</em> and a build is run after <code class="highlighter-rouge">git pull</code> is completely done.</p>
+
+    <p>By default, there is a delay of 50 milliseconds. This should be long enough
+ for computer-performed tasks (such as <code class="highlighter-rouge">git pull</code>) and short enough to be
+ imperceptible to a human saving changes in a text editor.</p>
+  </li>
+</ul>
+
 
                     </article>
                 </div>
