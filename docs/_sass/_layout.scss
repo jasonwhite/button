@@ -44,15 +44,6 @@ body > .container {
     }
 }
 
-li.github-icon a {
-    background-image: url(#{$baseurl}/assets/img/github-icon.svg);
-    background-repeat: no-repeat;
-    background-size: 30px;
-    background-position: right 10px center;
-    padding-right: 50px;
-    display: inline-block;
-}
-
 .jumbotron .container {
     max-width: $content-width;
     text-align: center;
