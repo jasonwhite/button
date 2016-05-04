@@ -16,7 +16,7 @@ Brings the build state up-to-date. This includes:
 
  * Running tasks based on changed inputs.
 
-This will be the command you will use 99% of the time. It equivalent to an
+This will be the command you will use 99% of the time. It is equivalent to an
 "incremental build". Although you should never need to do a complete rebuild,
 you can do so by running `bb clean` followed by `bb update`.
 
