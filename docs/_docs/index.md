@@ -19,9 +19,9 @@ this arena include:
  * [Ant][], [Maven][], [Gradle][]
  * [Bazel][], [Buck][], [Pants][]
 
-It should be noted that Brilliant Build is *not* a project generator, package
-manager, or continuous integration server. However, it is certainly an excellent
-choice to build these things off of.
+Note that Brilliant Build is *not* a project generator, package manager, or
+continuous integration server. However, it is certainly an excellent base to
+build these things off of.
 
 [Make]: https://www.gnu.org/software/make/
 [MSBuild]: https://github.com/Microsoft/msbuild
@@ -62,8 +62,8 @@ Lets just call this the *build graph* because the proper mathematical term is a
 mouthful. The build graph is [bipartite][] because it can be partitioned into
 two types of nodes: *resources* and *tasks*. In the figure above, the resources
 and tasks are shown as ellipses and rectangles, respectively. A resource is some
-file and a task is some program to execute. Resources are the inputs and outputs
-of a task.
+file and a task is some program to execute. Resources are inputs and outputs of
+tasks.
 
 In order to build, we simply traverse the graph starting at the top and work our
 way down while executing tasks. Of course, tasks that don't depend on each other
@@ -141,11 +141,11 @@ or transitively `#include`d.
 
 #### Restrictions
 
-There is one immutable rule that cannot be violated with implicit dependencies:
-**an implicit dependency must not change the build order**. If this rule is
-violated, the task will fail, Cthulhu will be summoned, and Brilliant Build will
-tell you to explicitly add the would-be dependency to the build description. (If
-you don't do it, Cthulhu will *find* you).
+There is one immutable rule about implicit dependencies that cannot be violated:
+**if added to the build graph, an implicit dependency must not change the build
+order**. If this rule is violated, the task will fail, Cthulhu will be summoned,
+and Brilliant Build will tell you to explicitly add the would-be dependency to
+the build description. (If you don't do it, Cthulhu will *find* you).
 
 Allowing an implicit dependency to change the build order while the build is
 running could lead to incorrect builds. More often, however, it is a mistake in

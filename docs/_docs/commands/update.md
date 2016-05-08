@@ -7,14 +7,18 @@ category: commands
 
 Brings the build state up-to-date. This includes:
 
- * Updating the internal task graph based on structural changes to the build
-   description.
+ 1. Updating the internal task graph based on structural changes to the build
+    description.
 
- * Deleting outputs that should no longer get built. For example, if the task
-   `gcc -c foo.c -o foo.o` was removed, the output `foo.o` will be deleted from
-   disk.
+ 2. Deleting outputs that should no longer get built. For example, if the task
+    `gcc -c foo.c -o foo.o` was removed from the build description, the output
+    `foo.o` will be deleted from disk.
 
- * Running tasks based on changed inputs.
+ 3. Checking for changes to resources. A resource is considered "changed" if
+    both its last modification time changed *and* the checksum of its contents
+    changed.
+
+ 4. Running tasks based on changed inputs.
 
 This will be the command you will use 99% of the time. It is equivalent to an
 "incremental build". Although you should never need to do a complete rebuild,
