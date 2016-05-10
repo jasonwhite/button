@@ -1,5 +1,5 @@
 ---
-title: "bb update"
+title: "button update"
 category: commands
 ---
 
@@ -22,36 +22,36 @@ Brings the build state up-to-date. This includes:
 
 This will be the command you will use 99% of the time. It is equivalent to an
 "incremental build". Although you should never need to do a complete rebuild,
-you can do so by running `bb clean` followed by `bb update`.
+you can do so by running `button clean` followed by `button update`.
 
 ## Example
 
-If your root build description `bb.json` is in the current working directory or
-one of its parent directories, simply run:
+If your root build description `button.json` is in the current working directory
+or one of its parent directories, simply run:
 
-    $ bb update
+    $ button update
 
-If instead your root build description is named something other than `bb.json`,
-such as `my_build_description.json`, run:
+If instead your root build description is named something other than
+`button.json`, such as `my_build_description.json`, run:
 
-    $ bb update --file my_build_description.json
+    $ button update --file my_build_description.json
 
-Note that the working directory of Brilliant Build will change to the directory
-of the root build description before running the build.
+Note that the working directory of Button will change to the directory of the
+root build description before running the build.
 
 ## Optional Arguments
 
  * `--file`, `-f <string>`
 
-    Specifies the path to the build description. If not specified, Brilliant
-    Build searches for a file named `bb.json` in the current directory and all
-    parent directories. Thus, you can invoke this command in any subdirectory
-    of your project.
+    Specifies the path to the build description. If not specified, Button
+    searches for a file named `button.json` in the current directory and all
+    parent directories. Thus, you can invoke this command in any subdirectory of
+    your project.
 
  * `--dryrun`, `-n`
 
-    Don't make any functional changes; just print what might happen. This can
-    be useful when refactoring the build description.
+    Don't make any functional changes; just print what might happen. This can be
+    useful when refactoring the build description.
 
  * `--threads`, `-j N`
 
@@ -90,9 +90,10 @@ of the root build description before running the build.
     for additional changes. That is, if after an initial change notification is
     received, the number of milliseconds to wait before starting a build.
 
-    For example, suppose you have `bb update --autopilot` running and do a `git
-    pull`. Instead of running a build for every file Git changes, the changes
-    are *accumulated* and a build is run after `git pull` is completely done.
+    For example, suppose you have `button update --autopilot` running and do a
+    `git pull`. Instead of running a build for every file Git changes, the
+    changes are *accumulated* and a build is run after `git pull` is completely
+    done.
 
     By default, there is a delay of 50 milliseconds. This should be long enough
     for computer-performed tasks (such as `git pull`) and short enough to be

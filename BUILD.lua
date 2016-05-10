@@ -6,7 +6,7 @@ Description:
 Generates the build description.
 ]]
 
-import "source/bblua/BUILD.lua"
+import "source/button-lua/BUILD.lua"
 
 local d = require "rules.d"
 
@@ -27,11 +27,11 @@ d.test {
 }
 
 d.binary {
-    name = "bb",
+    name = "button",
     deps = {"io"},
     srcs = glob {
         "source/util/*.d",
-        "source/bb/**/*.d",
+        "source/button/**/*.d",
         "source/darg/source/*.d",
         },
     imports = {"source", "source/darg/source", "source/io/source"},
@@ -39,11 +39,11 @@ d.binary {
 }
 
 d.test {
-    name = "bb_test",
+    name = "button_test",
     deps = {"io"},
     srcs = glob {
         "source/util/*.d",
-        "source/bb/**/*.d",
+        "source/button/**/*.d",
         "source/darg/source/*.d",
         },
     imports = {"source", "source/darg/source", "source/io/source"},
@@ -51,14 +51,14 @@ d.test {
 }
 
 d.binary {
-    name = "bbwrapper",
+    name = "buttonwrapper",
     deps = {"io"},
     srcs = glob "source/wrap/source/wrap/**/*.d",
     imports = {"source/wrap/source", "source/io/source"},
 }
 
 d.test {
-    name = "bbwrapper_test",
+    name = "buttonwrapper_test",
     deps = {"io"},
     srcs = glob "source/wrap/source/wrap/**/*.d",
     imports = {"source/wrap/source", "source/io/source"},

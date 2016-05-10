@@ -1,4 +1,4 @@
-name "bb"
+name "button"
 description "A build system that aims to be correct, scalable, and robust."
 copyright "Copyright © 2016, Jason White"
 authors "Jason White"
@@ -6,6 +6,6 @@ authors "Jason White"
 dependency "io" version=">=0.0.7"
 dependency "darg" version=">=0.0.4"
 
-sourcePaths "source/bb" "source/util"
+sourcePaths "source/button" "source/util"
 
 libs "sqlite3" platform="posix"

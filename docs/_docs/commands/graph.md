@@ -1,5 +1,5 @@
 ---
-title: "bb graph"
+title: "button graph"
 category: commands
 ---
 
@@ -12,7 +12,7 @@ the build graph.
 
 To generate a PNG image of your build graph, run:
 
-    $ bb graph | dot -Tpng > build_graph.png
+    $ button graph | dot -Tpng > build_graph.png
 
 Note that `dot` is part of [GraphViz][].
 
@@ -33,8 +33,8 @@ Note that `dot` is part of [GraphViz][].
 
  * `--full`
 
-    Displays the full name of each vertex. By default, the names of vertices
-    are shown in condensed form. That is, resource paths are shortened to their
+    Displays the full name of each vertex. By default, the names of vertices are
+    shown in condensed form. That is, resource paths are shortened to their
     basename and the display name of tasks (if available) are shown. If this
     option is specified, resource paths are shown in full and the full command
     line for a task is shown. This is off by default because it often makes

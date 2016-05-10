@@ -1,7 +1,7 @@
-[buildbadge]: https://travis-ci.org/jasonwhite/brilliant-build.svg?branch=master
-[buildstatus]: https://travis-ci.org/jasonwhite/brilliant-build
+[buildbadge]: https://travis-ci.org/jasonwhite/button.svg?branch=master
+[buildstatus]: https://travis-ci.org/jasonwhite/button
 
-# Brilliant Build [![Build Status][buildbadge]][buildstatus]
+# Button [![Build Status][buildbadge]][buildstatus]
 
 *This is a work in progress.*
 
@@ -14,7 +14,7 @@ A build system that aims to be correct, scalable, elegantly simple, and robust.
 There are many, *many* other build systems out there. Almost all of them make
 grand claims that they are better than all the rest. However, a single victor
 has yet to emerge. Rest assured, no grand claims of superiority will be made
-here. Time will tell if Brilliant Build is the One True Build System™ or not.
+here. Time will tell if Button is the One True Build System™ or not.
 
 Most build systems tend to suffer from one or more of the following problems:
 
@@ -32,8 +32,8 @@ hot new build system on the block, nor should they when the advantages are not
 worth the cost of translation. Instead, it would be preferable to use these
 legacy build descriptions with a new build system.
 
-Brilliant Build is designed such that it can simultaneously solve all of these
-problems. Read on to find out how.
+Button is designed such that it can simultaneously solve all of these problems.
+Read on to find out how.
 
 ## Features
 
@@ -86,7 +86,7 @@ into the build system for execution.
 Generating the fundamental build description has several advantages:
 
  * The generator can be written in any language (even x86 assembly, if you're a
-   masochist). By default, Brilliant Build comes with a tool to generate build
+   masochist). By default, Button comes with a tool to generate build
    descriptions with Lua scripts.
  * It cleanly separates configuration and execution. The generator takes care of
    configuration while the build system takes care of executing build tasks.
@@ -117,11 +117,11 @@ cc.binary {
 If this script is named `BUILD.lua`, we can generate the build description by
 running
 ```bash
-$ bblua BUILD.lua -o bb.json
+$ button-lua BUILD.lua -o button.json
 ```
 
 Note that this requires the separate tool
-[`bblua`](http://github.com/jasonwhite/bblua).
+[`button-lua`](http://github.com/jasonwhite/button-lua).
 
 ### Visualizing the Build
 
@@ -129,14 +129,14 @@ A visualization of the above build description can be generated using
 [GraphViz][]:
 
 ```bash
-$ bb graph --full | dot -Tpng > build_graph.png
+$ button graph --full | dot -Tpng > build_graph.png
 ```
 ![Simple Task Graph](/examples/basic/build.png)
 
 [GraphViz]: http://www.graphviz.org/
 
-*Note*: If the build description above was named `bb.json`, there is no need to
-specify its path on the command line. Otherwise, the path to the file can be
+*Note*: If the build description above was named `button.json`, there is no need
+to specify its path on the command line. Otherwise, the path to the file can be
 specified with the `-f` option.
 
 ### Running the Build
@@ -144,20 +144,20 @@ specified with the `-f` option.
 Suppose this is our first time running the build. In that case, we will see a
 full build:
 
-    $ bb build
+    $ button build
      > gcc -c foo.c -o foo.o
      > gcc -c bar.c -o bar.o
      > gcc foo.o bar.o -o foobar
 
 If we run it again immediately without changing any files, nothing will happen:
 
-    $ bb build
+    $ button build
 
 Now suppose we make a change to the file `foo.c` and run the build again. Only
 the necessary tasks to bring the outputs up-to-date are executed:
 
     $ echo "// Another comment" >> foo.c
-    $ bb build
+    $ button build
      > gcc -c foo.c -o foo.o
 
 Note that `gcc foo.o bar.o -o foobar` was not executed because its output
@@ -169,13 +169,13 @@ A file is only determined to be changed if its last modification time changed
 
 ### Automatic Builds
 
-Brilliant Build can run builds automatically when changes are made. This allows
-you to write code in your text editor, hit save, and watch your changes get
-built automatically.
+Button can run builds automatically when changes are made. This allows you to
+write code in your text editor, hit save, and watch your changes get built
+automatically.
 
 Simply pass in the `--autopilot` option, to enable it:
 
-    $ bb build --autopilot
+    $ button build --autopilot
      > gcc -c foo.c -o foo.o
      > gcc -c bar.c -o bar.o
      > gcc foo.o bar.o -o foobar
@@ -183,8 +183,8 @@ Simply pass in the `--autopilot` option, to enable it:
 
 An initial build will be done in order to ensure the build is fully up-to-date.
 If no changes have been made, this should be a quick no-op build. After the
-initial build, Brilliant Build will wait for changes and perform additional
-builds as needed. Simply exit with `CTRL-C`.
+initial build, Button will wait for changes and perform additional builds as
+needed. Simply exit with `CTRL-C`.
 
 ## Building the Build System
 
@@ -196,7 +196,7 @@ builds as needed. Simply exit with `CTRL-C`.
  2. Get the source:
 
     ```bash
-    git clone https://github.com/jasonwhite/brilliant-build.git
+    git clone https://github.com/jasonwhite/button.git
     ```
 
  3. Build it:
@@ -205,9 +205,9 @@ builds as needed. Simply exit with `CTRL-C`.
     dub build
     ```
 
-There should now be an executable `bb` at the root of the repository. It is
+There should now be an executable `button` at the root of the repository. It is
 completely self-contained. Put it in a directory that is on your `$PATH` and run
-`bb help` to get started!
+`button help` to get started!
 
 [DMD]: http://dlang.org/download.html
 [DUB]: http://code.dlang.org/download
@@ -247,12 +247,12 @@ descriptions into one.
 Similar to what [Bazel][] and [Buck][] do, build outputs should be cached. This
 helps solve two major problems:
 
- 1. Brilliant Build has no explicit support for variants (e.g., a *debug* or
-    *release* build). If one wants to switch between debug and release builds,
-    the build description must be regenerated and, thus, the entire build graph
-    is invalidated and triggers a new build. If build outputs are cached,
-    switching between variants will copy the build outputs from the cache
-    instead of building from scratch.
+ 1. Button has no explicit support for variants (e.g., a *debug* or *release*
+    build). If one wants to switch between debug and release builds, the build
+    description must be regenerated and, thus, the entire build graph is
+    invalidated and triggers a new build. If build outputs are cached, switching
+    between variants will copy the build outputs from the cache instead of
+    building from scratch.
  2. If two machines both run the same build, a lot of work is duplicated. If
     both builds are adding cached outputs to a shared cache, there would be a
     50% cache hit rate on average between the two machines. As more machines are
@@ -265,12 +265,12 @@ uploaded with an HTTP `POST` using the output's key. Similarly, an output is
 retrieved with an HTTP `GET` using the output's key. A `404` error code should
 be returned if it doesn't exist in the cache.
 
-Unfortunately, due to Brilliant Build's design, there is a difficulty in
-correctly implementing caching. With implicit dependencies, how can we correctly
-compute the task key? Implicit dependencies are not known until the task is
-executed for the first time. Bazel and Buck get around this by not even having
-implicit dependencies -- all task dependencies must be specified up-front. It
-may turn out that this is impossible to do correctly with implicit dependencies.
+Unfortunately, due to Button's design, there is a difficulty in correctly
+implementing caching. With implicit dependencies, how can we correctly compute
+the task key? Implicit dependencies are not known until the task is executed for
+the first time. Bazel and Buck get around this by not even having implicit
+dependencies -- all task dependencies must be specified up-front. It may turn
+out that this is impossible to do correctly with implicit dependencies.
 
 [Bazel]: http://bazel.io/
 [Buck]: https://buckbuild.com/
@@ -286,8 +286,8 @@ its `stderr` and `stdout` log.
 
 ## Other Build Systems
 
-The design of Brilliant Build learns from the successes and failures of many
-other build systems. In no particular order, these include:
+The design of Button learns from the successes and failures of many other build
+systems. In no particular order, these include:
 
  * [Tup](http://gittup.org/tup/)
  * [Ninja](https://martine.github.io/ninja/)

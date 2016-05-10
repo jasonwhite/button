@@ -1,9 +1,9 @@
-title: Brilliant Build
+title: Button
 description: >
     A recursive, universal build system.
-baseurl: "/brilliant-build"
+baseurl: "/button"
 url: "https://jasonwhite.github.io" # the base hostname & protocol for your site
-github: "https://github.com/jasonwhite/brilliant-build"
+github: "https://github.com/jasonwhite/button"
 
 permalink: /:path/:basename
 

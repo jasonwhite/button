@@ -1,0 +1,12 @@
+[
+    {
+        "inputs": ["BUILD.lua"],
+        "outputs": ["build.button.json"],
+        "task": ["./button-lua", "BUILD.lua", "-o", "build.button.json"]
+    },
+    {
+        "inputs": ["build.button.json"],
+        "outputs": [".build.button.json.state"],
+        "task": ["./button-bootstrap", "build", "--color=always", "-f", "build.button.json"]
+    }
+]
