@@ -1,9 +1,7 @@
 ---
-title: "button update"
+title: "button build"
 category: commands
 ---
-
-**Aliases**: `build`
 
 Brings the build state up-to-date. This includes:
 
@@ -22,19 +20,19 @@ Brings the build state up-to-date. This includes:
 
 This will be the command you will use 99% of the time. It is equivalent to an
 "incremental build". Although you should never need to do a complete rebuild,
-you can do so by running `button clean` followed by `button update`.
+you can do so by running `button clean` followed by `button build`.
 
 ## Example
 
 If your root build description `button.json` is in the current working directory
 or one of its parent directories, simply run:
 
-    $ button update
+    $ button build
 
 If instead your root build description is named something other than
 `button.json`, such as `my_build_description.json`, run:
 
-    $ button update --file my_build_description.json
+    $ button build --file my_build_description.json
 
 Note that the working directory of Button will change to the directory of the
 root build description before running the build.
@@ -90,7 +88,7 @@ root build description before running the build.
     for additional changes. That is, if after an initial change notification is
     received, the number of milliseconds to wait before starting a build.
 
-    For example, suppose you have `button update --autopilot` running and do a
+    For example, suppose you have `button build --autopilot` running and do a
     `git pull`. Instead of running a build for every file Git changes, the
     changes are *accumulated* and a build is run after `git pull` is completely
     done.

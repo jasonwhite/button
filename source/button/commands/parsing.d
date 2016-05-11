@@ -54,7 +54,6 @@ struct VersionOptions
 {
 }
 
-@Command("update")
 @Command("build")
 @Description("Runs a build.")
 struct UpdateOptions
@@ -113,7 +112,7 @@ struct GraphOptions
     string path;
 
     @Option("changes", "C")
-    @Help("Only display the subgraph that will be traversed on an update")
+    @Help("Only display the subgraph that will be traversed on an update.")
     OptionFlag changes;
 
     @Option("cached")
@@ -126,7 +125,7 @@ struct GraphOptions
 
     @Option("edges", "e")
     @MetaVar("{explicit,implicit,both}")
-    @Help("Type of edges to show")
+    @Help("Type of edges to show.")
     EdgeType edges = EdgeType.explicit;
 
     @Option("threads", "j")
