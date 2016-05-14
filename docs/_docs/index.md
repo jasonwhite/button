@@ -43,8 +43,9 @@ Button has some pretty neat features:
 
 Because it is general enough to be able to build a project written in any
 language, Button is particularly useful for building multi-language projects.
-Many build systems are tailored for a particular language. This can be very good
-for single-language projects, but it can also become very restrictive.
+Many other build systems are tailored for a particular language. While this can
+be a good thing for single-language projects, it can also become very
+restrictive as the project gets more complicated.
 
 ## How It Works
 
@@ -101,13 +102,13 @@ A rule consists of a list of inputs, a task, and a list of outputs. Connecting
 these rules together forms the build graph as shown in the previous section.
 
 When the build description is modified and we run the build again with `button
-update`, the internal build graph is incrementally updated with the changes. If
-a rule is added to the build description, then it is added to the build graph
-and the task is marked as "out of date" so that it gets unconditionally
-executed. If, on the other hand, a rule is removed from the build description,
-then it is removed from the build graph and all of its outputs are deleted from
-the file system. This ensures there are no extraneous files laying around to
-interfere with the build.
+build`, the internal build graph is incrementally updated with the changes. If a
+rule is added to the build description, then it is added to the build graph and
+the task is marked as "out of date" so that it gets unconditionally executed.
+If, on the other hand, a rule is removed from the build description, then it is
+removed from the build graph and all of its outputs are deleted from the file
+system. This ensures there are no extraneous files laying around to interfere
+with the build.
 
 Of course, you probably don't want to modify the JSON build description file by
 hand. For anything but trivial examples, it would be far too cumbersome and
@@ -149,7 +150,7 @@ description. (If you don't do it, Cthulhu will *find* you).
 
 Allowing an implicit dependency to change the build order while the build is
 running could lead to incorrect builds. More often, however, it is a mistake in
-the build description. Therefore, this scenario is strictly forbidden.
+the build description and, thus, this scenario is strictly forbidden.
 
 [button-deps]: https://github.com/jasonwhite/button-deps
 
