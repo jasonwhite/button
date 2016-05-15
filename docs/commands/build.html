@@ -5,13 +5,13 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>button update - Button</title>
-  <meta name="description" content="Aliases: build">
+  <title>button build - Button</title>
+  <meta name="description" content="Brings the build state up-to-date. This includes:">
 
   <link rel="stylesheet" href="/button/assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="/button/assets/css/main.css">
 
-  <link rel="canonical" href="https://jasonwhite.github.io/button/docs/commands/update">
+  <link rel="canonical" href="https://jasonwhite.github.io/button/docs/commands/build">
 </head>
 
     <body>
@@ -55,11 +55,11 @@
     
     
         
-            <li><a href="/button/docs/commands/graph">button graph</a></li>
+            <li class="active"><a href="/button/docs/commands/build">button build</a></li>
         
     
         
-            <li class="active"><a href="/button/docs/commands/update">button update</a></li>
+            <li><a href="/button/docs/commands/graph">button graph</a></li>
         
     
 </ul>
@@ -67,10 +67,8 @@
                 </div>
                 <div class="col-lg-10 col-md-9">
                     <article>
-                        <div class="page-header"><h1>button update</h1></div>
-                        <p><strong>Aliases</strong>: <code class="highlighter-rouge">build</code></p>
-
-<p>Brings the build state up-to-date. This includes:</p>
+                        <div class="page-header"><h1>button build</h1></div>
+                        <p>Brings the build state up-to-date. This includes:</p>
 
 <ol>
   <li>
@@ -94,21 +92,21 @@ changed.</p>
 
 <p>This will be the command you will use 99% of the time. It is equivalent to an
 “incremental build”. Although you should never need to do a complete rebuild,
-you can do so by running <code class="highlighter-rouge">button clean</code> followed by <code class="highlighter-rouge">button update</code>.</p>
+you can do so by running <code class="highlighter-rouge">button clean</code> followed by <code class="highlighter-rouge">button build</code>.</p>
 
 <h2 id="example">Example</h2>
 
 <p>If your root build description <code class="highlighter-rouge">button.json</code> is in the current working directory
 or one of its parent directories, simply run:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>$ button update
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button build
 </code></pre>
 </div>
 
 <p>If instead your root build description is named something other than
 <code class="highlighter-rouge">button.json</code>, such as <code class="highlighter-rouge">my_build_description.json</code>, run:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>$ button update --file my_build_description.json
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button build --file my_build_description.json
 </code></pre>
 </div>
 
@@ -175,7 +173,7 @@ root build description before running the build.</p>
  for additional changes. That is, if after an initial change notification is
  received, the number of milliseconds to wait before starting a build.</p>
 
-    <p>For example, suppose you have <code class="highlighter-rouge">button update --autopilot</code> running and do a
+    <p>For example, suppose you have <code class="highlighter-rouge">button build --autopilot</code> running and do a
  <code class="highlighter-rouge">git pull</code>. Instead of running a build for every file Git changes, the
  changes are <em>accumulated</em> and a build is run after <code class="highlighter-rouge">git pull</code> is completely
  done.</p>
@@ -198,7 +196,7 @@ root build description before running the build.</p>
       </div>
       <div class="pull-right">
           <p class="text-right">
-              <a href="https://github.com/jasonwhite/button/tree/master/docs/_docs/commands/update.md">Help improve this page</a>
+              <a href="https://github.com/jasonwhite/button/tree/master/docs/_docs/commands/build.md">Help improve this page</a>
           </p>
       </div>
   </div>
