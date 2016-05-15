@@ -5,12 +5,14 @@ layout: default
 <div class="jumbotron">
     <div class="container">
         <h1>Button</h1>
-        <p>A universal build system to build your software...</p>
-        <p><em>at the push of a button.</em></p>
+        <p>A universal build system to build your software <em>at the push of a
+            button.</em></p>
+        <p><a class="btn btn-primary btn-lg" href="{{ "/docs/" | prepend: site.baseurl }}" role="button">Get Started &raquo;</a></p>
     </div>
 </div>
 
 <div class="container">
+    <h2 class="text-center">Features</h2>
     <div class="row">
         <div class="col-md-4">
             <h3>Implicit Dependency Detection</h3>
@@ -53,4 +55,21 @@ layout: default
             abstractions.</p>
         </div>
     </div>
+
+    <div class="text-center">
+        <h2>The Killer Feature</h2>
+        <blockquote>
+            That sounds great, but what am I supposed to do with these crusty,
+            incomprehensible Makefiles?
+            <footer>You, just now.</footer>
+        </blockquote>
+    </div>
+
+    <p>Since the underlying build description of Button is so general,
+    theoretically the build description of any other build system can be
+    represented. With a modified version of GNU Make, called
+    <code>button-make</code>, a Makefile can be automatically converted to the
+    build description format required by Button. You get the benefit of all the
+    aforementioned features while still using your beloved Makefiles. It may
+    even help you find bugs in your Makefiles.</p>
 </div>
