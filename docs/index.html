@@ -5,13 +5,13 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Overview - Brilliant Build</title>
-  <meta name="description" content="Brilliant Build is a very general, elegantly simple, and powerful build system.This document gives a high-level overview of what Brilliant Build is, what itc...">
+  <title>Overview - Button</title>
+  <meta name="description" content="Button is a very general, elegantly simple, and powerful build system. Thisdocument gives a high-level overview of what Button is, what it can do, and howit ...">
 
-  <link rel="stylesheet" href="/brilliant-build/assets/css/bootstrap.min.css">
-  <link rel="stylesheet" href="/brilliant-build/assets/css/main.css">
+  <link rel="stylesheet" href="/button/assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/button/assets/css/main.css">
 
-  <link rel="canonical" href="https://jasonwhite.github.io/brilliant-build/docs/">
+  <link rel="canonical" href="https://jasonwhite.github.io/button/docs/">
 </head>
 
     <body>
@@ -24,12 +24,12 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="/brilliant-build/">Brilliant Build</a>
+            <a class="navbar-brand" href="/button/">Button</a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
             <ul class="nav navbar-nav navbar-right">
-                <li><a href="/brilliant-build/docs/" class="active">Docs</a></li>
-                <li><a href="https://github.com/jasonwhite/brilliant-build">View on GitHub</a></li>
+                <li><a href="/button/docs/" class="active">Docs</a></li>
+                <li><a href="https://github.com/jasonwhite/button">View on GitHub</a></li>
             </ul>
         </div>
     </div>
@@ -43,11 +43,11 @@
     
     
         
-            <li class="active"><a href="/brilliant-build/docs/">Overview</a></li>
+            <li class="active"><a href="/button/docs/">Overview</a></li>
         
     
         
-            <li><a href="/brilliant-build/docs/install">Installation</a></li>
+            <li><a href="/button/docs/install">Installation</a></li>
         
     
 
@@ -55,11 +55,11 @@
     
     
         
-            <li><a href="/brilliant-build/docs/commands/graph">bb graph</a></li>
+            <li><a href="/button/docs/commands/graph">button graph</a></li>
         
     
         
-            <li><a href="/brilliant-build/docs/commands/update">bb update</a></li>
+            <li><a href="/button/docs/commands/update">button update</a></li>
         
     
 </ul>
@@ -68,9 +68,9 @@
                 <div class="col-lg-10 col-md-9">
                     <article>
                         <div class="page-header"><h1>Overview</h1></div>
-                        <p>Brilliant Build is a very general, elegantly simple, and powerful build system.
-This document gives a high-level overview of what Brilliant Build is, what it
-can do, and how it works.</p>
+                        <p>Button is a very general, elegantly simple, and powerful build system. This
+document gives a high-level overview of what Button is, what it can do, and how
+it works.</p>
 
 <h2 id="introduction">Introduction</h2>
 
@@ -84,13 +84,13 @@ this arena include:</p>
   <li><a href="http://bazel.io/">Bazel</a>, <a href="https://buckbuild.com/">Buck</a>, <a href="http://pantsbuild.github.io/">Pants</a></li>
 </ul>
 
-<p>It should be noted that Brilliant Build is <em>not</em> a project generator, package
-manager, or continuous integration server. However, it is certainly an excellent
-choice to build these things off of.</p>
+<p>Note that Button is <em>not</em> a project generator, package manager, or continuous
+integration server. However, it is certainly an excellent base to build these
+things off of.</p>
 
 <h2 id="features">Features</h2>
 
-<p>Brilliant Build has some pretty neat features:</p>
+<p>Button has some pretty neat features:</p>
 
 <ul>
   <li>Fast and correct incremental builds.</li>
@@ -100,28 +100,28 @@ choice to build these things off of.</p>
 </ul>
 
 <p>Because it is general enough to be able to build a project written in any
-language, Brilliant Build is particularly useful for building multi-language
-projects. Many build systems are tailored for a particular language. This can be
-very good for single-language projects, but it can also become very restrictive.</p>
+language, Button is particularly useful for building multi-language projects.
+Many build systems are tailored for a particular language. This can be very good
+for single-language projects, but it can also become very restrictive.</p>
 
 <h2 id="how-it-works">How It Works</h2>
 
-<p>In order to understand how Brilliant Build works, it is imperative to understand
-at a high level its underlying data structure and how that data structure is
-operated on.</p>
+<p>In order to understand how Button works, it is imperative to understand at a
+high level its underlying data structure and how that data structure is operated
+on.</p>
 
 <h3 id="the-build-graph">The Build Graph</h3>
 
 <p>At the heart of this build system is a bipartite directed acyclic graph:</p>
 
-<p><img src="/brilliant-build/assets/img/build.png" alt="Build Graph" /></p>
+<p><img src="/button/assets/img/build.png" alt="Build Graph" /></p>
 
 <p>Lets just call this the <em>build graph</em> because the proper mathematical term is a
 mouthful. The build graph is <a href="https://en.wikipedia.org/wiki/Bipartite_graph">bipartite</a> because it can be partitioned into
 two types of nodes: <em>resources</em> and <em>tasks</em>. In the figure above, the resources
 and tasks are shown as ellipses and rectangles, respectively. A resource is some
-file and a task is some program to execute. Resources are the inputs and outputs
-of a task.</p>
+file and a task is some program to execute. Resources are inputs and outputs of
+tasks.</p>
 
 <p>In order to build, we simply traverse the graph starting at the top and work our
 way down while executing tasks. Of course, tasks that don’t depend on each other
@@ -156,7 +156,7 @@ The build description is simply a JSON file containing a list of <em>rules</em>:
 <p>A rule consists of a list of inputs, a task, and a list of outputs. Connecting
 these rules together forms the build graph as shown in the previous section.</p>
 
-<p>When the build description is modified and we run the build again with <code class="highlighter-rouge">bb
+<p>When the build description is modified and we run the build again with <code class="highlighter-rouge">button
 update</code>, the internal build graph is incrementally updated with the changes. If
 a rule is added to the build description, then it is added to the build graph
 and the task is marked as “out of date” so that it gets unconditionally
@@ -178,13 +178,13 @@ canonical example of implicit dependencies are C/C++ header files. It is tedious
 to explicitly specify these in the build description, but more importantly it is
 error-prone.</p>
 
-<p>Any task in the build graph, when executed, can tell Brilliant Build about its
-input and output resources. This is a generalized way of allowing implicit
-dependency detection. Tasks can be wrapped in another program that knows how to
-tell Brilliant Build about detected dependencies. <a href="https://github.com/jasonwhite/bbdeps"><code class="highlighter-rouge">bbdeps</code></a> is one such
-wrapper program. It has fast ad hoc detection for various compilers but falls
-back to tracing system calls for programs it doesn’t know about. For example, in
-order to do implicit dependency detection for the task:</p>
+<p>Any task in the build graph, when executed, can tell Button about its input and
+output resources. This is a generalized way of allowing implicit dependency
+detection. Tasks can be wrapped in another program that knows how to tell Button
+about detected dependencies. <a href="https://github.com/jasonwhite/button-deps"><code class="highlighter-rouge">button-deps</code></a> is one such wrapper
+program. It has fast ad hoc detection for various compilers but falls back to
+tracing system calls for programs it doesn’t know about. For example, in order
+to do implicit dependency detection for the task:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>gcc -c foo.c -o foo.o
 </code></pre>
@@ -192,20 +192,20 @@ order to do implicit dependency detection for the task:</p>
 
 <p>You would instead specify:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>bbdeps gcc -c foo.c -o foo.o
+<div class="highlighter-rouge"><pre class="highlight"><code>button-deps gcc -c foo.c -o foo.o
 </code></pre>
 </div>
 
-<p>When executed, it tells Brilliant Build about any headers that were <code class="highlighter-rouge">#include</code>d
-or transitively <code class="highlighter-rouge">#include</code>d.</p>
+<p>When executed, it tells Button about any headers that were <code class="highlighter-rouge">#include</code>d or
+transitively <code class="highlighter-rouge">#include</code>d.</p>
 
 <h4 id="restrictions">Restrictions</h4>
 
-<p>There is one immutable rule that cannot be violated with implicit dependencies:
-<strong>an implicit dependency must not change the build order</strong>. If this rule is
-violated, the task will fail, Cthulhu will be summoned, and Brilliant Build will
-tell you to explicitly add the would-be dependency to the build description. (If
-you don’t do it, Cthulhu will <em>find</em> you).</p>
+<p>There is one immutable rule about implicit dependencies that cannot be violated:
+<strong>if added to the build graph, an implicit dependency must not change the build
+order</strong>. If this rule is violated, the task will fail, Cthulhu will be summoned,
+and Button will tell you to explicitly add the would-be dependency to the build
+description. (If you don’t do it, Cthulhu will <em>find</em> you).</p>
 
 <p>Allowing an implicit dependency to change the build order while the build is
 running could lead to incorrect builds. More often, however, it is a mistake in
@@ -213,23 +213,23 @@ the build description. Therefore, this scenario is strictly forbidden.</p>
 
 <h3 id="recursive-builds">Recursive Builds</h3>
 
-<p>Any task in the build graph can also be a build system. That is, Brilliant Build
-can recursively run itself as part of the build. Doing this with <code class="highlighter-rouge">make</code> is
-generally <a href="http://lcgapp.cern.ch/project/architecture/recursive_make.pdf">considered harmful</a> because it throws correct incremental
-builds out the window. However, this is only because <code class="highlighter-rouge">make</code> doesn’t know about
-the dependencies of a sub-<code class="highlighter-rouge">make</code>. This is not a problem for Brilliant Build
-because it knows how to send information about implicit dependencies to a parent
-Brilliant Build process. By publishing implicit dependencies to the parent, the
-child build system can be executed again if any of its inputs change.</p>
+<p>Any task in the build graph can also be a build system. That is, Button can
+recursively run itself as part of the build. Doing this with <code class="highlighter-rouge">make</code> is generally
+<a href="http://lcgapp.cern.ch/project/architecture/recursive_make.pdf">considered harmful</a> because it throws correct incremental builds out the
+window. However, this is only because <code class="highlighter-rouge">make</code> doesn’t know about the dependencies
+of a sub-<code class="highlighter-rouge">make</code>. This is not a problem for Button because it knows how to send
+information about implicit dependencies to a parent Button process. By
+publishing implicit dependencies to the parent, the child build system can be
+executed again if any of its inputs change.</p>
 
 <h3 id="building-the-build-description">Building the Build Description</h3>
 
 <p>Since we can correctly do recursive builds, we can also generate the build
 description with, say, a scripting language as part of the build. The program
-<a href="https://github.com/jasonwhite/bblua"><code class="highlighter-rouge">bblua</code></a> is provided for this purpose. As the name might imply, it uses the
-lightweight <a href="https://www.lua.org/">Lua</a> scripting language to specify build descriptions at a high
-level. For example, this considerably more terse script (<code class="highlighter-rouge">BUILD.lua</code>) can
-generate the JSON build description from the earlier section:</p>
+<a href="https://github.com/jasonwhite/button-lua"><code class="highlighter-rouge">button-lua</code></a> is provided for this purpose. As the name might
+imply, it uses the lightweight <a href="https://www.lua.org/">Lua</a> scripting language to specify build
+descriptions at a high level. For example, this considerably more terse script
+(<code class="highlighter-rouge">BUILD.lua</code>) can generate the JSON build description from the earlier section:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">local</span> <span class="n">cc</span> <span class="o">=</span> <span class="nb">require</span> <span class="s2">"rules.cc"</span>
 
@@ -241,18 +241,18 @@ generate the JSON build description from the earlier section:</p>
 </div>
 
 <p>Unfortunately, we must still have an <em>upper</em> JSON build description as this is
-what the parent Brilliant Build needs to read in:</p>
+what the parent Button needs to read in:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code><span class="p">[</span><span class="w">
     </span><span class="p">{</span><span class="w">
         </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"BUILD.lua"</span><span class="p">],</span><span class="w">
-        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bblua"</span><span class="p">,</span><span class="w"> </span><span class="s2">"BUILD.lua"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"build.bb.json"</span><span class="p">],</span><span class="w">
-        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"build.bb.json"</span><span class="p">]</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"button-lua"</span><span class="p">,</span><span class="w"> </span><span class="s2">"BUILD.lua"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"build.button.json"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"build.button.json"</span><span class="p">]</span><span class="w">
     </span><span class="p">},</span><span class="w">
     </span><span class="p">{</span><span class="w">
-        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"build.bb.json"</span><span class="p">],</span><span class="w">
-        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bb"</span><span class="p">,</span><span class="w"> </span><span class="s2">"update"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--color=always"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-f"</span><span class="p">,</span><span class="w"> </span><span class="s2">"build.bb.json"</span><span class="p">],</span><span class="w">
-        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">".build.bb.json.state"</span><span class="p">]</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"build.button.json"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"button"</span><span class="p">,</span><span class="w"> </span><span class="s2">"update"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--color=always"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-f"</span><span class="p">,</span><span class="w"> </span><span class="s2">"build.button.json"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">".build.button.json.state"</span><span class="p">]</span><span class="w">
     </span><span class="p">}</span><span class="w">
 </span><span class="p">]</span><span class="w">
 </span></code></pre>
@@ -273,14 +273,14 @@ the Lua script as your project grows.</p>
       </div>
       <div class="pull-right">
           <p class="text-right">
-              <a href="https://github.com/jasonwhite/brilliant-build/tree/master/docs/_docs/index.md">Help improve this page</a>
+              <a href="https://github.com/jasonwhite/button/tree/master/docs/_docs/index.md">Help improve this page</a>
           </p>
       </div>
   </div>
 </footer>
 
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-<script src="/brilliant-build/assets/js/bootstrap.min.js"></script>
+<script src="/button/assets/js/bootstrap.min.js"></script>
 
     </body>
 </html>
