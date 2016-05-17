@@ -8,9 +8,9 @@ module button.vertex.task;
 import button.log;
 
 /**
- * Thrown if a task fails.
+ * Thrown if a command fails.
  */
-class TaskError : Exception
+class CommandError : Exception
 {
     this(string msg)
     {
@@ -19,66 +19,14 @@ class TaskError : Exception
 }
 
 /**
- * A task key must be unique.
+ * Thrown if a task fails.
  */
-struct TaskKey
+class TaskError : Exception
 {
-    /**
-     * The command to execute. The first argument is the name of the executable.
-     */
-    immutable(string)[] command;
-
-    /**
-     * The working directory for the command relative to the current working
-     * directory of the build system. If empty, the current working directory of
-     * the build system is used.
-     */
-    string workingDirectory = "";
-
-    /**
-     * Compares this key with another.
-     */
-    int opCmp()(const auto ref typeof(this) that) const pure nothrow
+    this(string msg)
     {
-        import std.algorithm.comparison : cmp;
-        import std.path : filenameCmp;
-
-        if (immutable result = cmp(this.command, that.command))
-            return result;
-
-        return filenameCmp(this.workingDirectory, that.workingDirectory);
+        super(msg);
     }
-
-    /// Ditto
-    bool opEquals()(const auto ref typeof(this) that) const pure nothrow
-    {
-        return opCmp(that) == 0;
-    }
-}
-
-unittest
-{
-    static assert(TaskKey(["a", "b"]) < TaskKey(["a", "c"]));
-    static assert(TaskKey(["a", "c"]) > TaskKey(["a", "b"]));
-    static assert(TaskKey(["a", "b"], "a") == TaskKey(["a", "b"], "a"));
-    static assert(TaskKey(["a", "b"], "a") < TaskKey(["a", "b"], "b"));
-}
-
-/**
- * The result of executing a task.
- */
-struct TaskResult
-{
-    import core.time : TickDuration;
-
-    // The task exit status code
-    int status;
-
-    // NUL-delimited list of implicit dependencies.
-    immutable(ubyte)[] inputs, outputs;
-
-    // How long it took the task to run from start to finish.
-    TickDuration duration;
 }
 
 /**
@@ -143,49 +91,45 @@ unittest
 }
 
 /**
- * A representation of a task.
+ * The result of executing a task.
  */
-struct Task
+struct CommandResult
 {
     import core.time : TickDuration;
-    import std.datetime : SysTime;
 
-    TaskKey key;
+    /// The command's exit status code
+    int status;
 
-    alias key this;
+    /// Implicit inputs and outputs received through the input and output pipes.
+    immutable(ubyte)[] inputs, outputs;
 
+    /// How long it took the command to run from start to finish.
+    TickDuration duration;
+}
+
+/**
+ * A single command.
+ */
+struct Command
+{
     /**
-     * Time this task was last executed. If this is SysTime.min, then it is
-     * taken to mean that the task has never been executed before. This is
-     * useful for knowing if a task with no dependencies needs to be executed.
+     * The command to execute. The first argument is the name of the executable.
      */
-    SysTime lastExecuted = SysTime.min;
+    immutable(string)[] command;
 
-    /**
-     * Text to display when running the command. If this is null, the command
-     * itself will be displayed. This is useful for reducing the amount of
-     * information that is displayed.
-     */
-    string display;
+    alias command this;
 
-    this(TaskKey key)
+    this(immutable(string)[] command)
     {
-        this.key = key;
-    }
+        assert(command.length > 0, "A command must have >0 arguments");
 
-    this(immutable(string)[] command, string workDir = "",
-            string display = null, SysTime lastExecuted = SysTime.min)
-    {
         this.command = command;
-        this.display = display;
-        this.workingDirectory = workDir;
-        this.lastExecuted = lastExecuted;
     }
 
     // Open /dev/null to be used by all child processes as its standard input.
     version (Posix)
     {
-        shared static int devnull;
+        private shared static int devnull;
 
         shared static this()
         {
@@ -203,18 +147,44 @@ struct Task
     }
 
     /**
+     * Compares this command with another.
+     */
+    int opCmp()(const auto ref typeof(this) that) const pure nothrow
+    {
+        import std.algorithm.comparison : cmp;
+        return cmp(this.command, that.command);
+    }
+
+    /// Ditto
+    bool opEquals()(const auto ref typeof(this) that) const pure nothrow
+    {
+        return this.opCmp(that) == 0;
+    }
+
+    unittest
+    {
+        import std.algorithm.comparison : cmp;
+
+        static assert(Command(["a", "b"]) == Command(["a", "b"]));
+        static assert(Command(["a", "b"]) != Command(["a", "c"]));
+        static assert(Command(["a", "b"]) <  Command(["a", "c"]));
+        static assert(Command(["b", "a"]) >  Command(["a", "b"]));
+
+        static assert(cmp([Command(["a", "b"])], [Command(["a", "b"])]) == 0);
+        static assert(cmp([Command(["a", "b"])], [Command(["a", "c"])]) <  0);
+        static assert(cmp([Command(["a", "c"])], [Command(["a", "b"])]) >  0);
+    }
+
+    /**
      * Returns a string representation of the command.
      *
-     * Since commands are specified as arrays, we format it into a string as one
+     * Since the command is in argv format, we format it into a string as one
      * would enter into a shell.
      */
-    string toString(bool verbose = false) const pure
+    string toPrettyString() const pure
     {
         import std.array : join;
         import std.algorithm.iteration : map;
-
-        if (display && !verbose)
-            return display;
 
         return command.map!(arg => arg.escapeShellArg).join(" ");
     }
@@ -222,49 +192,16 @@ struct Task
     /**
      * Returns a short string representation of the command.
      */
-    @property string toShortString() const pure nothrow
+    @property string toPrettyShortString() const pure nothrow
     {
-        if (display)
-            return display;
-
-        if (command.length > 0)
-            return command[0];
-
-        return "";
+        // TODO: If the program name is "button-deps", use the next one instead.
+        return command[0];
     }
 
     /**
-     * Compares this task with another.
+     * Executes the command.
      */
-    int opCmp()(const auto ref typeof(this) that) const pure nothrow
-    {
-        return this.key.opCmp(that.key);
-    }
-
-    /// Ditto
-    bool opEquals()(const auto ref typeof(this) that) const pure nothrow
-    {
-        return opCmp(that) == 0;
-    }
-
-    unittest
-    {
-        assert(Task(["a", "b"]) < Task(["a", "c"]));
-        assert(Task(["a", "b"]) > Task(["a", "a"]));
-
-        assert(Task(["a", "b"]) < Task(["a", "c"]));
-        assert(Task(["a", "b"]) > Task(["a", "a"]));
-
-        assert(Task(["a", "b"]) == Task(["a", "b"]));
-        assert(Task(["a", "b"], "a") < Task(["a", "b"], "b"));
-        assert(Task(["a", "b"], "b") > Task(["a", "b"], "a"));
-        assert(Task(["a", "b"], "a") == Task(["a", "b"], "a"));
-    }
-
-    /**
-     * Executes the task.
-     */
-    version (Posix) TaskResult execute(TaskLogger logger) const
+    version (Posix) CommandResult execute(string workingDirectory, TaskLogger logger) const
     {
         import core.sys.posix.unistd;
         import core.stdc.stdio : sprintf;
@@ -273,17 +210,16 @@ struct Task
 
         import std.string : toStringz;
         import std.datetime : StopWatch;
-        import core.time : Duration;
 
         StopWatch sw;
-        TaskResult result;
+        CommandResult result;
 
         sw.start();
 
         int[2] stdfds, inputfds, outputfds;
 
-        sysEnforce(pipe(stdfds) != -1); // Standard output
-        sysEnforce(pipe(inputfds) != -1); // Implicit inputs
+        sysEnforce(pipe(stdfds)    != -1); // Standard output
+        sysEnforce(pipe(inputfds)  != -1); // Implicit inputs
         sysEnforce(pipe(outputfds) != -1); // Implicit outputs
 
         // Convert D command argument list to a null-terminated argument list
@@ -313,6 +249,8 @@ struct Task
 
             executeChild(argv, cwd, this.devnull, stdfds[1], inputfds[1],
                     outputfds[1], inputsenv.ptr, outputsenv.ptr);
+
+            // Unreachable
         }
 
         // In the parent process
@@ -335,7 +273,7 @@ struct Task
     }
 
     version (Windows)
-    TaskResult execute(TaskLogger logger) const
+    CommandResult execute(TaskLogger logger) const
     {
         // TODO: Implement implicit dependencies
         import std.process : execute;
@@ -343,7 +281,7 @@ struct Task
         import std.datetime : StopWatch;
         import std.conv : to;
 
-        TaskResult result;
+        CommandResult result;
 
         StopWatch sw;
         sw.start();
@@ -358,6 +296,238 @@ struct Task
         result.duration = sw.peek();
 
         return result;
+    }
+}
+
+/**
+ * A task key must be unique.
+ */
+struct TaskKey
+{
+    /**
+     * The commands to execute in sequential order. The first argument is the
+     * name of the executable.
+     */
+    immutable(Command)[] commands;
+
+    /**
+     * The working directory for the commands, relative to the current working
+     * directory of the build system. If empty, the current working directory of
+     * the build system is used.
+     */
+    string workingDirectory = "";
+
+    this(immutable(Command)[] commands, string workingDirectory = "")
+    {
+        assert(commands.length, "A task must have >0 commands");
+
+        this.commands = commands;
+        this.workingDirectory = workingDirectory;
+    }
+
+    /**
+     * Compares this key with another.
+     */
+    int opCmp()(const auto ref typeof(this) that) const pure nothrow
+    {
+        import std.algorithm.comparison : cmp;
+        import std.path : filenameCmp;
+
+        if (immutable result = cmp(this.commands, that.commands))
+            return result;
+
+        return filenameCmp(this.workingDirectory, that.workingDirectory);
+    }
+
+    /// Ditto
+    bool opEquals()(const auto ref typeof(this) that) const pure nothrow
+    {
+        return this.opCmp(that) == 0;
+    }
+}
+
+unittest
+{
+    // Comparison
+    static assert(TaskKey([Command(["a", "b"])]) < TaskKey([Command(["a", "c"])]));
+    static assert(TaskKey([Command(["a", "c"])]) > TaskKey([Command(["a", "b"])]));
+    static assert(TaskKey([Command(["a", "b"])], "a") == TaskKey([Command(["a", "b"])], "a"));
+    static assert(TaskKey([Command(["a", "b"])], "a") != TaskKey([Command(["a", "b"])], "b"));
+    static assert(TaskKey([Command(["a", "b"])], "a") <  TaskKey([Command(["a", "b"])], "b"));
+}
+
+unittest
+{
+    import std.conv : to;
+
+    // Converting commands to a string. This is used to store/retrieve tasks in
+    // the database.
+
+    immutable t = TaskKey([
+            Command(["foo", "bar"]),
+            Command(["baz"]),
+            ]);
+
+    assert(t.commands.to!string == `[["foo", "bar"], ["baz"]]`);
+}
+
+/**
+ * The result of executing a task.
+ */
+struct TaskResult
+{
+    import core.time : TickDuration;
+
+    /**
+     * True if all the commands in the task succeeded.
+     */
+    bool success;
+
+    /**
+     * List of raw byte arrays of implicit inputs/outputs. There is one byte
+     * array per command.
+     */
+    immutable(ubyte)[][] inputs, outputs;
+
+    /**
+     * How long it took the task, including all of its commands, to run from
+     * start to finish.
+     */
+    TickDuration duration;
+}
+
+/**
+ * A representation of a task.
+ */
+struct Task
+{
+    import core.time : TickDuration;
+    import std.datetime : SysTime;
+
+    TaskKey key;
+
+    alias key this;
+
+    /**
+     * Time this task was last executed. If this is SysTime.min, then it is
+     * taken to mean that the task has never been executed before. This is
+     * useful for knowing if a task with no dependencies needs to be executed.
+     */
+    SysTime lastExecuted = SysTime.min;
+
+    /**
+     * Text to display when running the task. If this is null, the commands
+     * themselves will be displayed. This is useful for reducing the amount of
+     * noise that is displayed.
+     */
+    string display;
+
+    this(TaskKey key)
+    {
+        this.key = key;
+    }
+
+    this(immutable(Command)[] commands, string workDir = "",
+            string display = null, SysTime lastExecuted = SysTime.min)
+    {
+        assert(commands.length, "A task must have >0 commands");
+
+        this.commands = commands;
+        this.display = display;
+        this.workingDirectory = workDir;
+        this.lastExecuted = lastExecuted;
+    }
+
+    /**
+     * Returns a string representation of the task.
+     *
+     * Since individual commands are in argv format, we format it into a string
+     * as one would enter into a shell.
+     */
+    string toPrettyString(bool verbose = false) const pure
+    {
+        import std.array : join;
+        import std.algorithm.iteration : map;
+
+        if (display && !verbose)
+            return display;
+
+        // Just use the first command
+        return commands[0].toPrettyString;
+    }
+
+    /**
+     * Returns a short string representation of the task.
+     */
+    @property string toPrettyShortString() const pure nothrow
+    {
+        if (display)
+            return display;
+
+        // Just use the first command
+        return commands[0].toPrettyShortString;
+    }
+
+    /**
+     * Compares this task with another.
+     */
+    int opCmp()(const auto ref typeof(this) that) const pure nothrow
+    {
+        return this.key.opCmp(that.key);
+    }
+
+    /// Ditto
+    bool opEquals()(const auto ref typeof(this) that) const pure nothrow
+    {
+        return opCmp(that) == 0;
+    }
+
+    version (none) unittest
+    {
+        assert(Task([["a", "b"]]) < Task([["a", "c"]]));
+        assert(Task([["a", "b"]]) > Task([["a", "a"]]));
+
+        assert(Task([["a", "b"]]) < Task([["a", "c"]]));
+        assert(Task([["a", "b"]]) > Task([["a", "a"]]));
+
+        assert(Task([["a", "b"]])      == Task([["a", "b"]]));
+        assert(Task([["a", "b"]], "a") <  Task([["a", "b"]], "b"));
+        assert(Task([["a", "b"]], "b") >  Task([["a", "b"]], "a"));
+        assert(Task([["a", "b"]], "a") == Task([["a", "b"]], "a"));
+    }
+
+    TaskResult execute(TaskLogger logger)
+    {
+        import std.array : appender;
+        import std.datetime : StopWatch, AutoStart;
+
+        auto inputs  = appender!(immutable(ubyte)[][]);
+        auto outputs = appender!(immutable(ubyte)[][]);
+
+        auto sw = StopWatch(AutoStart.yes);
+
+        foreach (command; commands)
+        {
+            auto result = command.execute(workingDirectory, logger);
+
+            inputs.put(result.inputs);
+            outputs.put(result.outputs);
+
+            if (result.status != 0)
+            {
+                sw.stop();
+
+                return TaskResult(
+                        false, // Failed
+                        inputs.data, outputs.data,
+                        sw.peek() // Task duration
+                        );
+            }
+        }
+
+        sw.stop();
+
+        return TaskResult(true, inputs.data, outputs.data, sw.peek());
     }
 }
 

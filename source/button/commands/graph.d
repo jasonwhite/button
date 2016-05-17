@@ -138,9 +138,9 @@ void graphviz(Stream)(
     foreach (id; graph.vertices!B)
     {
         immutable v = state[id];
-        immutable name = full ? v.toString : v.toShortString;
+        immutable name = full ? v.toPrettyString : v.toPrettyShortString;
         stream.printfln(`        "t:%s" [label="%s", tooltip="%s"];`, id,
-                name.escapeLabel, v.toString.escapeLabel);
+                name.escapeLabel, v.toPrettyString.escapeLabel);
     }
     stream.println("    }");
 

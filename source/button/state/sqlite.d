@@ -35,12 +35,12 @@ CREATE TABLE IF NOT EXISTS resource (
 private immutable tasksTable = q"{
 CREATE TABLE IF NOT EXISTS task (
     id           INTEGER,
-    command      TEXT     NOT NULL,
+    commands     TEXT     NOT NULL,
     workDir      TEXT     NOT NULL,
     display      TEXT,
     lastExecuted INTEGER  NOT NULL,
     PRIMARY KEY(id),
-    UNIQUE(command, workDir)
+    UNIQUE(commands, workDir)
 )}";
 
 /**
@@ -96,7 +96,7 @@ CREATE INDEX IF NOT EXISTS resourceIndex ON resource(path)
 
 /// Ditto
 private immutable taskIndex = q"{
-CREATE INDEX IF NOT EXISTS taskIndex ON task(command,workDir)
+CREATE INDEX IF NOT EXISTS taskIndex ON task(commands,workDir)
 }";
 
 /**
@@ -208,8 +208,16 @@ Vertex parse(Vertex : Task)(SQLite3.Statement s)
 {
     import std.conv : to;
     import std.datetime : SysTime;
+    import std.algorithm.iteration : map;
+    import std.array : array;
+    import std.exception : assumeUnique;
+
     return Task(
-        s.get!string(0).to!(string[]),
+        s.get!string(0)
+            .to!(string[][])
+            .map!(x => Command(x.assumeUnique))
+            .array
+            .assumeUnique,
         s.get!string(1),
         s.get!string(2),
         SysTime(s.get!long(3)),
@@ -333,9 +341,16 @@ E parse(E : ResourceKey)(SQLite3.Statement s)
 E parse(E : TaskKey)(SQLite3.Statement s)
 {
     import std.conv : to;
+    import std.algorith.iteration : map;
+    import std.array : array;
+    import std.exception : assumeUnique;
 
     return E(
-        s.get!string(0).to!(string[]),
+        s.get!string(0)
+            .to!(string[][])
+            .map!(x => Command(x.assumeUnique))
+            .array
+            .assumeUnique,
         s.get!string(1)
         );
 }
@@ -435,7 +450,7 @@ class BuildState : SQLite3
                 ` VALUES(?, ?, ?)`
                 );
         sqlInsertTask = new Statement(
-                `INSERT INTO task (command, workDir, display, lastExecuted)` ~
+                `INSERT INTO task (commands, workDir, display, lastExecuted)` ~
                 ` VALUES(?, ?, ?, ?)`
                 );
         sqlAddResource = new Statement(
@@ -445,7 +460,7 @@ class BuildState : SQLite3
                 );
         sqlAddTask = new Statement(
                 `INSERT OR IGNORE INTO task` ~
-                ` (command, workDir, display, lastExecuted)` ~
+                ` (commands, workDir, display, lastExecuted)` ~
                 ` VALUES(?, ?, ?, ?)`
                 );
         sqlRemoveResourceByIndex = new Statement(
@@ -458,20 +473,20 @@ class BuildState : SQLite3
                 `DELETE FROM resource WHERE path=?`
                 );
         sqlRemoveTaskByKey = new Statement(
-                `DELETE FROM task WHERE command=? AND workDir=?`
+                `DELETE FROM task WHERE commands=? AND workDir=?`
                 );
         sqlFindResourceByKey = new Statement(
                 `SELECT id FROM resource WHERE path=?`
                 );
         sqlFindTaskByKey = new Statement(
-                `SELECT id FROM task WHERE command=? AND workDir=?`
+                `SELECT id FROM task WHERE commands=? AND workDir=?`
                 );
         sqlResourceByIndex = new Statement(
                 `SELECT path,lastModified,checksum` ~
                 ` FROM resource WHERE id=?`
                 );
         sqlTaskByIndex = new Statement(
-                `SELECT command,workDir,display,lastExecuted` ~
+                `SELECT commands,workDir,display,lastExecuted` ~
                 ` FROM task WHERE id=?`
                 );
         sqlResourceByKey = new Statement(
@@ -479,8 +494,8 @@ class BuildState : SQLite3
                ` FROM resource WHERE path=?`
                 );
         sqlTaskByKey = new Statement(
-                `SELECT command,workDir,display,lastExecuted FROM task` ~
-                ` WHERE command=? AND workDir=?`
+                `SELECT commands,workDir,display,lastExecuted FROM task` ~
+                ` WHERE commands=? AND workDir=?`
                 );
         sqlUpdateResource = new Statement(
                 `UPDATE resource` ~
@@ -489,7 +504,7 @@ class BuildState : SQLite3
                 );
         sqlUpdateTask = new Statement(
                `UPDATE task` ~
-               ` SET command=?,workDir=?,display=?,lastExecuted=?` ~
+               ` SET commands=?,workDir=?,display=?,lastExecuted=?` ~
                ` WHERE id=?`
                 );
         sqlInsertTaskEdge = new Statement(
@@ -601,7 +616,7 @@ class BuildState : SQLite3
         {
             scope (exit) s.reset();
 
-            s.bind(task.command.to!string(),
+            s.bind(task.commands.to!string(),
                    task.workingDirectory,
                    task.display,
                    task.lastExecuted.stdTime);
@@ -625,7 +640,7 @@ class BuildState : SQLite3
         }
 
         {
-            immutable vertex = Task(["foo", "test", "test test"]);
+            immutable vertex = Task([Command(["foo", "test", "test test"])]);
 
             immutable id = state.put(vertex);
             assert(state[id] == vertex);
@@ -661,7 +676,7 @@ class BuildState : SQLite3
         {
             scope (exit) s.reset();
 
-            s.bind(task.command.to!string(),
+            s.bind(task.commands.to!string(),
                    task.workingDirectory,
                    task.display,
                    task.lastExecuted.stdTime);
@@ -721,7 +736,7 @@ class BuildState : SQLite3
         synchronized (s)
         {
             scope (exit) s.reset();
-            s.bind(key.command.to!string, key.workingDirectory);
+            s.bind(key.commands.to!string, key.workingDirectory);
             s.step();
         }
     }
@@ -757,7 +772,7 @@ class BuildState : SQLite3
         {
             scope (exit) s.reset();
 
-            s.bind(id.command.to!string, id.workingDirectory);
+            s.bind(id.commands.to!string, id.workingDirectory);
 
             if (s.step())
                 return typeof(return)(s.get!ulong(0));
@@ -832,7 +847,7 @@ class BuildState : SQLite3
         synchronized (s)
         {
             scope (exit) s.reset();
-            s.bind(key.command.to!string, key.workingDirectory);
+            s.bind(key.commands.to!string, key.workingDirectory);
             enforce(s.step(), "Vertex does not exist.");
             return s.parse!Task();
         }
@@ -864,7 +879,7 @@ class BuildState : SQLite3
         synchronized (s)
         {
             scope (exit) s.reset();
-            s.bind(v.command.to!string,
+            s.bind(v.commands.to!string,
                    v.workingDirectory,
                    v.display,
                    v.lastExecuted.stdTime, index);
@@ -909,7 +924,7 @@ class BuildState : SQLite3
      */
     @property auto enumerate(T : Task)()
     {
-        return prepare(`SELECT command,workDir,display,lastExecuted FROM task`)
+        return prepare(`SELECT commands,workDir,display,lastExecuted FROM task`)
             .rows!(parse!T);
     }
 
@@ -920,9 +935,9 @@ class BuildState : SQLite3
         auto state = new BuildState;
 
         immutable tasks = [
-            Task(["foo", "arg 1", "arg 2"]),
-            Task(["bar", "arg 1"]),
-            Task(["baz", "arg 1", "arg 2", "arg 3"]),
+            Task([Command(["foo", "arg 1", "arg 2"])]),
+            Task([Command(["bar", "arg 1"])]),
+            Task([Command(["baz", "arg 1", "arg 2", "arg 3"])]),
             ];
 
         foreach (task; tasks)
@@ -944,7 +959,7 @@ class BuildState : SQLite3
     /// Ditto
     @property auto enumerate(T : TaskKey)()
     {
-        return prepare(`SELECT command,workDir FROM task`)
+        return prepare(`SELECT commands,workDir FROM task`)
             .rows!(parse!TaskKey);
     }
 
@@ -1050,7 +1065,7 @@ class BuildState : SQLite3
         auto state = new BuildState;
 
         immutable resId  = state.put(Resource("foo.c"));
-        immutable taskId = state.put(Task(["gcc", "foo.c"]));
+        immutable taskId = state.put(Task([Command(["gcc", "foo.c"])]));
         state.remove(resId);
         state.remove(taskId);
     }
@@ -1131,8 +1146,8 @@ class BuildState : SQLite3
             ];
 
         auto tasks = [
-            state.put(Task(["test"])),
-            state.put(Task(["foobar", "foo", "bar"])),
+            state.put(Task([Command(["test"])])),
+            state.put(Task([Command(["foobar", "foo", "bar"])])),
             ];
 
         state.put(tasks[0], resources[0], EdgeType.explicit);
@@ -1471,7 +1486,7 @@ class BuildState : SQLite3
         immutable resources = ["a", "b", "c"];
         auto resourceIds = resources.map!(r => state.put(Resource(r))).array;
 
-        immutable tasks = [["foo"], ["bar"]];
+        immutable tasks = [[Command(["foo"])], [Command(["bar"])]];
         auto taskIds = tasks.map!(t => state.put(Task(t))).array;
 
         foreach (immutable id; resourceIds)

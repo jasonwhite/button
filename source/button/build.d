@@ -100,17 +100,17 @@ unittest
     immutable Rule[] rules = [
         {
             inputs: [Resource("foo.c"), Resource("baz.h")],
-            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"]),
+            task: Task([Command(["gcc", "-c", "foo.c", "-o", "foo.o"])]),
             outputs: [Resource("foo.o")]
         },
         {
             inputs: [Resource("bar.c"), Resource("baz.h")],
-            task: Task(["gcc", "-c", "bar.c", "-o", "bar.o"]),
+            task: Task([Command(["gcc", "-c", "bar.c", "-o", "bar.o"])]),
             outputs: [Resource("bar.o")]
         },
         {
             inputs: [Resource("foo.o"), Resource("bar.o")],
-            task: Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]),
+            task: Task([Command(["gcc", "foo.o", "bar.o", "-o", "foobar"])]),
             outputs: [Resource("foobar")]
         }
     ];
@@ -521,9 +521,9 @@ void queueChanges(BuildState state, TaskPool pool, TextColor color)
  * Syncs the build state with implicit dependencies.
  */
 void syncStateImplicit(BuildState state, Index!Task v, string workDir,
-        immutable(ubyte)[] inputs, immutable(ubyte)[] outputs)
+        immutable(ubyte)[][] inputs, immutable(ubyte)[][] outputs)
 {
-    import std.algorithm.iteration : splitter, uniq, filter, map;
+    import std.algorithm.iteration : splitter, uniq, filter, map, joiner;
     import std.array : array;
     import std.algorithm.sorting : sort;
     import std.format : format;
@@ -532,12 +532,12 @@ void syncStateImplicit(BuildState state, Index!Task v, string workDir,
 
     auto inputDiff = changes(
             state.incoming!Resource(v, EdgeType.implicit).array.sort(),
-            inputs.deps(workDir).array.sort().uniq
+            inputs.map!(x => x.deps(workDir)).joiner.array.sort().uniq
             );
 
     auto outputDiff = changes(
             state.outgoing!Resource(v, EdgeType.implicit).array.sort(),
-            outputs.deps(workDir).array.sort().uniq
+            outputs.map!(x => x.deps(workDir)).joiner.array.sort().uniq
             );
 
     foreach (c; inputDiff)
@@ -717,10 +717,8 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
 
     try
     {
-        if (result.status != 0)
-            throw new TaskError(
-                    "Process exited with code %d".format(result.status)
-                    );
+        if (!result.success)
+            throw new TaskError("Task failed");
 
         synchronized (context.state)
             syncStateImplicit(context.state, v, task.workingDirectory,

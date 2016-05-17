@@ -54,6 +54,7 @@ struct Rules
         import std.array : array;
         import std.json : JSONException;
         import std.path : buildNormalizedPath;
+        import std.exception : assumeUnique;
 
         if (rules.empty)
         {
@@ -71,10 +72,10 @@ struct Rules
             .map!(x => Resource(buildNormalizedPath(x.str())))
             .array();
 
-        auto command = jsonRule["task"].array()
-            .map!(x => x.str())
-            .array()
-            .idup;
+        auto commands = jsonRule["task"].array()
+            .map!(x => Command(x.array().map!(y => y.str()).array().idup))
+            .array
+            .assumeUnique;
 
         string cwd = "";
 
@@ -88,7 +89,7 @@ struct Rules
             display = jsonRule["display"].str();
         catch(JSONException e) {}
 
-        rule = Rule(inputs, outputs, Task(command, cwd, display));
+        rule = Rule(inputs, outputs, Task(commands, cwd, display));
 
         rules.popFront();
     }
@@ -122,18 +123,18 @@ unittest
         [
             {
                 "inputs": ["foo.c", "baz.h"],
-                "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
+                "task": [["gcc", "-c", "foo.c", "-o", "foo.o"]],
                 "display": "cc foo.c",
                 "outputs": ["foo.o"]
             },
             {
                 "inputs": ["bar.c", "baz.h"],
-                "task": ["gcc", "-c", "bar.c", "-o", "bar.o"],
+                "task": [["gcc", "-c", "bar.c", "-o", "bar.o"]],
                 "outputs": ["bar.o"]
             },
             {
                 "inputs": ["foo.o", "bar.o"],
-                "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
+                "task": [["gcc", "foo.o", "bar.o", "-o", "foobar"]],
                 "outputs": ["foobar"]
             }
         ]
@@ -142,17 +143,17 @@ unittest
     immutable Rule[] rules = [
         {
             inputs: [Resource("foo.c"), Resource("baz.h")],
-            task: Task(["gcc", "-c", "foo.c", "-o", "foo.o"]),
+            task: Task([Command(["gcc", "-c", "foo.c", "-o", "foo.o"])]),
             outputs: [Resource("foo.o")]
         },
         {
             inputs: [Resource("bar.c"), Resource("baz.h")],
-            task: Task(["gcc", "-c", "bar.c", "-o", "bar.o"]),
+            task: Task([Command(["gcc", "-c", "bar.c", "-o", "bar.o"])]),
             outputs: [Resource("bar.o")]
         },
         {
             inputs: [Resource("foo.o"), Resource("bar.o")],
-            task: Task(["gcc", "foo.o", "bar.o", "-o", "foobar"]),
+            task: Task([Command(["gcc", "foo.o", "bar.o", "-o", "foobar"])]),
             outputs: [Resource("foobar")]
         }
     ];
@@ -168,7 +169,7 @@ unittest
         [
             {
                 "inputs": ["./test/../foo.c", "./baz.h"],
-                "task": ["ls", "foo.c", "baz.h"],
+                "task": [["ls", "foo.c", "baz.h"]],
                 "outputs": ["this/../path/../is/../normalized"]
             }
         ]
@@ -177,7 +178,7 @@ unittest
     immutable Rule[] rules = [
         {
             inputs: [Resource("foo.c"), Resource("baz.h")],
-            task: Task(["ls", "foo.c", "baz.h"]),
+            task: Task([Command(["ls", "foo.c", "baz.h"])]),
             outputs: [Resource("normalized")]
         },
     ];

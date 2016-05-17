@@ -75,7 +75,7 @@ final class FileLogger : Logger
             synchronized (this.outer)
             {
                 file.println(color.status, " > ", color.reset,
-                        task.toString(verbose));
+                        task.toPrettyString(verbose));
 
                 printOutput();
                 printTail(duration);
@@ -89,7 +89,7 @@ final class FileLogger : Logger
             synchronized (this.outer)
             {
                 file.println(color.status, " > ", color.error,
-                        task.toString(verbose), color.reset);
+                        task.toPrettyString(verbose), color.reset);
 
                 printOutput();
                 printTail(duration);
