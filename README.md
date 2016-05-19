@@ -55,17 +55,17 @@ Here is a simple example of a build description:
 [
     {
         "inputs": ["foo.c", "baz.h"],
-        "task": ["gcc", "-c", "foo.c", "-o", "foo.o"],
+        "task": [["gcc", "-c", "foo.c", "-o", "foo.o"]],
         "outputs": ["foo.o"]
     },
     {
         "inputs": ["bar.c", "baz.h"],
-        "task": ["gcc", "-c", "bar.c", "-o", "bar.o"],
+        "task": [["gcc", "-c", "bar.c", "-o", "bar.o"]],
         "outputs": ["bar.o"]
     },
     {
         "inputs": ["foo.o", "bar.o"],
-        "task": ["gcc", "foo.o", "bar.o", "-o", "foobar"],
+        "task": [["gcc", "foo.o", "bar.o", "-o", "foobar"]],
         "outputs": ["foobar"]
     }
 ]
