@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Installation - Button</title>
-  <meta name="description" content="Unfortunately, there are no operating system packages for Button yet. It must bebuilt from source.">
+  <meta name="description" content="Button consists of three main components:">
 
   <link rel="stylesheet" href="/button/assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="/button/assets/css/main.css">
@@ -68,41 +68,50 @@
                 <div class="col-lg-10 col-md-9">
                     <article>
                         <div class="page-header"><h1>Installation</h1></div>
-                        <p>Unfortunately, there are no operating system packages for Button yet. It must be
-built from source.</p>
-
-<p><strong>NOTE</strong>: Button is currently only supported on Linux. If you’re on OS X or
-Windows, you are out of luck. The good news is that there isn’t much work to do
-to support these operating systems. Any help with this would be greatly
-appreciated.</p>
-
-<h2 id="building-it">Building It</h2>
-
-<p>Button consists of three main components:</p>
+                        <p>Button consists of three main components:</p>
 
 <ol>
-  <li>The core build system itself (<code class="highlighter-rouge">button</code>). This is what runs the actual build.</li>
-  <li>The implicit dependency detector (<code class="highlighter-rouge">button-deps</code>).</li>
-  <li>The build description generator from Lua scripts (<code class="highlighter-rouge">button-lua</code>).</li>
+  <li><code class="highlighter-rouge">button</code>: The build system itself.</li>
+  <li><code class="highlighter-rouge">button-deps</code>: The implicit dependency detector.</li>
+  <li><code class="highlighter-rouge">button-lua</code>: The build description generator from Lua scripts.</li>
 </ol>
 
 <p>Optionally, there is also the Makefile-to-Button build description converter
 (<code class="highlighter-rouge">button-make</code>). This is only needed if you want to automatically convert
 Makefiles to Button’s build description format.</p>
 
-<h3 id="prerequisites">Prerequisites</h3>
+<h2 id="system-requirements">System Requirements</h2>
 
-<p>To build, you’ll need:</p>
+<p>Supported platforms:</p>
 
-<ol>
-  <li><a href="https://git-scm.com/">Git</a>.</li>
-  <li><a href="https://www.gnu.org/software/make/">Make</a>.</li>
-  <li><a href="http://dlang.org/download.html">DMD</a>, the D compiler.</li>
-  <li><a href="http://code.dlang.org/download">DUB</a>, The D package manager.</li>
-</ol>
+<ul>
+  <li>Linux</li>
+</ul>
 
-<p>If you’re running a relatively recent Linux distribution, there are probably
-packages available for these already.</p>
+<p>Unsupported platforms:</p>
+
+<ul>
+  <li>OS X</li>
+  <li>Windows</li>
+</ul>
+
+<p>Supported for OS X and Windows will be coming in the future.</p>
+
+<h2 id="compiling-from-source">Compiling From Source</h2>
+
+<p>Unfortunately, there are no operating system packages for Button yet. It must be
+built from source.</p>
+
+<h3 id="installing-dependencies">Installing Dependencies</h3>
+
+<p>To build, you’ll need <a href="https://git-scm.com/">Git</a>, <a href="https://www.gnu.org/software/make/">Make</a>, <a href="http://dlang.org/download.html">DMD</a> (the D compiler), and <a href="http://code.dlang.org/download">DUB</a>
+(the D package manager).</p>
+
+<p>On Arch Linux, these can be installed with:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ sudo pacman -Sy git base-devel dlang dub
+</code></pre>
+</div>
 
 <h3 id="building-button">Building <code class="highlighter-rouge">button</code></h3>
 
@@ -123,8 +132,8 @@ packages available for these already.</p>
   </li>
 </ol>
 
-<p>There should now be a <code class="highlighter-rouge">button</code> executable in the current directory. Put this in
-a directory that is in your <code class="highlighter-rouge">$PATH</code> and run it to make sure it is working:</p>
+<p>There should now be a <code class="highlighter-rouge">button</code> executable in the current directory. Copy it to a
+directory that is in your <code class="highlighter-rouge">$PATH</code> and run it to make sure it is working:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>$ button help
 </code></pre>
@@ -149,9 +158,8 @@ a directory that is in your <code class="highlighter-rouge">$PATH</code> and run
   </li>
 </ol>
 
-<p>There should now be a <code class="highlighter-rouge">button-deps</code> executable in the current directory. Put
-this in a directory that is in your <code class="highlighter-rouge">$PATH</code> and run it to make sure it is
-working:</p>
+<p>There should now be a <code class="highlighter-rouge">button-deps</code> executable in the current directory. Copy
+it to a directory that is in your <code class="highlighter-rouge">$PATH</code> and run it to make sure it is working:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>$ button-deps
 Usage: button-deps [--json FILE] -- program [arg...]
@@ -187,10 +195,9 @@ Usage: button-lua &lt;script&gt; [-o output] [args...]
 </code></pre>
 </div>
 
-<h3 id="building-button-make">Building <code class="highlighter-rouge">button-make</code></h3>
+<h3 id="optional-building-button-make">Optional: Building <code class="highlighter-rouge">button-make</code></h3>
 
-<p>This is entirely optional. This is only needed if you have Makefiles you want to
-build and/or visualize.</p>
+<p>This is only needed if you have Makefiles you want to build and/or visualize.</p>
 
 <p><code class="highlighter-rouge">button-make</code> is a modified version of GNU Make and thus the build process is
 the same as building <code class="highlighter-rouge">make</code>:</p>
