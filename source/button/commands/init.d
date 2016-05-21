@@ -43,12 +43,12 @@ immutable rootTemplateContents = q"EOS
 [
     {
         "inputs": ["BUILD.lua"],
-        "task": ["button-lua", "BUILD.lua", "-o", ".BUILD.lua.json"],
+        "task": [["button-lua", "BUILD.lua", "-o", ".BUILD.lua.json"]],
         "outputs": [".BUILD.lua.json"]
     },
     {
         "inputs": [".BUILD.lua.json"],
-        "task": ["button", "build", "--color=always", "-f", ".BUILD.lua.json"],
+        "task": [["button", "build", "--color=always", "-f", ".BUILD.lua.json"]],
         "outputs": [".BUILD.lua.json.state"]
     }
 ]
