@@ -4,37 +4,47 @@ category: intro
 order: 1
 ---
 
-Unfortunately, there are no operating system packages for Button yet. It must be
-built from source.
-
-**NOTE**: Button is currently only supported on Linux. If you're on OS X or
-Windows, you are out of luck. The good news is that there isn't much work to do
-to support these operating systems. Any help with this would be greatly
-appreciated.
-
-## Building It
-
 Button consists of three main components:
 
- 1. The core build system itself (`button`). This is what runs the actual build.
- 2. The implicit dependency detector (`button-deps`).
- 3. The build description generator from Lua scripts (`button-lua`).
+ 1. `button`: The build system itself.
+ 2. `button-deps`: The implicit dependency detector.
+ 3. `button-lua`: The build description generator from Lua scripts.
 
 Optionally, there is also the Makefile-to-Button build description converter
 (`button-make`). This is only needed if you want to automatically convert
 Makefiles to Button's build description format.
 
-### Prerequisites
+## System Requirements
 
-To build, you'll need:
+Supported platforms:
 
- 1. [Git](https://git-scm.com/).
- 2. [Make](https://www.gnu.org/software/make/).
- 2. [DMD](http://dlang.org/download.html), the D compiler.
- 3. [DUB](http://code.dlang.org/download), The D package manager.
+ * Linux
 
-If you're running a relatively recent Linux distribution, there are probably
-packages available for these already.
+Unsupported platforms:
+
+ * OS X
+ * Windows
+
+Supported for OS X and Windows will be coming in the future.
+
+## Compiling From Source
+
+Unfortunately, there are no operating system packages for Button yet. It must be
+built from source.
+
+### Installing Dependencies
+
+To build, you'll need [Git][], [Make][], [DMD][] (the D compiler), and [DUB][]
+(the D package manager).
+
+On Arch Linux, these can be installed with:
+
+    $ sudo pacman -Sy git base-devel dlang dub
+
+[Git]: https://git-scm.com/
+[Make]: https://www.gnu.org/software/make/
+[DMD]: http://dlang.org/download.html
+[DUB]: http://code.dlang.org/download
 
 ### Building `button`
 
@@ -50,8 +60,8 @@ packages available for these already.
     $ dub build --build=release
     ```
 
-There should now be a `button` executable in the current directory. Put this in
-a directory that is in your `$PATH` and run it to make sure it is working:
+There should now be a `button` executable in the current directory. Copy it to a
+directory that is in your `$PATH` and run it to make sure it is working:
 
     $ button help
 
@@ -69,9 +79,8 @@ a directory that is in your `$PATH` and run it to make sure it is working:
     $ dub build --build=release
     ```
 
-There should now be a `button-deps` executable in the current directory. Put
-this in a directory that is in your `$PATH` and run it to make sure it is
-working:
+There should now be a `button-deps` executable in the current directory. Copy
+it to a directory that is in your `$PATH` and run it to make sure it is working:
 
     $ button-deps
     Usage: button-deps [--json FILE] -- program [arg...]
@@ -98,10 +107,9 @@ to a directory that is in your `$PATH` and run it to make sure it is working:
     $ button-lua
     Usage: button-lua <script> [-o output] [args...]
 
-### Building `button-make`
+### Optional: Building `button-make`
 
-This is entirely optional. This is only needed if you have Makefiles you want to
-build and/or visualize.
+This is only needed if you have Makefiles you want to build and/or visualize.
 
 `button-make` is a modified version of GNU Make and thus the build process is
 the same as building `make`:
