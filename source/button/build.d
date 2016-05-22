@@ -247,10 +247,14 @@ void syncState(R)(R rules, BuildState state, TaskPool pool, bool dryRun = false)
             auto taskid = state.find(c.value.from.key);
             auto resid = state.find(c.value.to.identifier);
 
-            // When an edge from a task to a resource is removed, the
-            // resource should be deleted.
-            if (!dryRun)
-                state[resid].remove();
+            auto r = state[resid];
+
+            // When an edge from a task to a resource is removed, the resource
+            // should be deleted.
+            r.remove(dryRun);
+
+            // Update the resource status in the database.
+            //state[resid] = r;
 
             state.remove(taskid, resid, EdgeType.explicit);
             break;
@@ -269,12 +273,9 @@ void syncState(R)(R rules, BuildState state, TaskPool pool, bool dryRun = false)
             // Delete all outputs from this task. Note that any edges associated
             // with this task are automatically removed when the task is removed
             // from the database (because of "ON CASCADE DELETE").
-            if (!dryRun)
-            {
-                auto outgoing = state.outgoing!(EdgeIndex!(Task, Resource))(id);
-                foreach (e; pool.parallel(outgoing))
-                    state[e.vertex].remove();
-            }
+            auto outgoing = state.outgoing!(EdgeIndex!(Task, Resource))(id);
+            foreach (e; pool.parallel(outgoing))
+                state[e.vertex].remove(dryRun);
 
             state.remove(id);
         }
@@ -629,7 +630,7 @@ void syncStateImplicit(BuildState state, Index!Task v, string workDir,
             auto id = state.find(c.value.path);
             assert(id != Index!Resource.Invalid);
 
-            state[id].remove();
+            state[id].remove(false);
             state.remove(v, id, EdgeType.implicit);
             state.remove(id);
         }
@@ -759,17 +760,32 @@ void build(BuildStateGraph graph, BuildState state, TaskPool pool,
 /**
  * Deletes all outputs from the file system.
  */
-void clean(BuildState state)
+void clean(BuildState state, bool dryRun)
 {
     import io.text, io.file.stdio;
+    import std.range : takeOne;
 
     foreach (id; state.enumerate!(Index!Resource))
     {
         if (state.degreeIn(id) > 0)
         {
             auto r = state[id];
+
             println("Deleting `", r, "`");
-            r.remove();
+
+            r.remove(dryRun);
+
+            // Update the database with the new status of the resource.
+            state[id] = r;
+
+            // We want to build this the next time around, so mark its task as
+            // pending.
+            auto incoming = state
+                .incoming!(NeighborIndex!(Index!Resource))(id)
+                .takeOne;
+            assert(incoming.length == 1,
+                    "Output resource has does not have 1 incoming edge!");
+            state.addPending(incoming[0].vertex);
         }
     }
 }

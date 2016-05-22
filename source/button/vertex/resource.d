@@ -201,9 +201,9 @@ struct Resource
     }
 
     /**
-     * Deletes the resource from disk, but only if it is an output resource.
+     * Deletes the resource from disk.
      */
-    void remove() const nothrow
+    void remove(bool dryRun) nothrow
     {
         import std.file : unlink = remove, isFile;
         import io;
@@ -216,12 +216,17 @@ struct Resource
 
         // TODO: Use rmdir instead if this is a directory.
 
-        try
+        if (!dryRun)
         {
-            unlink(path);
+            try
+            {
+                unlink(path);
+            }
+            catch (Exception e)
+            {
+            }
         }
-        catch (Exception e)
-        {
-        }
+
+        lastModified = Status.notFound;
     }
 }

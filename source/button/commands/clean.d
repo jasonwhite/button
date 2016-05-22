@@ -32,12 +32,34 @@ int cleanCommand(CleanOptions opts, GlobalOptions globalOpts)
     try
     {
         string path = buildDescriptionPath(opts.path);
+        string statePath = path.stateName;
 
-        auto state = new BuildState(path.stateName);
-        clean(state);
+        auto state = new BuildState(statePath);
+
+        {
+            state.begin();
+            scope (success)
+            {
+                if (opts.dryRun)
+                    state.rollback();
+                else
+                    state.commit();
+            }
+
+            scope (failure)
+                state.rollback();
+
+            clean(state, opts.dryRun);
+        }
+
+        // Close the database before deleting it.
+        state.close();
 
         if (opts.purge)
-            remove(path.stateName);
+        {
+            println("Deleting `", statePath, "`");
+            remove(statePath);
+        }
     }
     catch (BuildException e)
     {
