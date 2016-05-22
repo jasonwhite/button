@@ -5,6 +5,13 @@ order: 0
 permalink: /:collection/
 ---
 
+Table of contents:
+
+* TOC
+{:toc}
+
+---
+
 Button is a very general, elegantly simple, and powerful build system. This
 document gives a high-level overview of what Button is, what it can do, and how
 it works.

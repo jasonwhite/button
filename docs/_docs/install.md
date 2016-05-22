@@ -4,6 +4,13 @@ category: intro
 order: 1
 ---
 
+Table of contents:
+
+* TOC
+{:toc}
+
+---
+
 Button consists of three main components:
 
  1. `button`: The build system itself.
