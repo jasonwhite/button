@@ -1,11 +1,11 @@
 [
     {
-        "inputs": ["foo.c", "baz.h"],
+        "inputs": ["foo.c", "foo.h"],
         "task": [["gcc", "-c", "foo.c", "-o", "foo.o"]],
         "outputs": ["foo.o"]
     },
     {
-        "inputs": ["bar.c", "baz.h"],
+        "inputs": ["bar.c", "foo.h"],
         "task": [["gcc", "-c", "bar.c", "-o", "bar.o"]],
         "outputs": ["bar.o"]
     },

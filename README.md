@@ -54,12 +54,12 @@ Here is a simple example of a build description:
 ```json
 [
     {
-        "inputs": ["foo.c", "baz.h"],
+        "inputs": ["foo.c", "foo.h"],
         "task": [["gcc", "-c", "foo.c", "-o", "foo.o"]],
         "outputs": ["foo.o"]
     },
     {
-        "inputs": ["bar.c", "baz.h"],
+        "inputs": ["bar.c", "foo.h"],
         "task": [["gcc", "-c", "bar.c", "-o", "bar.o"]],
         "outputs": ["bar.o"]
     },
@@ -131,7 +131,7 @@ A visualization of the above build description can be generated using
 ```bash
 $ button graph --full | dot -Tpng > build_graph.png
 ```
-![Simple Task Graph](/examples/basic/build.png)
+![Simple Task Graph](/docs/assets/img/build.png)
 
 [GraphViz]: http://www.graphviz.org/
 
