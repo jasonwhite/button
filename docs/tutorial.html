@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+    <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Tutorial - Button</title>
+  <meta name="description" content="Table of contents:">
+
+  <link rel="stylesheet" href="/button/assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/button/assets/css/main.css">
+
+  <link rel="canonical" href="https://jasonwhite.github.io/button/docs/tutorial">
+</head>
+
+    <body>
+        <nav class="navbar navbar-static-top navbar-inverse">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/button/">Button</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="/button/docs/" class="active">Docs</a></li>
+                <li><a href="https://github.com/jasonwhite/button">View on GitHub</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+        <div class="container">
+            <div class="row">
+                <div id="sidebar" class="col-lg-2 col-md-3">
+                    <ul class="nav nav-list">
+    <li class="nav-header">Getting Started</li>
+    
+    
+        
+            <li><a href="/button/docs/">Overview</a></li>
+        
+    
+        
+            <li><a href="/button/docs/install">Installation</a></li>
+        
+    
+        
+            <li class="active"><a href="/button/docs/tutorial">Tutorial</a></li>
+        
+    
+
+    <li class="nav-header">Commands</li>
+    
+    
+        
+            <li><a href="/button/docs/commands/build">button build</a></li>
+        
+    
+        
+            <li><a href="/button/docs/commands/graph">button graph</a></li>
+        
+    
+</ul>
+
+                </div>
+                <div class="col-lg-10 col-md-9">
+                    <article>
+                        <div class="page-header"><h1>Tutorial</h1></div>
+                        <p>Table of contents:</p>
+
+<ul id="markdown-toc">
+  <li><a href="#setup" id="markdown-toc-setup">Setup</a></li>
+  <li><a href="#building-without-a-build-system" id="markdown-toc-building-without-a-build-system">Building Without a Build System</a></li>
+  <li><a href="#the-build-description" id="markdown-toc-the-build-description">The Build Description</a>    <ul>
+      <li><a href="#visualizing-it" id="markdown-toc-visualizing-it">Visualizing It</a></li>
+    </ul>
+  </li>
+  <li><a href="#building-it" id="markdown-toc-building-it">Building It</a>    <ul>
+      <li><a href="#the-null-build" id="markdown-toc-the-null-build">The Null Build</a></li>
+      <li><a href="#touching-a-file" id="markdown-toc-touching-a-file">Touching a File</a></li>
+      <li><a href="#modifying-a-file" id="markdown-toc-modifying-a-file">Modifying a File</a></li>
+      <li><a href="#deleting-an-output" id="markdown-toc-deleting-an-output">Deleting an Output</a></li>
+      <li><a href="#adding-a-comment" id="markdown-toc-adding-a-comment">Adding a Comment</a></li>
+      <li><a href="#modifying-the-build-description" id="markdown-toc-modifying-the-build-description">Modifying the Build Description</a></li>
+    </ul>
+  </li>
+  <li><a href="#going-meta-building-the-build-description" id="markdown-toc-going-meta-building-the-build-description">Going Meta: Building the Build Description</a></li>
+</ul>
+
+<hr />
+
+<p>If you haven’t done so already, follow the <a href="/button/docs/install">installation instructions</a> to
+install Button.</p>
+
+<h2 id="setup">Setup</h2>
+
+<p>Suppose, in our <code class="highlighter-rouge">button-tutorial</code> directory, we have two C files and one header
+file that we want to build:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>button-tutorial
+|-- bar.c
+|-- foo.c
+`-- foo.h
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">foo.c</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include "foo.h"
+</span>
+<span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="nf">foo</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="s">"Hello world!"</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">bar.c</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include "foo.h"
+#include &lt;stdio.h&gt;
+</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">puts</span><span class="p">(</span><span class="n">foo</span><span class="p">());</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">foo.h</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#ifndef FOO_H
+#define FOO_H
+</span>
+<span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">foo</span><span class="p">();</span>
+
+<span class="cp">#endif // FOO_H
+</span></code></pre>
+</div>
+
+<h2 id="building-without-a-build-system">Building Without a Build System</h2>
+
+<p>Without a build system, we might compile and link these like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ gcc -c foo.c -o foo.o
+$ gcc -c bar.c -o bar.o
+$ gcc foo.o bar.o -o foobar
+</code></pre>
+</div>
+
+<p>Alternatively, it could have been done in one step:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ gcc foo.c bar.c -o foobar
+</code></pre>
+</div>
+
+<p>However, that approach doesn’t scale well with many source files. If only one
+source file has changed since the last compilation, the compiler would be
+duplicating a lot of work by building everything from scratch. Build systems
+generally take the first approach so that only the necessary files are
+recompiled.</p>
+
+<h2 id="the-build-description">The Build Description</h2>
+
+<p>In order to automate the three steps above, we need to create a <em>build
+description</em>. A build description lists every step necessary to build a project.</p>
+
+<p>Button reads in the build description in JSON format. The above three steps
+would look like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.h"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.o"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.o"</span><span class="p">]</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bar.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.h"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.o"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bar.o"</span><span class="p">]</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.o"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foobar"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foobar"</span><span class="p">]</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span></code></pre>
+</div>
+
+<p>Obviously, you don’t want to write this by hand for real-world projects.
+However, for learning purposes, it is important to do it at least once. In later
+sections, we will generate the build description as part of the build.</p>
+
+<p>Name this JSON file <code class="highlighter-rouge">button.json</code>. Our source tree should then look like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>button-tutorial
+|-- bar.c
+|-- button.json
+|-- foo.c
+`-- foo.h
+</code></pre>
+</div>
+
+<h3 id="visualizing-it">Visualizing It</h3>
+
+<p>It can be very useful to see what the build description looks like. There is a
+command to produce input for <a href="http://www.graphviz.org/">GraphViz</a>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button graph --full | dot -Tpng &gt; build.png
+</code></pre>
+</div>
+
+<p><img src="/button/assets/img/build.png" alt="Build Graph" /></p>
+
+<p>Like looking at a map, you can gain an immediate understanding of what the build
+is doing by looking at its graph. See the documentation on <a href="/button/docs/commands/graph"><code class="highlighter-rouge">button
+graph</code></a> for more information.</p>
+
+<h2 id="building-it">Building It</h2>
+
+<p>To build it, simply run <code class="highlighter-rouge">button build</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button build
+ &gt; gcc -c foo.c -o foo.o
+ &gt; gcc -c bar.c -o bar.o
+ &gt; gcc foo.o bar.o -o foobar
+$ ./foobar
+Hello world!
+</code></pre>
+</div>
+
+<p>By default, Button looks for a <code class="highlighter-rouge">button.json</code> file in the current directory (or
+any parent directory). See the documentation on <a href="/button/docs/commands/build"><code class="highlighter-rouge">button build</code></a>
+for more information.</p>
+
+<p>Lets kick the tires and see what happens to the build under certain scenarios.</p>
+
+<h3 id="the-null-build">The Null Build</h3>
+
+<p>Immediately running the build again, without changing anything, nothing will
+happen:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button build
+</code></pre>
+</div>
+
+<p>Button sees that none of the source files have changed and so it has nothing to
+do.</p>
+
+<h3 id="touching-a-file">Touching a File</h3>
+
+<p>What happens if we <code class="highlighter-rouge">touch</code> a file (i.e., change its modification time stamp)?</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ touch foo.c
+$ button build
+</code></pre>
+</div>
+
+<p>Nothing happened! Indeed, nothing <em>needs</em> to happen. The file itself didn’t
+change – only the metadata associated with the file. While other build systems
+use a file’s time stamp to determine changes, Button determines changes based on
+the checksum of a file’s contents. This might seem like it would get slow for
+many files, but the checksum is only recomputed if the time stamp changed.</p>
+
+<h3 id="modifying-a-file">Modifying a File</h3>
+
+<p>Lets change the return string in <code class="highlighter-rouge">foo.c</code> to <code class="highlighter-rouge">"Farewell, cruel world!"</code> and run the
+build again:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include "foo.h"
+</span>
+<span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="nf">foo</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="s">"Farewell, cruel world!"</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button build
+ &gt; gcc -c foo.c -o foo.o
+ &gt; gcc foo.o bar.o -o foobar
+$ ./foobar
+Farewell, cruel world!
+</code></pre>
+</div>
+
+<p>Of course, <code class="highlighter-rouge">foo.c</code> changed and so it got recompiled. Since <code class="highlighter-rouge">bar.c</code> hasn’t
+changed, there is no need to recompile it. It also relinked because <code class="highlighter-rouge">foo.o</code>
+changed after recompiling <code class="highlighter-rouge">foo.c</code>.</p>
+
+<h3 id="deleting-an-output">Deleting an Output</h3>
+
+<p>What happens if we delete the executable <code class="highlighter-rouge">foobar</code>?</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ rm foobar
+$ button build
+ - Warning: Output file `foobar` was changed externally and will be regenerated.
+ &gt; gcc foo.o bar.o -o foobar
+</code></pre>
+</div>
+
+<p>Button sees that <code class="highlighter-rouge">foobar</code> doesn’t exist anymore and rebuilds it. If <code class="highlighter-rouge">foobar</code> was
+modified by us in some other way, it would have been rebuilt just the same.</p>
+
+<h3 id="adding-a-comment">Adding a Comment</h3>
+
+<p>Lets add a comment to <code class="highlighter-rouge">foo.c</code> and see what happens:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include "foo.h"
+</span>
+<span class="cm">/**
+ * Returns a pleasant greeting. Guaranteed to be random.
+ */</span>
+<span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="nf">foo</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="s">"Farewell, cruel world!"</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button build
+ &gt; gcc -c foo.c -o foo.o
+</code></pre>
+</div>
+
+<p>Only <code class="highlighter-rouge">foo.c</code> was rebuilt. It wasn’t relinked. Shouldn’t it have relinked?</p>
+
+<p>When compiling object files, <code class="highlighter-rouge">gcc</code> is deterministic. That is, given the same
+input, it always produces the same output. Adding a comment to the source file
+has no effect on the generated code and so <code class="highlighter-rouge">gcc</code> generates the same exact object
+file as it would without the comment. Of course, this is specific to <code class="highlighter-rouge">gcc</code>. Not
+all compilers do this, but they should (I’m looking at <em>you</em> Microsoft).</p>
+
+<p>Here, the checksum of <code class="highlighter-rouge">foo.o</code> did not change from the previous build and so
+Button avoids doing work that doesn’t need to be done.</p>
+
+<h3 id="modifying-the-build-description">Modifying the Build Description</h3>
+
+<p>How does Button handle changes to the build description?</p>
+
+<p>Lets remove the compilation of <code class="highlighter-rouge">bar.c</code> from the build description and run the
+build again. <code class="highlighter-rouge">button.json</code> should then look like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.h"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.o"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.o"</span><span class="p">]</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.o"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foobar"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foobar"</span><span class="p">]</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span></code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button build
+ &gt; gcc foo.o bar.o -o foobar
+gcc: error: bar.o: No such file or directory
+   ➥ Task Error: Task failed
+:: Build failed! See the output above for details.
+</code></pre>
+</div>
+
+<p>Linking failed because <code class="highlighter-rouge">bar.o</code> doesn’t exist on disk! Button deleted <code class="highlighter-rouge">bar.o</code>.</p>
+
+<p>Button stores the build description internally in a database and does a
+comparison to what is in <code class="highlighter-rouge">button.json</code>. If it sees that a rule was removed, it
+will delete its outputs from disk. This helps ensure that incremental builds,
+even in the face of structural changes to the build description, are correct. If
+<code class="highlighter-rouge">bar.o</code> hadn’t been deleted, the link task would have happily succeeded. We
+could have spent a long time tracking down why the program is misbehaving at
+runtime. Instead it failed at build-time as it should.</p>
+
+<h2 id="going-meta-building-the-build-description">Going Meta: Building the Build Description</h2>
+
+<p>As mentioned earlier, writing the JSON build description by hand simply doesn’t
+scale for anything beyond trivial examples. Lets build the build description as
+part of the build.</p>
+
+<p>Go ahead and delete everything except the source files, including <code class="highlighter-rouge">button.json</code>.
+We’re going to start fresh:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button clean --purge
+$ rm button.json
+</code></pre>
+</div>
+
+<p>Our source should now look the same as it did at the start of the tutorial:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>button-tutorial
+|-- bar.c
+|-- foo.c
+`-- foo.h
+</code></pre>
+</div>
+
+<p>Lets initialize it with some extra files:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button init .
+</code></pre>
+</div>
+
+<p>That created a few new files for us, so we don’t have to do it manually. Our
+source tree should now look like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>basic-example
+|-- bar.c
+|-- BUILD.lua
+|-- button.json
+|-- foo.c
+|-- foo.h
+`-- .gitignore
+</code></pre>
+</div>
+
+<p>The important ones are <code class="highlighter-rouge">button.json</code> and <code class="highlighter-rouge">BUILD.lua</code>. Lets take a peek inside
+<code class="highlighter-rouge">button.json</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"BUILD.lua"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"button-lua"</span><span class="p">,</span><span class="w"> </span><span class="s2">"BUILD.lua"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">".BUILD.lua.json"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">".BUILD.lua.json"</span><span class="p">]</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">".BUILD.lua.json"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"button"</span><span class="p">,</span><span class="w"> </span><span class="s2">"build"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--color=always"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-f"</span><span class="p">,</span><span class="w"> </span><span class="s2">".BUILD.lua.json"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">".BUILD.lua.json.state"</span><span class="p">]</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span></code></pre>
+</div>
+
+<p>The first rule runs <code class="highlighter-rouge">button-lua</code> on the file <code class="highlighter-rouge">BUILD.lua</code> to generate the build
+description <code class="highlighter-rouge">.BUILD.lua.json</code>. The second rule then runs Button with the
+generated build description file.</p>
+
+<p>Lets run a build:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button build
+ &gt; button-lua BUILD.lua -o .BUILD.lua.json
+ &gt; button build --color=always -f .BUILD.lua.json
+</code></pre>
+</div>
+
+<p>As expected, it ran the two rules in <code class="highlighter-rouge">button.json</code>, but the second rule didn’t
+really do anything. The generated <code class="highlighter-rouge">.BUILD.lua.json</code> has no rules in it because
+<code class="highlighter-rouge">BUILD.lua</code> isn’t generating any yet.</p>
+
+<p><code class="highlighter-rouge">BUILD.lua</code> currently only has a comment in it:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cm">--[[
+    This is the top-level build description. This is where you either create
+    build rules or delegate to other Lua scripts to create build rules.
+
+    See the documentation for more information on how to get started.
+]]</span>
+</code></pre>
+</div>
+
+<p>Good thing you’re here reading the documentation for more information on how to
+get started!</p>
+
+<p>To generate our rules using Lua, we can add this to the end of <code class="highlighter-rouge">BUILD.lua</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">rule</span> <span class="p">{</span>
+    <span class="n">inputs</span>  <span class="o">=</span> <span class="p">{</span><span class="s2">"foo.c"</span><span class="p">,</span> <span class="s2">"foo.h"</span><span class="p">},</span>
+    <span class="n">task</span>    <span class="o">=</span> <span class="p">{{</span><span class="s2">"gcc"</span><span class="p">,</span> <span class="s2">"-c"</span><span class="p">,</span> <span class="s2">"foo.c"</span><span class="p">,</span> <span class="s2">"-o"</span><span class="p">,</span> <span class="s2">"foo.o"</span><span class="p">}},</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"foo.o"</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">rule</span> <span class="p">{</span>
+    <span class="n">inputs</span>  <span class="o">=</span> <span class="p">{</span><span class="s2">"bar.c"</span><span class="p">,</span> <span class="s2">"foo.h"</span><span class="p">},</span>
+    <span class="n">task</span>    <span class="o">=</span> <span class="p">{{</span><span class="s2">"gcc"</span><span class="p">,</span> <span class="s2">"-c"</span><span class="p">,</span> <span class="s2">"bar.c"</span><span class="p">,</span> <span class="s2">"-o"</span><span class="p">,</span> <span class="s2">"bar.o"</span><span class="p">}},</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"bar.o"</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">rule</span> <span class="p">{</span>
+    <span class="n">inputs</span>  <span class="o">=</span> <span class="p">{</span><span class="s2">"foo.o"</span><span class="p">,</span> <span class="s2">"bar.o"</span><span class="p">},</span>
+    <span class="n">task</span>    <span class="o">=</span> <span class="p">{{</span><span class="s2">"gcc"</span><span class="p">,</span> <span class="s2">"foo.o"</span><span class="p">,</span> <span class="s2">"bar.o"</span><span class="p">,</span> <span class="s2">"-o"</span><span class="p">,</span> <span class="s2">"foobar"</span><span class="p">}},</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"foobar"</span><span class="p">},</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">rule</code> is a function that takes a table as an argument. Since we’re working with
+a full-fledged programming language, we can add more abstractions so it isn’t so
+verbose. There are modules to do exactly that:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">local</span> <span class="n">cc</span> <span class="o">=</span> <span class="nb">require</span> <span class="s2">"rules.cc"</span>
+
+<span class="n">cc</span><span class="p">.</span><span class="n">binary</span> <span class="p">{</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"foobar"</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="n">glob</span> <span class="s2">"*.c"</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">"rules.cc"</code> is a module that lets you generate rules for C and C++ builds.
+Here, calling <code class="highlighter-rouge">cc.binary</code> generates the compilation and linker rules for us.
+This is the JSON file it generates:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bar.c"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"button-deps"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--"</span><span class="p">,</span><span class="w"> </span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c.o"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bar.c.o"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"display"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cc bar.c"</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.c"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"button-deps"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--"</span><span class="p">,</span><span class="w"> </span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c.o"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.c.o"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"display"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cc foo.c"</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bar.c.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c.o"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"button-deps"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--"</span><span class="p">,</span><span class="w"> </span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"./foobar"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c.o"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"./foobar"</span><span class="p">],</span><span class="w">
+        </span><span class="nt">"display"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ld foobar"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span></code></pre>
+</div>
+
+<p>Notice that each task is prefixed with <code class="highlighter-rouge">["button-deps", "--",</code>. The program
+<code class="highlighter-rouge">button-deps</code> wraps the <code class="highlighter-rouge">gcc</code> command in order to provide automatic dependency
+detection. Any header files that are brought in with <code class="highlighter-rouge">#include</code> will get
+detected. That way, after the initial compilation, when a header file is
+changed, Button knows which tasks it needs to rerun in order to keep the build
+in a consistent state. Likewise, <code class="highlighter-rouge">button-deps</code> discovers outputs automatically
+so that Button can correctly delete them later if/when they are no longer
+outputs.</p>
+
+<p>You may also notice that there is a new <code class="highlighter-rouge">"display"</code> field. This just gives a
+human-readable name to the task. The display name is printed in the output
+instead of the command line of the task. It is not uncommon for command lines to
+get very long and thus very unreadable. Linker commands that are linking in many
+object files are usually the biggest offenders.</p>
+
+<p>Your <code class="highlighter-rouge">BUILD.lua</code> should now look like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cm">--[[
+    This is the top-level build description. This is where you either create
+    build rules or delegate to other Lua scripts to create build rules.
+
+    See the documentation for more information on how to get started.
+]]</span>
+
+<span class="kd">local</span> <span class="n">cc</span> <span class="o">=</span> <span class="nb">require</span> <span class="s2">"rules.cc"</span>
+
+<span class="n">cc</span><span class="p">.</span><span class="n">binary</span> <span class="p">{</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"foobar"</span><span class="p">,</span>
+    <span class="n">srcs</span> <span class="o">=</span> <span class="n">glob</span> <span class="s2">"*.c"</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+
+                    </article>
+                </div>
+            </div>
+        </div>
+        <footer class="footer">
+  <div class="container">
+      <div class="pull-left">
+          <p class="text-muted">&copy; Jason White, 2016</p>
+      </div>
+      <div class="pull-right">
+          <p class="text-right">
+              <a href="https://github.com/jasonwhite/button/tree/master/docs/_docs/tutorial.md">Help improve this page</a>
+          </p>
+      </div>
+  </div>
+</footer>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="/button/assets/js/bootstrap.min.js"></script>
+
+    </body>
+</html>
