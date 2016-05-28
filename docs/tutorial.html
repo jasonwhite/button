@@ -308,7 +308,7 @@ $ button build
 </div>
 
 <p>Button sees that <code class="highlighter-rouge">foobar</code> doesn’t exist anymore and rebuilds it. If <code class="highlighter-rouge">foobar</code> was
-modified by us in some other way, it would have been rebuilt just the same.</p>
+modified by us in some other way, it would have been rebuilt as well.</p>
 
 <h3 id="adding-a-comment">Adding a Comment</h3>
 
@@ -337,7 +337,8 @@ modified by us in some other way, it would have been rebuilt just the same.</p>
 input, it always produces the same output. Adding a comment to the source file
 has no effect on the generated code and so <code class="highlighter-rouge">gcc</code> generates the same exact object
 file as it would without the comment. Of course, this is specific to <code class="highlighter-rouge">gcc</code>. Not
-all compilers do this, but they should (I’m looking at <em>you</em> Microsoft).</p>
+all compilers are deterministic like this, but they should be (I’m looking at
+<em>you</em> Microsoft!).</p>
 
 <p>Here, the checksum of <code class="highlighter-rouge">foo.o</code> did not change from the previous build and so
 Button avoids doing work that doesn’t need to be done.</p>
@@ -456,7 +457,7 @@ generated build description file.</p>
 
 <p>As expected, it ran the two rules in <code class="highlighter-rouge">button.json</code>, but the second rule didn’t
 really do anything. The generated <code class="highlighter-rouge">.BUILD.lua.json</code> has no rules in it because
-<code class="highlighter-rouge">BUILD.lua</code> isn’t generating any yet.</p>
+<code class="highlighter-rouge">BUILD.lua</code> isn’t creating them yet.</p>
 
 <p><code class="highlighter-rouge">BUILD.lua</code> currently only has a comment in it:</p>
 
@@ -468,9 +469,6 @@ really do anything. The generated <code class="highlighter-rouge">.BUILD.lua.jso
 ]]</span>
 </code></pre>
 </div>
-
-<p>Good thing you’re here reading the documentation for more information on how to
-get started!</p>
 
 <p>To generate our rules using Lua, we can add this to the end of <code class="highlighter-rouge">BUILD.lua</code>:</p>
 
@@ -496,7 +494,7 @@ get started!</p>
 
 <p><code class="highlighter-rouge">rule</code> is a function that takes a table as an argument. Since we’re working with
 a full-fledged programming language, we can add more abstractions so it isn’t so
-verbose. There are modules to do exactly that:</p>
+verbose. Indeed, there are modules to do exactly that:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">local</span> <span class="n">cc</span> <span class="o">=</span> <span class="nb">require</span> <span class="s2">"rules.cc"</span>
 
@@ -567,6 +565,21 @@ object files are usually the biggest offenders.</p>
 </code></pre>
 </div>
 
+<p>Now we can run a build:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button build
+ &gt; button build --color=always -f .BUILD.lua.json
+ &gt; cc bar.c
+ &gt; cc foo.c
+ &gt; ld foobar
+</code></pre>
+</div>
+
+<p>Notice that the display names were shown instead of the full command lines.</p>
+
+<p><code class="highlighter-rouge">BUILD.lua</code> can be freely modified and Button will detect changes to it and
+rebuild as necessary. If we modify <code class="highlighter-rouge">BUILD.lua</code> without changing how the build
+description is generated, nothing will get rebuilt.</p>
 
                     </article>
                 </div>
