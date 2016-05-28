@@ -521,24 +521,23 @@ void queueChanges(BuildState state, TaskPool pool, TextColor color)
 /**
  * Syncs the build state with implicit dependencies.
  */
-void syncStateImplicit(BuildState state, Index!Task v, string workDir,
-        immutable(ubyte)[][] inputs, immutable(ubyte)[][] outputs)
+void syncStateImplicit(BuildState state, Index!Task v,
+        Resource[] inputs, Resource[] outputs)
 {
     import std.algorithm.iteration : splitter, uniq, filter, map, joiner;
     import std.array : array;
     import std.algorithm.sorting : sort;
     import std.format : format;
     import util.change;
-    import button.deps;
 
     auto inputDiff = changes(
             state.incoming!Resource(v, EdgeType.implicit).array.sort(),
-            inputs.map!(x => x.deps(workDir)).joiner.array.sort().uniq
+            inputs.sort().uniq
             );
 
     auto outputDiff = changes(
             state.outgoing!Resource(v, EdgeType.implicit).array.sort(),
-            outputs.map!(x => x.deps(workDir)).joiner.array.sort().uniq
+            outputs.sort().uniq
             );
 
     foreach (c; inputDiff)
@@ -722,8 +721,7 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
             throw new TaskError("Task failed");
 
         synchronized (context.state)
-            syncStateImplicit(context.state, v, task.workingDirectory,
-                    result.inputs, result.outputs);
+            syncStateImplicit(context.state, v, result.inputs, result.outputs);
     }
     catch (TaskError e)
     {

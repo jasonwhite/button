@@ -7,6 +7,8 @@ module button.vertex.task;
 
 import button.log;
 
+import button.vertex.resource;
+
 /**
  * Thrown if a command fails.
  */
@@ -109,13 +111,19 @@ struct Command
     {
         import core.time : TickDuration;
 
-        /// The command's exit status code
+        /**
+         * The command's exit status code
+         */
         int status;
 
-        /// Implicit inputs and outputs received through the input and output pipes.
-        immutable(ubyte)[] inputs, outputs;
+        /**
+         * Implicit input and output resources this command used.
+         */
+        Resource[] inputs, outputs;
 
-        /// How long it took the command to run from start to finish.
+        /**
+         * How long it took the command to run from start to finish.
+         */
         TickDuration duration;
     }
 
@@ -203,6 +211,10 @@ struct Command
      */
     version (Posix) Result execute(string workingDirectory, TaskLogger logger) const
     {
+        // FIXME: Commands should use a separate logger. It only uses the
+        // TaskLogger because there used to never be more than one command in a
+        // task.
+
         import core.sys.posix.unistd;
         import core.stdc.stdio : sprintf;
 
@@ -210,6 +222,9 @@ struct Command
 
         import std.string : toStringz;
         import std.datetime : StopWatch;
+        import std.array : array;
+
+        import button.deps : deps;
 
         StopWatch sw;
         Result result;
@@ -258,9 +273,11 @@ struct Command
         close(inputfds[1]);
         close(outputfds[1]);
 
+        // TODO: Parse the resources as they come in instead of all at once at
+        // the end.
         auto output = readOutput(stdfds[0], inputfds[0], outputfds[0], logger);
-        result.inputs  = output.inputs;
-        result.outputs = output.outputs;
+        result.inputs  = deps(output.inputs, workingDirectory).array;
+        result.outputs = deps(output.outputs, workingDirectory).array;
 
         // Wait for the child to exit
         result.status = waitFor(pid);
@@ -413,7 +430,7 @@ struct Task
          * List of raw byte arrays of implicit inputs/outputs. There is one byte
          * array per command.
          */
-        immutable(ubyte)[][] inputs, outputs;
+        Resource[] inputs, outputs;
 
         /**
          * How long it took the task, including all of its commands, to run from
@@ -501,8 +518,9 @@ struct Task
         import std.array : appender;
         import std.datetime : StopWatch, AutoStart;
 
-        auto inputs  = appender!(immutable(ubyte)[][]);
-        auto outputs = appender!(immutable(ubyte)[][]);
+        // FIXME: Use a set instead?
+        auto inputs  = appender!(Resource[]);
+        auto outputs = appender!(Resource[]);
 
         auto sw = StopWatch(AutoStart.yes);
 
@@ -510,6 +528,10 @@ struct Task
         {
             auto result = command.execute(workingDirectory, logger);
 
+            // FIXME: Commands may have temporary inputs and outputs. For
+            // example, if one command creates a file and a later command
+            // deletes it, it should not end up in either of the input or output
+            // sets.
             inputs.put(result.inputs);
             outputs.put(result.outputs);
 
