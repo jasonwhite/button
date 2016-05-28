@@ -91,23 +91,6 @@ unittest
 }
 
 /**
- * The result of executing a task.
- */
-struct CommandResult
-{
-    import core.time : TickDuration;
-
-    /// The command's exit status code
-    int status;
-
-    /// Implicit inputs and outputs received through the input and output pipes.
-    immutable(ubyte)[] inputs, outputs;
-
-    /// How long it took the command to run from start to finish.
-    TickDuration duration;
-}
-
-/**
  * A single command.
  */
 struct Command
@@ -118,6 +101,23 @@ struct Command
     immutable(string)[] command;
 
     alias command this;
+
+    /**
+     * The result of executing a command.
+     */
+    struct Result
+    {
+        import core.time : TickDuration;
+
+        /// The command's exit status code
+        int status;
+
+        /// Implicit inputs and outputs received through the input and output pipes.
+        immutable(ubyte)[] inputs, outputs;
+
+        /// How long it took the command to run from start to finish.
+        TickDuration duration;
+    }
 
     this(immutable(string)[] command)
     {
@@ -201,7 +201,7 @@ struct Command
     /**
      * Executes the command.
      */
-    version (Posix) CommandResult execute(string workingDirectory, TaskLogger logger) const
+    version (Posix) Result execute(string workingDirectory, TaskLogger logger) const
     {
         import core.sys.posix.unistd;
         import core.stdc.stdio : sprintf;
@@ -212,7 +212,7 @@ struct Command
         import std.datetime : StopWatch;
 
         StopWatch sw;
-        CommandResult result;
+        Result result;
 
         sw.start();
 
@@ -273,7 +273,7 @@ struct Command
     }
 
     version (Windows)
-    CommandResult execute(TaskLogger logger) const
+    Result execute(TaskLogger logger) const
     {
         // TODO: Implement implicit dependencies
         import std.process : execute;
@@ -281,7 +281,7 @@ struct Command
         import std.datetime : StopWatch;
         import std.conv : to;
 
-        CommandResult result;
+        Result result;
 
         StopWatch sw;
         sw.start();
@@ -372,31 +372,6 @@ unittest
 }
 
 /**
- * The result of executing a task.
- */
-struct TaskResult
-{
-    import core.time : TickDuration;
-
-    /**
-     * True if all the commands in the task succeeded.
-     */
-    bool success;
-
-    /**
-     * List of raw byte arrays of implicit inputs/outputs. There is one byte
-     * array per command.
-     */
-    immutable(ubyte)[][] inputs, outputs;
-
-    /**
-     * How long it took the task, including all of its commands, to run from
-     * start to finish.
-     */
-    TickDuration duration;
-}
-
-/**
  * A representation of a task.
  */
 struct Task
@@ -421,6 +396,31 @@ struct Task
      * noise that is displayed.
      */
     string display;
+
+    /**
+     * The result of executing a task.
+     */
+    struct Result
+    {
+        import core.time : TickDuration;
+
+        /**
+         * True if all the commands in the task succeeded.
+         */
+        bool success;
+
+        /**
+         * List of raw byte arrays of implicit inputs/outputs. There is one byte
+         * array per command.
+         */
+        immutable(ubyte)[][] inputs, outputs;
+
+        /**
+         * How long it took the task, including all of its commands, to run from
+         * start to finish.
+         */
+        TickDuration duration;
+    }
 
     this(TaskKey key)
     {
@@ -496,7 +496,7 @@ struct Task
         assert(Task([["a", "b"]], "a") == Task([["a", "b"]], "a"));
     }
 
-    TaskResult execute(TaskLogger logger)
+    Result execute(TaskLogger logger)
     {
         import std.array : appender;
         import std.datetime : StopWatch, AutoStart;
@@ -517,7 +517,7 @@ struct Task
             {
                 sw.stop();
 
-                return TaskResult(
+                return Result(
                         false, // Failed
                         inputs.data, outputs.data,
                         sw.peek() // Task duration
@@ -527,7 +527,7 @@ struct Task
 
         sw.stop();
 
-        return TaskResult(true, inputs.data, outputs.data, sw.peek());
+        return Result(true, inputs.data, outputs.data, sw.peek());
     }
 }
 
