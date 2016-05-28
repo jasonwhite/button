@@ -232,16 +232,6 @@ includes:
  * Fundamental concepts of how it works
  * Tutorials on various use-cases
 
-### Tool to translate other build descriptions to this one
-
-Since the JSON build description is very general, theoretically a build
-description from another build system (e.g., Make, MSBuild) could be translated
-automatically.
-
-This would greatly aid in transitioning away from the build system currently in
-use. It would also potentially allow one to glue together many disparate build
-descriptions into one.
-
 ### Caching
 
 Similar to what [Bazel][] and [Buck][] do, build outputs should be cached. This
