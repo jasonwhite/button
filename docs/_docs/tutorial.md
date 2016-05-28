@@ -211,7 +211,7 @@ What happens if we delete the executable `foobar`?
      > gcc foo.o bar.o -o foobar
 
 Button sees that `foobar` doesn't exist anymore and rebuilds it. If `foobar` was
-modified by us in some other way, it would have been rebuilt just the same.
+modified by us in some other way, it would have been rebuilt as well.
 
 ### Adding a Comment
 
@@ -238,7 +238,8 @@ When compiling object files, `gcc` is deterministic. That is, given the same
 input, it always produces the same output. Adding a comment to the source file
 has no effect on the generated code and so `gcc` generates the same exact object
 file as it would without the comment. Of course, this is specific to `gcc`. Not
-all compilers do this, but they should (I'm looking at *you* Microsoft).
+all compilers are deterministic like this, but they should be (I'm looking at
+*you* Microsoft!).
 
 Here, the checksum of `foo.o` did not change from the previous build and so
 Button avoids doing work that doesn't need to be done.
@@ -345,7 +346,7 @@ Lets run a build:
 
 As expected, it ran the two rules in `button.json`, but the second rule didn't
 really do anything. The generated `.BUILD.lua.json` has no rules in it because
-`BUILD.lua` isn't generating any yet.
+`BUILD.lua` isn't creating them yet.
 
 `BUILD.lua` currently only has a comment in it:
 
@@ -357,9 +358,6 @@ really do anything. The generated `.BUILD.lua.json` has no rules in it because
     See the documentation for more information on how to get started.
 ]]
 ```
-
-Good thing you're here reading the documentation for more information on how to
-get started!
 
 To generate our rules using Lua, we can add this to the end of `BUILD.lua`:
 
@@ -387,7 +385,7 @@ rule {
 
 `rule` is a function that takes a table as an argument. Since we're working with
 a full-fledged programming language, we can add more abstractions so it isn't so
-verbose. There are modules to do exactly that:
+verbose. Indeed, there are modules to do exactly that:
 
 ```lua
 local cc = require "rules.cc"
@@ -458,3 +456,16 @@ cc.binary {
 }
 ```
 
+Now we can run a build:
+
+    $ button build
+     > button build --color=always -f .BUILD.lua.json
+     > cc bar.c
+     > cc foo.c
+     > ld foobar
+
+Notice that the display names were shown instead of the full command lines.
+
+`BUILD.lua` can be freely modified and Button will detect changes to it and
+rebuild as necessary. If we modify `BUILD.lua` without changing how the build
+description is generated, nothing will get rebuilt.
