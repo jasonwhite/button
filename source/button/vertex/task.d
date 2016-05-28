@@ -209,7 +209,25 @@ struct Command
     /**
      * Executes the command.
      */
-    version (Posix) Result execute(string workingDirectory, TaskLogger logger) const
+    Result execute(string workDir, TaskLogger logger) const
+    {
+        import std.datetime : StopWatch, AutoStart;
+
+        auto sw = StopWatch(AutoStart.yes);
+
+        auto result = executeImpl(workDir, logger);
+
+        sw.stop();
+
+        result.duration = sw.peek();
+
+        return result;
+    }
+
+    /**
+     * Executes the command.
+     */
+    version (Posix) Result executeImpl(string workDir, TaskLogger logger) const
     {
         // FIXME: Commands should use a separate logger. It only uses the
         // TaskLogger because there used to never be more than one command in a
@@ -221,15 +239,11 @@ struct Command
         import io.file.stream : sysEnforce;
 
         import std.string : toStringz;
-        import std.datetime : StopWatch;
         import std.array : array;
 
         import button.deps : deps;
 
-        StopWatch sw;
         Result result;
-
-        sw.start();
 
         int[2] stdfds, inputfds, outputfds;
 
@@ -245,8 +259,8 @@ struct Command
 
         // Working directory
         const(char)* cwd = null;
-        if (workingDirectory.length)
-            cwd = workingDirectory.toStringz();
+        if (workDir.length)
+            cwd = workDir.toStringz();
 
         char[16] inputsenv, outputsenv;
         sprintf(inputsenv.ptr, "%d", inputfds[1]);
@@ -276,21 +290,16 @@ struct Command
         // TODO: Parse the resources as they come in instead of all at once at
         // the end.
         auto output = readOutput(stdfds[0], inputfds[0], outputfds[0], logger);
-        result.inputs  = deps(output.inputs, workingDirectory).array;
-        result.outputs = deps(output.outputs, workingDirectory).array;
+        result.inputs  = deps(output.inputs, workDir).array;
+        result.outputs = deps(output.outputs, workDir).array;
 
         // Wait for the child to exit
         result.status = waitFor(pid);
 
-        sw.stop();
-
-        result.duration = sw.peek();
-
         return result;
     }
 
-    version (Windows)
-    Result execute(TaskLogger logger) const
+    version (Windows) Result executeImpl(string workDir, TaskLogger logger) const
     {
         // TODO: Implement implicit dependencies
         import std.process : execute;
@@ -300,17 +309,11 @@ struct Command
 
         Result result;
 
-        StopWatch sw;
-        sw.start();
-
         auto cmd = execute(command);
-
-        sw.stop();
 
         logger.output(cast(const(ubyte)[])cmd.output);
 
         result.status = cmd.status;
-        result.duration = sw.peek();
 
         return result;
     }
