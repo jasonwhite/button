@@ -6,7 +6,7 @@
  * Description:
  * Stores the persistent state of the build.
  */
-module button.state.sqlite;
+module button.state;
 
 import button.command;
 import button.resource;
