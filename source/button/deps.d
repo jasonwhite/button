@@ -142,9 +142,7 @@ struct Deps
 
     void popFront()
     {
-        import std.exception : assumeUnique;
         import std.datetime : SysTime;
-        import std.file : getcwd;
 
         if (buf.length == 0)
         {
