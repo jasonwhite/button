@@ -619,8 +619,8 @@ void syncStateImplicit(BuildState state, Index!Task v,
             else
             {
                 throw new TaskError(
-                    "Implicit task output '%s' would change the build order." ~
-                    " It must be explicitly added to the build description."
+                    ("Implicit task output '%s' would change the build order." ~
+                    " It must be explicitly added to the build description.")
                     .format(r)
                     );
             }
