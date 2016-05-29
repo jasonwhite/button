@@ -1,0 +1,19 @@
+/**
+ * Copyright: Copyright Jason White, 2016
+ * License:   MIT
+ * Authors:   Jason White
+ *
+ * Description:
+ * Command handler package. A command handler takes in a command line, executes
+ * it, and returns a set of implicit inputs/outputs. Handlers can be called by
+ * other handlers.
+ *
+ * This is useful for ad-hoc dependency detection. For example, to detect
+ * inputs/outputs when running DMD, we modify the command line so it writes them
+ * to a file which we then read in to determine the inputs/outputs.
+ *
+ * If there is no handler, we default to system call tracing.
+ */
+module button.handlers;
+
+public import button.handlers.pipe;

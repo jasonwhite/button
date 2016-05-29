@@ -6,6 +6,8 @@
 module button.resource;
 import std.digest.digest : DigestType, isDigest;
 
+import std.array : Appender;
+
 /**
  * A resource identifier.
  */
@@ -230,3 +232,8 @@ struct Resource
         lastModified = Status.notFound;
     }
 }
+
+/**
+ * Simple alias to make it easier to refer to lists of resources.
+ */
+alias Resources = Appender!(Resource[]);

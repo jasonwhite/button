@@ -56,7 +56,7 @@ unittest
 /**
  * Normalizes a dependency path.
  */
-private string normalizePath(string workDir, string taskDir, string path) pure
+private string normalizePath(in char[] workDir, in char[] taskDir, in char[] path) pure
 {
     import std.path : isAbsolute, buildNormalizedPath, pathSplitter,
            filenameCmp, dirSeparator;
@@ -109,7 +109,7 @@ struct Deps
     private
     {
         immutable(void)[] buf;
-        string taskDir;
+        const(char)[] taskDir;
 
         Resource _current;
         bool _empty;
@@ -123,7 +123,7 @@ struct Deps
         buildDir = getcwd();
     }
 
-    this(immutable(void)[] buf, string taskDir)
+    this(immutable(void)[] buf, in char[] taskDir)
     {
         this.buf = buf;
         this.taskDir = taskDir;
@@ -174,7 +174,7 @@ struct Deps
 /**
  * Convenience function for returning a range of resources.
  */
-Deps deps(immutable(void)[] buf, string taskDir)
+Deps deps(immutable(void)[] buf, in char[] taskDir)
 {
     return Deps(buf, taskDir);
 }
