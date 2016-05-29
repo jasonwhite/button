@@ -19,7 +19,8 @@ import io.text,
 
 import io.stream : isSink;
 
-import button.vertex,
+import button.resource,
+       button.task,
        button.edgedata,
        button.graph,
        button.state,

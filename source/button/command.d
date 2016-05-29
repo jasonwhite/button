@@ -6,7 +6,7 @@
 module button.command;
 
 import button.log;
-import button.vertex.resource;
+import button.resource;
 
 /**
  * Thrown if a command fails.

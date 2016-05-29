@@ -8,7 +8,7 @@ module button.watcher.inotify;
 version (linux):
 
 import button.state;
-import button.vertex.resource;
+import button.resource;
 
 import core.sys.posix.unistd;
 import core.sys.posix.poll;

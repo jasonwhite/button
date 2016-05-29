@@ -11,7 +11,7 @@ module button.log.file;
 import core.time : TickDuration;
 
 import button.log;
-import button.vertex;
+import button.task;
 import button.state;
 
 import io.file.stream;

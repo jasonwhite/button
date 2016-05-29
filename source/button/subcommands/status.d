@@ -18,10 +18,11 @@ import std.algorithm : sort, map, filter;
 import io.text,
        io.file;
 
-import button.vertex,
-       button.state,
-       button.build,
-       button.textcolor;
+import button.task;
+import button.resource;
+import button.state;
+import button.build;
+import button.textcolor;
 
 int statusCommand(StatusOptions opts, GlobalOptions globalOpts)
 {

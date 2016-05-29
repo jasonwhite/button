@@ -3,7 +3,7 @@
  * License:   MIT
  * Authors:   Jason White
  */
-module button.vertex.resource;
+module button.resource;
 import std.digest.digest : DigestType, isDigest;
 
 /**

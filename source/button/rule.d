@@ -11,7 +11,9 @@ module button.rule;
 import std.range.primitives : isInputRange, ElementType;
 
 import button.command;
-import button.vertex, button.edge;
+import button.resource;
+import button.task;
+import button.edge;
 
 struct Rule
 {

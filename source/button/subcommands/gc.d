@@ -16,7 +16,6 @@ import button.state,
        button.rule,
        button.graph,
        button.build,
-       button.vertex,
        button.textcolor;
 
 /**

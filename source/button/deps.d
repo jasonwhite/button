@@ -5,7 +5,7 @@
  */
 module button.deps;
 
-import button.vertex.resource;
+import button.resource;
 
 /**
  * Format for dependencies received from a task over a pipe.

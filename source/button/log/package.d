@@ -8,7 +8,7 @@
  */
 module button.log;
 
-import button.vertex;
+import button.task;
 import button.state;
 import core.time : TickDuration;
 

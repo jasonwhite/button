@@ -12,17 +12,17 @@ import std.parallelism : TaskPool;
 
 import button.subcommands.parsing;
 
-import io.text,
-       io.file;
+import io.text, io.file;
 
-import button.state,
-       button.rule,
-       button.graph,
-       button.build,
-       button.vertex,
-       button.textcolor,
-       button.log,
-       button.watcher;
+import button.state;
+import button.rule;
+import button.graph;
+import button.build;
+import button.resource;
+import button.task;
+import button.textcolor;
+import button.log;
+import button.watcher;
 
 /**
  * Returns a build logger based on the command options.

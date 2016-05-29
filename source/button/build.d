@@ -12,7 +12,9 @@ import std.range : ElementType;
 import std.parallelism : TaskPool;
 
 import button.graph;
-import button.vertex, button.edge, button.edgedata;
+import button.task;
+import button.resource;
+import button.edge, button.edgedata;
 import button.state;
 import button.textcolor;
 import button.rule;

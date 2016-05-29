@@ -3,11 +3,11 @@
  * License:   MIT
  * Authors:   Jason White
  */
-module button.vertex.task;
+module button.task;
 
 import button.command;
 import button.log;
-import button.vertex.resource;
+import button.resource;
 
 /**
  * Thrown if a task fails.
