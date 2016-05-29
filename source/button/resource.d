@@ -47,12 +47,21 @@ private DigestType!Hash digestFile(Hash)(string path)
     if (isDigest!Hash)
 {
     import std.digest.digest : digest;
-    import io.file : File, FileFlags;
+    import io.file : SysException, File, FileFlags;
     import io.range : byChunk;
 
     ubyte[4096] buf;
 
-    return digest!Hash(File(path, FileFlags.readExisting).byChunk(buf));
+    try
+    {
+        return digest!Hash(File(path, FileFlags.readExisting).byChunk(buf));
+    }
+    catch (SysException e)
+    {
+        // This may fail if the given path is a directory. The path could have
+        // also been deleted.
+        return typeof(return).init;
+    }
 }
 
 /**
@@ -65,6 +74,11 @@ struct Resource
     import std.datetime : SysTime;
     import std.digest.digest : DigestType;
     import std.digest.sha : SHA256;
+
+    /**
+     * Digest to use to determine changes.
+     */
+    alias Digest = SHA256;
 
     enum Status
     {
@@ -88,7 +102,7 @@ struct Resource
      *
      * TODO: If this is a directory, checksum the sorted list of its contents.
      */
-    DigestType!SHA256 checksum;
+    DigestType!Digest checksum;
 
     this(ResourceId path, SysTime lastModified = Status.unknown,
             const(ubyte[]) checksum = []) pure
@@ -178,7 +192,7 @@ struct Resource
 
             if (lastModified != Status.notFound)
             {
-                auto checksum = digestFile!SHA256(path);
+                auto checksum = digestFile!Digest(path);
                 if (checksum != this.checksum)
                 {
                     this.checksum = checksum;
