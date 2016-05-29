@@ -8,6 +8,7 @@
  */
 module button.state.sqlite;
 
+import button.command;
 import button.vertex;
 import button.edge, button.edgedata;
 import util.sqlite3;

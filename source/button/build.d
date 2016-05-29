@@ -97,6 +97,8 @@ Graph!(Resource, Task) graph(R)(auto ref R rules)
 
 unittest
 {
+    import button.command;
+
     immutable Rule[] rules = [
         {
             inputs: [Resource("foo.c"), Resource("baz.h")],

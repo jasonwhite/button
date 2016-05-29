@@ -10,6 +10,7 @@ module button.rule;
 
 import std.range.primitives : isInputRange, ElementType;
 
+import button.command;
 import button.vertex, button.edge;
 
 struct Rule
