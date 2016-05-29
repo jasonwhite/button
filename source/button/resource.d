@@ -90,7 +90,8 @@ struct Resource
      */
     DigestType!SHA256 checksum;
 
-    this(ResourceId path, SysTime lastModified = Status.unknown, const(ubyte[]) checksum = [])
+    this(ResourceId path, SysTime lastModified = Status.unknown,
+            const(ubyte[]) checksum = []) pure
     {
         import std.algorithm.comparison : min;
 
@@ -237,3 +238,59 @@ struct Resource
  * Simple alias to make it easier to refer to lists of resources.
  */
 alias Resources = Appender!(Resource[]);
+
+/**
+ * Normalizes a resource path while trying to make it relative to the buildRoot.
+ * If it cannot be done, the path is made absolute.
+ *
+ * Params:
+ *     buildRoot = The root directory of the build. Probably always the current
+ *                 working directory.
+ *     taskDir   = The working directory of the task this is for. The path is
+ *                 normalized relative to this directory.
+ *     path      = The path to be normalized.
+ */
+string normalizePath(const(char)[] buildRoot, const(char)[] taskDir, const(char)[] path) pure
+{
+    import std.path : isAbsolute, buildNormalizedPath, pathSplitter,
+           filenameCmp, dirSeparator;
+    import std.algorithm.searching : skipOver;
+    import std.algorithm.iteration : joiner;
+    import std.array : array;
+    import std.utf : byChar;
+
+    auto normalized = buildNormalizedPath(taskDir, path);
+
+    // If the normalized path is absolute, get a relative path if the absolute
+    // path is inside the working directory. This is done instead of always
+    // getting a relative path because we don't want to get relative paths to
+    // directories like "/usr/include". If the build directory moves, absolute
+    // paths outside will become invalid.
+    if (isAbsolute(normalized) && buildRoot.length)
+    {
+        auto normPS  = pathSplitter(normalized);
+        auto buildPS = pathSplitter(buildRoot);
+
+        alias pred = (a, b) => filenameCmp(a, b) == 0;
+
+        if (skipOver!pred(normPS, &buildPS) && buildPS.empty)
+            return normPS.joiner(dirSeparator).byChar.array;
+    }
+
+    return normalized;
+}
+
+pure unittest
+{
+    version (Posix)
+    {
+        assert(normalizePath("", "", "foo") == "foo");
+        assert(normalizePath("", "foo", "bar") == "foo/bar");
+
+        assert(normalizePath("", "foo/../foo/.", "bar/../baz") == "foo/baz");
+
+        assert(normalizePath("", "foo", "/usr/include/bar") == "/usr/include/bar");
+        assert(normalizePath("/usr", "foo", "/usr/bar") == "bar");
+        assert(normalizePath("/usr/include", "foo", "/usr/bar") == "/usr/bar");
+    }
+}

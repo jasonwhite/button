@@ -180,13 +180,18 @@ struct Command
     Result execute(string workDir, TaskLogger logger) const
     {
         import std.datetime : StopWatch, AutoStart;
-        import button.handlers.pipe;
+        import button.handler : executeHandler = execute;
 
         Resources inputs, outputs;
 
         auto sw = StopWatch(AutoStart.yes);
 
-        immutable status = button.handlers.pipe.execute(args, workDir, inputs, outputs, logger);
+        immutable status = executeHandler(
+                args,
+                workDir,
+                inputs, outputs,
+                logger
+                );
 
         return Result(status, inputs.data, outputs.data, sw.peek());
     }

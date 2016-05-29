@@ -16,4 +16,5 @@
  */
 module button.handlers;
 
-public import button.handlers.pipe;
+public import button.handlers.base : base = execute;
+public import button.handlers.dmd  : dmd  = execute;

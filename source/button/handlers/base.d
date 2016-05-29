@@ -14,7 +14,7 @@
  * Button sends build inputs and outputs to a parent Button process using this
  * mechanism.
  */
-module button.handlers.pipe;
+module button.handlers.base;
 
 import button.log;
 import button.resource;
@@ -40,9 +40,13 @@ version (Posix)
 }
 
 version (Posix)
-int execute(in char[][] args, in char[] workDir,
-        ref Resources inputs, ref Resources outputs,
-        TaskLogger logger)
+int execute(
+        const(string)[] args,
+        string workDir,
+        ref Resources inputs,
+        ref Resources outputs,
+        TaskLogger logger
+        )
 {
     // FIXME: Commands should use a separate logger. It only uses the
     // TaskLogger because there used to never be more than one command in a

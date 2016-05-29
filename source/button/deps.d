@@ -54,54 +54,6 @@ unittest
 }
 
 /**
- * Normalizes a dependency path.
- */
-private string normalizePath(in char[] workDir, in char[] taskDir, in char[] path) pure
-{
-    import std.path : isAbsolute, buildNormalizedPath, pathSplitter,
-           filenameCmp, dirSeparator;
-    import std.algorithm.searching : skipOver;
-    import std.algorithm.iteration : joiner;
-    import std.array : array;
-    import std.utf : byChar;
-
-    auto normalized = buildNormalizedPath(taskDir, path);
-
-    // If the normalized path is absolute, get a relative path if the absolute
-    // path is inside the working directory. This is done instead of always
-    // getting a relative path because we don't want to get relative paths to
-    // directories like "/usr/include". If the build directory moves, absolute
-    // paths outside will become invalid.
-    if (isAbsolute(normalized) && workDir.length)
-    {
-        auto normPS = pathSplitter(normalized);
-        auto workPS = pathSplitter(workDir);
-
-        alias pred = (a, b) => filenameCmp(a, b) == 0;
-
-        if (skipOver!pred(normPS, &workPS) && workPS.empty)
-            return normPS.joiner(dirSeparator).byChar.array;
-    }
-
-    return normalized;
-}
-
-pure unittest
-{
-    version (Posix)
-    {
-        assert(normalizePath("", "", "foo") == "foo");
-        assert(normalizePath("", "foo", "bar") == "foo/bar");
-
-        assert(normalizePath("", "foo/../foo/.", "bar/../baz") == "foo/baz");
-
-        assert(normalizePath("", "foo", "/usr/include/bar") == "/usr/include/bar");
-        assert(normalizePath("/usr", "foo", "/usr/bar") == "bar");
-        assert(normalizePath("/usr/include", "foo", "/usr/bar") == "/usr/bar");
-    }
-}
-
-/**
  * Range of resources received from a child process.
  */
 struct Deps
