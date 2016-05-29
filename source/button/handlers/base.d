@@ -106,11 +106,11 @@ int execute(
 
     // TODO: Parse the resources as they come in instead of all at once at
     // the end.
-    auto output = readOutput(stdfds[0], inputfds[0], outputfds[0], logger);
+    auto implicit = readOutput(stdfds[0], inputfds[0], outputfds[0], logger);
 
     // Add the inputs and outputs
-    inputs.put(deps(output.inputs, workDir));
-    outputs.put(deps(output.outputs, workDir));
+    inputs.put(implicit.inputs.deps);
+    outputs.put(implicit.outputs.deps);
 
     // Wait for the child to exit
     return waitFor(pid);

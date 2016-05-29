@@ -64,7 +64,7 @@ private struct Options
     /**
      * Returns a list of object file paths.
      */
-    Resource[] objects() const pure
+    const(char[])[] objects() const pure
     {
         import std.algorithm.iteration : map, filter;
         import std.algorithm.searching : endsWith;
@@ -80,23 +80,23 @@ private struct Options
         if (compileFlag)
         {
             if (outputFile)
-                return [Resource(outputFile)];
+                return [outputFile];
             else
                 return files
                     .filter!(p => p.endsWith(".d"))
-                    .map!(p => Resource(objectPath(p)))
+                    .map!(p => objectPath(p))
                     .array();
         }
 
         // Object name is based on -of
         if (outputFile)
-            return [Resource(objectPath(outputFile))];
+            return [objectPath(outputFile)];
 
         auto dSources = files.filter!(p => p.endsWith(".d"));
         if (dSources.empty)
             return [];
 
-        return [Resource(objectPath(dSources.front))];
+        return [objectPath(dSources.front)];
     }
 
     /**
@@ -251,12 +251,8 @@ private void parseInputs(File f, ref Resources inputs)
 {
     import io.text : byLine;
     import std.regex : regex, matchAll;
-    import std.array : appender;
-    import std.algorithm.sorting : sort;
-    import std.exception : assumeUnique;
 
-    auto r = regex(`\((.*?)\)`);
-
+    static r = regex(`\((.*?)\)`);
     foreach (line; f.byLine)
         foreach (c; line.matchAll(r))
             inputs.put(Resource(c[1].idup));
@@ -276,6 +272,7 @@ int execute(
     import std.algorithm.iteration : map, filter, uniq;
     import std.algorithm.searching : endsWith;
     import std.range : enumerate, empty, popFront, front;
+    import std.regex : regex, matchAll;
     import std.file : remove;
     import std.array : array;
 
@@ -310,8 +307,13 @@ int execute(
         return exitCode;
     }
 
-    parseInputs(File(depsPath), inputs);
-    inputs.put(opts.files.map!(x => Resource(x)));
+    // Add the inputs from the dependency file.
+    static r = regex(`\((.*?)\)`);
+    foreach (line; File(depsPath).byLine)
+        foreach (c; line.matchAll(r))
+            inputs.put(c[1]);
+
+    inputs.put(opts.files);
 
     // Determine the output files based on command line options. If no output
     // file name is specified with -of, the file name is based on the first
@@ -319,7 +321,7 @@ int execute(
     if (opts.libFlag)
     {
         if (auto path = opts.staticLibraryPath())
-            outputs.put(Resource(path));
+            outputs.put(path);
     }
     else if (opts.compileFlag)
     {
@@ -328,7 +330,7 @@ int execute(
     else if (opts.sharedFlag)
     {
         if (auto path = opts.sharedLibraryPath())
-            outputs.put(Resource(path));
+            outputs.put(path);
 
         outputs.put(opts.objects);
     }
@@ -338,7 +340,7 @@ int execute(
         {
             // Binary executable.
             if (auto path = opts.executablePath())
-                outputs.put(Resource(path));
+                outputs.put(path);
 
             // Objects
             outputs.put(opts.objects);

@@ -92,6 +92,10 @@ struct Command
 
     alias args this;
 
+    // Root of the build directory. This is used to normalize implicit resource
+    // paths.
+    private static string buildRoot;
+
     /**
      * The result of executing a command.
      */
@@ -113,6 +117,12 @@ struct Command
          * How long it took the command to run from start to finish.
          */
         TickDuration duration;
+    }
+
+    static this()
+    {
+        import std.file : getcwd;
+        buildRoot = getcwd();
     }
 
     this(immutable(string)[] args)
@@ -170,7 +180,6 @@ struct Command
      */
     @property string toPrettyShortString() const pure nothrow
     {
-        // TODO: If the program name is "button-deps", use the next one instead.
         return args[0];
     }
 
@@ -182,7 +191,8 @@ struct Command
         import std.datetime : StopWatch, AutoStart;
         import button.handler : executeHandler = execute;
 
-        Resources inputs, outputs;
+        auto inputs  = Resources(buildRoot, workDir);
+        auto outputs = Resources(buildRoot, workDir);
 
         auto sw = StopWatch(AutoStart.yes);
 

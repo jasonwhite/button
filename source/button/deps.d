@@ -61,24 +61,14 @@ struct Deps
     private
     {
         immutable(void)[] buf;
-        const(char)[] taskDir;
 
         Resource _current;
         bool _empty;
-
-        static string buildDir;
     }
 
-    static this()
-    {
-        import std.file : getcwd;
-        buildDir = getcwd();
-    }
-
-    this(immutable(void)[] buf, in char[] taskDir)
+    this(immutable(void)[] buf)
     {
         this.buf = buf;
-        this.taskDir = taskDir;
         popFront();
     }
 
@@ -112,7 +102,7 @@ struct Deps
         string name = cast(string)buf[Dependency.sizeof .. totalSize];
 
         _current = Resource(
-            normalizePath(buildDir, taskDir, name),
+            name,
             SysTime(cast(long)dep.timestamp),
             dep.checksum
             );
@@ -124,7 +114,7 @@ struct Deps
 /**
  * Convenience function for returning a range of resources.
  */
-Deps deps(immutable(void)[] buf, in char[] taskDir)
+Deps deps(immutable(void)[] buf)
 {
-    return Deps(buf, taskDir);
+    return Deps(buf);
 }

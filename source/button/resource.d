@@ -235,11 +235,6 @@ struct Resource
 }
 
 /**
- * Simple alias to make it easier to refer to lists of resources.
- */
-alias Resources = Appender!(Resource[]);
-
-/**
  * Normalizes a resource path while trying to make it relative to the buildRoot.
  * If it cannot be done, the path is made absolute.
  *
@@ -250,7 +245,8 @@ alias Resources = Appender!(Resource[]);
  *                 normalized relative to this directory.
  *     path      = The path to be normalized.
  */
-string normalizePath(const(char)[] buildRoot, const(char)[] taskDir, const(char)[] path) pure
+string normPath(const(char)[] buildRoot, const(char)[] taskDir,
+        const(char)[] path) pure
 {
     import std.path : isAbsolute, buildNormalizedPath, pathSplitter,
            filenameCmp, dirSeparator;
@@ -284,13 +280,64 @@ pure unittest
 {
     version (Posix)
     {
-        assert(normalizePath("", "", "foo") == "foo");
-        assert(normalizePath("", "foo", "bar") == "foo/bar");
+        assert(normPath("", "", "foo") == "foo");
+        assert(normPath("", "foo", "bar") == "foo/bar");
 
-        assert(normalizePath("", "foo/../foo/.", "bar/../baz") == "foo/baz");
+        assert(normPath("", "foo/../foo/.", "bar/../baz") == "foo/baz");
 
-        assert(normalizePath("", "foo", "/usr/include/bar") == "/usr/include/bar");
-        assert(normalizePath("/usr", "foo", "/usr/bar") == "bar");
-        assert(normalizePath("/usr/include", "foo", "/usr/bar") == "/usr/bar");
+        assert(normPath("", "foo", "/usr/include/bar") == "/usr/include/bar");
+        assert(normPath("/usr", "foo", "/usr/bar") == "bar");
+        assert(normPath("/usr/include", "foo", "/usr/bar") == "/usr/bar");
+    }
+}
+
+/**
+ * Output range of implicit resources.
+ *
+ * This is used to easily accumulate implicit resources while also normalizing
+ * their paths at the same time.
+ */
+struct Resources
+{
+    import std.array : Appender;
+    import std.range : isInputRange, ElementType;
+
+    Appender!(Resource[]) resources;
+
+    alias resources this;
+
+    string buildDir;
+    string taskDir;
+
+    this(string buildDir, string taskDir)
+    {
+        this.buildDir = buildDir;
+        this.taskDir = taskDir;
+    }
+
+    void put(R)(R items)
+        if (isInputRange!R && is(ElementType!R : const(char)[]))
+    {
+        import std.range : empty, popFront, front;
+
+        for (; !items.empty; items.popFront())
+            put(items.front);
+    }
+
+    void put(const(char)[] item)
+    {
+        resources.put(Resource(normPath(buildDir, taskDir, item)));
+    }
+
+    void put(R)(R items)
+        if (isInputRange!R && is(ElementType!R : Resource))
+    {
+        resources.put(items);
+    }
+
+    void put(Resource item)
+    {
+        item.path = normPath(buildDir, taskDir, item.path);
+        resources.put(item);
     }
 }
