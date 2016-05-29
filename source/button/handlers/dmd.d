@@ -244,21 +244,6 @@ private Options parseArgs(const(string)[] args) pure
     return opts;
 }
 
-/**
- * Parses the given file for dependencies. Returns a sorted list of inputs.
- */
-private void parseInputs(File f, ref Resources inputs)
-{
-    import io.text : byLine;
-    import std.regex : regex, matchAll;
-
-    static r = regex(`\((.*?)\)`);
-    foreach (line; f.byLine)
-        foreach (c; line.matchAll(r))
-            inputs.put(Resource(c[1].idup));
-}
-
-
 int execute(
         const(string)[] args,
         string workDir,
