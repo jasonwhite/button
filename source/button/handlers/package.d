@@ -16,5 +16,7 @@
  */
 module button.handlers;
 
-public import button.handlers.base : base = execute;
-public import button.handlers.dmd  : dmd  = execute;
+// List of all handler types
+public import button.handlers.base   : base   = execute;
+public import button.handlers.dmd    : dmd    = execute;
+public import button.handlers.tracer : tracer = execute;

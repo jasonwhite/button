@@ -22,6 +22,16 @@ alias Handler = int function(
         TaskLogger logger
         );
 
+immutable Handler[string] handlers;
+shared static this()
+{
+    handlers = [
+        "button": &base,
+        "button-lua": &base,
+        "dmd": &dmd,
+    ];
+}
+
 /**
  * Returns a handler appropriate for the given arguments.
  *
@@ -30,18 +40,23 @@ alias Handler = int function(
  */
 Handler selectHandler(const(string)[] args)
 {
+    import std.uni : toLower;
     import std.path : baseName, filenameCmp;
 
     if (args.length)
     {
-        auto tool = baseName(args[0]);
+        auto name = baseName(args[0]);
 
-        if (filenameCmp(tool, "dmd") == 0)
-            return &dmd;
+        // Need case-insensitive comparison on Windows.
+        version (Windows)
+            name = name.toLower;
+
+        if (auto p = name in handlers)
+            return *p;
     }
 
     // TODO: Default to the tracer
-    return &base;
+    return &tracer;
 }
 
 int execute(
