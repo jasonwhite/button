@@ -11,11 +11,11 @@
  * This makes the assumption that you want to use Lua as your build description
  * language and creates an initial BUILD.lua file for you.
  */
-module button.commands.init;
+module button.subcommands.init;
 
 import io;
 
-import button.commands.parsing;
+import button.subcommands.parsing;
 
 /**
  * Contents of .gitignore

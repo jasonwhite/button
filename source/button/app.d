@@ -6,7 +6,7 @@
  * Description:
  * Program entry point.
  */
-import button.commands;
+import button.subcommands;
 
 import std.meta : AliasSeq;
 

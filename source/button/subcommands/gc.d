@@ -6,9 +6,9 @@
  * Description:
  * Handles command line arguments.
  */
-module button.commands.gc;
+module button.subcommands.gc;
 
-import button.commands.parsing;
+import button.subcommands.parsing;
 
 import io.text, io.file.stdio;
 

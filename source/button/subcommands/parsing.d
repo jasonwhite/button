@@ -3,7 +3,7 @@
  * License:   MIT
  * Authors:   Jason White
  */
-module button.commands.parsing;
+module button.subcommands.parsing;
 
 import std.meta : AliasSeq;
 

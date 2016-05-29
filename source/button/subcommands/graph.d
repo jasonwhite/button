@@ -6,9 +6,9 @@
  * Description:
  * Generates input for GraphViz.
  */
-module button.commands.graph;
+module button.subcommands.graph;
 
-import button.commands.parsing;
+import button.subcommands.parsing;
 
 import std.array : array;
 import std.algorithm.iteration : filter;

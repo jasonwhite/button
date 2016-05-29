@@ -6,11 +6,11 @@
  * Description:
  * Handles the 'update' or 'build' command.
  */
-module button.commands.update;
+module button.subcommands.update;
 
 import std.parallelism : TaskPool;
 
-import button.commands.parsing;
+import button.subcommands.parsing;
 
 import io.text,
        io.file;
