@@ -40,15 +40,14 @@ built from source.
 
 ### Installing Dependencies
 
-To build, you'll need [Git][], [Make][], [DMD][] (the D compiler), and [DUB][]
-(the D package manager).
+To build, you'll need [Git][], [DMD][] (the D compiler), and [DUB][] (the D
+package manager).
 
 On Arch Linux, these can be installed with:
 
-    $ sudo pacman -Sy git base-devel dlang dub
+    $ sudo pacman -Sy git dlang dub
 
 [Git]: https://git-scm.com/
-[Make]: https://www.gnu.org/software/make/
 [DMD]: http://dlang.org/download.html
 [DUB]: http://code.dlang.org/download
 

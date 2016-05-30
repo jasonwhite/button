@@ -20,7 +20,7 @@ it works.
 
 If you don't already know what a build system is, it is a tool to automate the
 steps necessary to translate source code to deliverables. Well known tools in
-this arena include:
+this domain include:
 
  * [Make][], [MSBuild][]
  * [Ant][], [Maven][], [Gradle][]
@@ -45,7 +45,7 @@ Button has some pretty neat features:
 
  * Fast and correct incremental builds.
  * Implicit dependency detection.
- * Able to generate the build description as part of the build.
+ * The ability to generate the build description as part of the build.
  * Can run builds automatically when something changes.
 
 Because it is general enough to be able to build a project written in any
@@ -70,15 +70,25 @@ Lets just call this the *build graph* because the proper mathematical term is a
 mouthful. The build graph is [bipartite][] because it can be partitioned into
 two types of nodes: *resources* and *tasks*. In the figure above, the resources
 and tasks are shown as ellipses and rectangles, respectively. A resource is some
-file and a task is some program to execute. Resources are inputs and outputs of
-tasks.
+file and a task is some program to execute. Resources are the inputs and outputs
+of tasks.
 
 In order to build, we simply traverse the graph starting at the top and work our
 way down while executing tasks. Of course, tasks that don't depend on each other
 are executed in parallel. Furthermore, if a resource hasn't been modified, the
 task it leads to will not be executed.
 
+There are two important restrictions on the structure of the build graph:
+
+ 1. It must be [acyclic][]. That is, there must be no path in the graph where
+    you can traverse the same edge twice.
+ 2. Output resources can have one parent task. This helps prevent race
+    conditions.
+
+Both of these cases are detected automatically and result in an error.
+
 [bipartite]: https://en.wikipedia.org/wiki/Bipartite_graph
+[acyclic]: https://en.wikipedia.org/wiki/Directed_acyclic_graph
 
 ### The Build Description
 
@@ -127,8 +137,11 @@ problem -- generating the build description.
 An implicit dependency (as opposed to an explicit dependency) is one that is not
 specified in the build description, but discovered by running a task. The
 canonical example of implicit dependencies are C/C++ header files. It is tedious
-to explicitly specify these in the build description, but more importantly it is
-error-prone.
+to explicitly specify these in the build description, but even worse, it is
+error-prone. In general, the set of explicit dependencies will be a subset of
+the implicit dependencies. If this is not the case, then either (1) you've
+over specified dependencies or (2) implicit dependencies have not been correctly
+detected.
 
 Any task in the build graph, when executed, can tell Button about its input and
 output resources. This is a generalized way of allowing implicit dependency
@@ -200,5 +213,9 @@ what the parent Button needs to read in:
 Fortunately, this rarely requires modification as most of the changes will be in
 the Lua script as your project grows.
 
+See the [tutorial][] to learn more.
+
 [button-lua]: https://github.com/jasonwhite/button-lua
 [Lua]: https://www.lua.org/
+
+[tutorial]: {{ "/docs/tutorial" | prepend: site.baseurl }}
