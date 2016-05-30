@@ -8,7 +8,7 @@ the build graph.
 
 [GraphViz]: http://www.graphviz.org/
 
-## Example
+## Examples
 
 To generate a PNG image of your build graph, run:
 

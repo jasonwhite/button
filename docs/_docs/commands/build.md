@@ -22,7 +22,7 @@ This will be the command you will use 99% of the time. It is equivalent to an
 "incremental build". Although you should never need to do a complete rebuild,
 you can do so by running `button clean` followed by `button build`.
 
-## Example
+## Examples
 
 If your root build description `button.json` is in the current working directory
 or one of its parent directories, simply run:
