@@ -16,10 +16,6 @@ Button consists of two main components:
  1. `button`: The build system itself.
  2. `button-lua`: The build description generator from Lua scripts.
 
-Optionally, there is also the Makefile-to-Button build description converter
-(`button-make`). This is only needed if you want to automatically convert
-Makefiles to Button's build description format.
-
 ## System Requirements
 
 Supported platforms:
@@ -93,6 +89,8 @@ to a directory that is in your `$PATH` and run it to make sure it is working:
     Usage: button-lua <script> [-o output] [args...]
 
 ### Optional: Building `button-make`
+
+***Experimental.***
 
 This is only needed if you have Makefiles you want to build and/or visualize.
 
