@@ -16,6 +16,10 @@ To generate a PNG image of your build graph, run:
 
 Note that `dot` is part of [GraphViz][].
 
+If running X11, you can also display an interactive graph:
+
+    $ button graph | dot -Tx11
+
 ## Optional Arguments
 
  * `--file`, `-f <string>`
