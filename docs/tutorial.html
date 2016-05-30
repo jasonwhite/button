@@ -512,19 +512,19 @@ This is the JSON file it generates:</p>
 <div class="highlighter-rouge"><pre class="highlight"><code><span class="p">[</span><span class="w">
     </span><span class="p">{</span><span class="w">
         </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bar.c"</span><span class="p">],</span><span class="w">
-        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"button-deps"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--"</span><span class="p">,</span><span class="w"> </span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c.o"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c.o"</span><span class="p">]],</span><span class="w">
         </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bar.c.o"</span><span class="p">],</span><span class="w">
         </span><span class="nt">"display"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cc bar.c"</span><span class="w">
     </span><span class="p">},</span><span class="w">
     </span><span class="p">{</span><span class="w">
         </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.c"</span><span class="p">],</span><span class="w">
-        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"button-deps"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--"</span><span class="p">,</span><span class="w"> </span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c.o"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c.o"</span><span class="p">]],</span><span class="w">
         </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"foo.c.o"</span><span class="p">],</span><span class="w">
         </span><span class="nt">"display"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cc foo.c"</span><span class="w">
     </span><span class="p">},</span><span class="w">
     </span><span class="p">{</span><span class="w">
         </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"bar.c.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c.o"</span><span class="p">],</span><span class="w">
-        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"button-deps"</span><span class="p">,</span><span class="w"> </span><span class="s2">"--"</span><span class="p">,</span><span class="w"> </span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"./foobar"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c.o"</span><span class="p">]],</span><span class="w">
+        </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"gcc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"./foobar"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bar.c.o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"foo.c.o"</span><span class="p">]],</span><span class="w">
         </span><span class="nt">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"./foobar"</span><span class="p">],</span><span class="w">
         </span><span class="nt">"display"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ld foobar"</span><span class="w">
     </span><span class="p">}</span><span class="w">
@@ -532,16 +532,7 @@ This is the JSON file it generates:</p>
 </span></code></pre>
 </div>
 
-<p>Notice that each task is prefixed with <code class="highlighter-rouge">["button-deps", "--",</code>. The program
-<code class="highlighter-rouge">button-deps</code> wraps the <code class="highlighter-rouge">gcc</code> command in order to provide automatic dependency
-detection. Any header files that are brought in with <code class="highlighter-rouge">#include</code> will get
-detected. That way, after the initial compilation, when a header file is
-changed, Button knows which tasks it needs to rerun in order to keep the build
-in a consistent state. Likewise, <code class="highlighter-rouge">button-deps</code> discovers outputs automatically
-so that Button can correctly delete them later if/when they are no longer
-outputs.</p>
-
-<p>You may also notice that there is a new <code class="highlighter-rouge">"display"</code> field. This just gives a
+<p>You may notice that there is a new <code class="highlighter-rouge">"display"</code> field. This just gives a
 human-readable name to the task. The display name is printed in the output
 instead of the command line of the task. It is not uncommon for command lines to
 get very long and thus very unreadable. Linker commands that are linking in many

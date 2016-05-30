@@ -79,7 +79,6 @@
   <li><a href="#compiling-from-source" id="markdown-toc-compiling-from-source">Compiling From Source</a>    <ul>
       <li><a href="#installing-dependencies" id="markdown-toc-installing-dependencies">Installing Dependencies</a></li>
       <li><a href="#building-button" id="markdown-toc-building-button">Building <code class="highlighter-rouge">button</code></a></li>
-      <li><a href="#building-button-deps" id="markdown-toc-building-button-deps">Building <code class="highlighter-rouge">button-deps</code></a></li>
       <li><a href="#building-button-lua" id="markdown-toc-building-button-lua">Building <code class="highlighter-rouge">button-lua</code></a></li>
       <li><a href="#optional-building-button-make" id="markdown-toc-optional-building-button-make">Optional: Building <code class="highlighter-rouge">button-make</code></a></li>
     </ul>
@@ -88,11 +87,10 @@
 
 <hr />
 
-<p>Button consists of three main components:</p>
+<p>Button consists of two main components:</p>
 
 <ol>
   <li><code class="highlighter-rouge">button</code>: The build system itself.</li>
-  <li><code class="highlighter-rouge">button-deps</code>: The implicit dependency detector.</li>
   <li><code class="highlighter-rouge">button-lua</code>: The build description generator from Lua scripts.</li>
 </ol>
 
@@ -156,33 +154,6 @@ built from source.</p>
 directory that is in your <code class="highlighter-rouge">$PATH</code> and run it to make sure it is working:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>$ button help
-</code></pre>
-</div>
-
-<h3 id="building-button-deps">Building <code class="highlighter-rouge">button-deps</code></h3>
-
-<ol>
-  <li>
-    <p>Get the source:</p>
-
-    <div class="highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>git clone https://github.com/jasonwhite/button-deps.git <span class="o">&amp;&amp;</span> <span class="nb">cd </span>button-deps
-</code></pre>
-    </div>
-  </li>
-  <li>
-    <p>Build it:</p>
-
-    <div class="highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>dub build --build<span class="o">=</span>release
-</code></pre>
-    </div>
-  </li>
-</ol>
-
-<p>There should now be a <code class="highlighter-rouge">button-deps</code> executable in the current directory. Copy
-it to a directory that is in your <code class="highlighter-rouge">$PATH</code> and run it to make sure it is working:</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>$ button-deps
-Usage: button-deps [--json FILE] -- program [arg...]
 </code></pre>
 </div>
 

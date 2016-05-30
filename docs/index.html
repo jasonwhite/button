@@ -205,24 +205,9 @@ error-prone.</p>
 
 <p>Any task in the build graph, when executed, can tell Button about its input and
 output resources. This is a generalized way of allowing implicit dependency
-detection. Tasks can be wrapped in another program that knows how to tell Button
-about detected dependencies. <a href="https://github.com/jasonwhite/button-deps"><code class="highlighter-rouge">button-deps</code></a> is one such wrapper
-program. It has fast ad hoc detection for various compilers but falls back to
-tracing system calls for programs it doesn’t know about. For example, in order
-to do implicit dependency detection for the task:</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>gcc -c foo.c -o foo.o
-</code></pre>
-</div>
-
-<p>You would instead specify:</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>button-deps gcc -c foo.c -o foo.o
-</code></pre>
-</div>
-
-<p>When executed, it tells Button about any headers that were <code class="highlighter-rouge">#include</code>d or
-transitively <code class="highlighter-rouge">#include</code>d.</p>
+detection. Button has fast ad hoc detection for various compilers but falls back
+to tracing system calls for programs it doesn’t know about. This all happens
+behind the scenes without you having to do anything special.</p>
 
 <h4 id="restrictions">Restrictions</h4>
 
