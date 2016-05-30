@@ -5,13 +5,13 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>button graph - Button</title>
-  <meta name="description" content="Produces output to be consumed by GraphViz. This is useful for visualisingthe build graph.">
+  <title>button init - Button</title>
+  <meta name="description" content="Initializes a directory with an initial build description. This is similar toGit’s init command.">
 
   <link rel="stylesheet" href="/button/assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="/button/assets/css/main.css">
 
-  <link rel="canonical" href="https://jasonwhite.github.io/button/docs/commands/graph">
+  <link rel="canonical" href="https://jasonwhite.github.io/button/docs/commands/init">
 </head>
 
     <body>
@@ -63,7 +63,7 @@
         
     
         
-            <li class="active"><a href="/button/docs/commands/graph">button graph</a></li>
+            <li><a href="/button/docs/commands/graph">button graph</a></li>
         
     
         
@@ -71,7 +71,7 @@
         
     
         
-            <li><a href="/button/docs/commands/init">button init</a></li>
+            <li class="active"><a href="/button/docs/commands/init">button init</a></li>
         
     
 </ul>
@@ -79,68 +79,41 @@
                 </div>
                 <div class="col-lg-10 col-md-9">
                     <article>
-                        <div class="page-header"><h1>button graph</h1></div>
-                        <p>Produces output to be consumed by <a href="http://www.graphviz.org/">GraphViz</a>. This is useful for visualising
-the build graph.</p>
+                        <div class="page-header"><h1>button init</h1></div>
+                        <p>Initializes a directory with an initial build description. This is similar to
+Git’s <code class="highlighter-rouge">init</code> command.</p>
+
+<p>Note that this command is not mandatory. It is just useful for quickly getting
+started on a new project.</p>
+
+<p>This command will <em>not</em> overwrite any existing files.</p>
 
 <h2 id="examples">Examples</h2>
 
-<p>To generate a PNG image of your build graph, run:</p>
+<p>To create a <code class="highlighter-rouge">my_project</code> directory with a starting build description inside:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>$ button graph | dot -Tpng &gt; build_graph.png
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button init my_project
+$ cd my_project
+$ button build
 </code></pre>
 </div>
 
-<p>Note that <code class="highlighter-rouge">dot</code> is part of <a href="http://www.graphviz.org/">GraphViz</a>.</p>
+<p>To create a starting build description in the current directory:</p>
 
-<p>If running X11, you can also display an interactive graph:</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>$ button graph | dot -Tx11
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button init
 </code></pre>
 </div>
 
-<h2 id="optional-arguments">Optional Arguments</h2>
+<h2 id="positional-arguments">Positional Arguments</h2>
 
 <ul>
   <li>
-    <p><code class="highlighter-rouge">--file</code>, <code class="highlighter-rouge">-f &lt;string&gt;</code></p>
+    <p><code class="highlighter-rouge">dir</code></p>
 
-    <p>Specifies the path to the build description.</p>
-  </li>
-  <li>
-    <p><code class="highlighter-rouge">--changes</code>, <code class="highlighter-rouge">-C</code></p>
-
-    <p>Only display the subgraph that will be traversed in the next build.</p>
-  </li>
-  <li>
-    <p><code class="highlighter-rouge">--cached</code></p>
-
-    <p>Displays the cached graph from the previous build. By default, changes to
- the build description are represented in the graph.</p>
-  </li>
-  <li>
-    <p><code class="highlighter-rouge">--full</code></p>
-
-    <p>Displays the full name of each vertex. By default, the names of vertices are
- shown in condensed form. That is, resource paths are shortened to their
- basename and the display name of tasks (if available) are shown. If this
- option is specified, resource paths are shown in full and the full command
- line for a task is shown. This is off by default because it often makes
- vertices in the graph quite large.</p>
-  </li>
-  <li>
-    <p><code class="highlighter-rouge">--edges</code>, <code class="highlighter-rouge">-e {explicit,implicit,both}</code></p>
-
-    <p>Type of edges to show.</p>
-  </li>
-  <li>
-    <p><code class="highlighter-rouge">--threads</code>, <code class="highlighter-rouge">-j N</code></p>
-
-    <p>The number of threads to use. By default, the number of logical cores is
- used.</p>
+    <p>The directory to initialize. If not specified, defaults to the current
+ directory.</p>
   </li>
 </ul>
-
 
                     </article>
                 </div>
@@ -153,7 +126,7 @@ the build graph.</p>
       </div>
       <div class="pull-right">
           <p class="text-right">
-              <a href="https://github.com/jasonwhite/button/tree/master/docs/_docs/commands/graph.md">Help improve this page</a>
+              <a href="https://github.com/jasonwhite/button/tree/master/docs/_docs/commands/init.md">Help improve this page</a>
           </p>
       </div>
   </div>
