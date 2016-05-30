@@ -410,12 +410,12 @@ void checkCycles(Graph!(Resource, Task) graph)
         auto tasks = scc.vertices!(Task);
 
         println("    ", resources[0]);
-        println(" -> ", tasks[0]);
+        println(" -> ", tasks[0].toPrettyString);
 
         foreach_reverse(j; 1 .. min(resources.length, tasks.length))
         {
             println(" -> ", resources[j]);
-            println(" -> ", tasks[j]);
+            println(" -> ", tasks[j].toPrettyString);
         }
 
         // Make the cycle obvious
