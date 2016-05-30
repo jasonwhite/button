@@ -45,14 +45,11 @@ int statusCommand(StatusOptions opts, GlobalOptions globalOpts)
         scope (exit) state.rollback();
 
         if (!opts.cached)
-        {
             path.syncState(state, pool);
 
-            //displayResourceDiff(build, state, color);
-        }
-
-        printfln("%d total resources", state.length!Resource);
-        printfln("%d total tasks", state.length!Task);
+        printfln("%d resources and %d tasks total",
+                state.length!Resource,
+                state.length!Task);
 
         displayPendingResources(state, color);
         displayPendingTasks(state, color);
@@ -66,37 +63,6 @@ int statusCommand(StatusOptions opts, GlobalOptions globalOpts)
     return 0;
 }
 
-version (none) void displayResourceDiff(ref BuildDescription build, BuildState state,
-        TextColor color)
-{
-    import util.change;
-
-    auto resourceDiff = build.diffVertices!Resource(state)
-                             .filter!(c => c.type != ChangeType.none);
-
-    if (resourceDiff.empty)
-        return;
-
-    println("Resource changes:\n");
-
-    foreach (c; resourceDiff)
-    {
-        final switch (c.type)
-        {
-        case ChangeType.added:
-            println("    new:     ", color.green, Resource(c.value), color.reset);
-            break;
-        case ChangeType.removed:
-            println("    removed: ", color.red, Resource(c.value), color.reset);
-            break;
-        case ChangeType.none:
-            break;
-        }
-    }
-
-    println();
-}
-
 void displayPendingResources(BuildState state, TextColor color)
 {
     auto resources = state.enumerate!Resource
@@ -106,7 +72,7 @@ void displayPendingResources(BuildState state, TextColor color)
 
     if (resources.empty)
     {
-        println("No modified resources.");
+        println("No resources have been modified.");
     }
     else
     {
@@ -121,18 +87,18 @@ void displayPendingResources(BuildState state, TextColor color)
 
 void displayPendingTasks(BuildState state, TextColor color)
 {
-    auto tasks = state.pending!Task;
+    auto tasks = state.pending!Task.array;
 
     if (tasks.empty)
     {
-        println("No pending tasks.");
+        println("No tasks are pending.");
     }
     else
     {
-        println("Pending tasks:\n");
+        printfln("%d pending task(s):\n", tasks.length);
 
         foreach (v; tasks)
-            println("    ", color.blue, state[v], color.reset);
+            println("    ", color.blue, state[v].toPrettyString, color.reset);
 
         println();
     }
