@@ -404,35 +404,26 @@ This is the JSON file it generates:
 [
     {
         "inputs": ["bar.c"],
-        "task": [["button-deps", "--", "gcc", "-c", "bar.c", "-o", "bar.c.o"]],
+        "task": [["gcc", "-c", "bar.c", "-o", "bar.c.o"]],
         "outputs": ["bar.c.o"],
         "display": "cc bar.c"
     },
     {
         "inputs": ["foo.c"],
-        "task": [["button-deps", "--", "gcc", "-c", "foo.c", "-o", "foo.c.o"]],
+        "task": [["gcc", "-c", "foo.c", "-o", "foo.c.o"]],
         "outputs": ["foo.c.o"],
         "display": "cc foo.c"
     },
     {
         "inputs": ["bar.c.o", "foo.c.o"],
-        "task": [["button-deps", "--", "gcc", "-o", "./foobar", "bar.c.o", "foo.c.o"]],
+        "task": [["gcc", "-o", "./foobar", "bar.c.o", "foo.c.o"]],
         "outputs": ["./foobar"],
         "display": "ld foobar"
     }
 ]
 ```
 
-Notice that each task is prefixed with `["button-deps", "--",`. The program
-`button-deps` wraps the `gcc` command in order to provide automatic dependency
-detection. Any header files that are brought in with `#include` will get
-detected. That way, after the initial compilation, when a header file is
-changed, Button knows which tasks it needs to rerun in order to keep the build
-in a consistent state. Likewise, `button-deps` discovers outputs automatically
-so that Button can correctly delete them later if/when they are no longer
-outputs.
-
-You may also notice that there is a new `"display"` field. This just gives a
+You may notice that there is a new `"display"` field. This just gives a
 human-readable name to the task. The display name is printed in the output
 instead of the command line of the task. It is not uncommon for command lines to
 get very long and thus very unreadable. Linker commands that are linking in many

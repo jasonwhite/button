@@ -11,11 +11,10 @@ Table of contents:
 
 ---
 
-Button consists of three main components:
+Button consists of two main components:
 
  1. `button`: The build system itself.
- 2. `button-deps`: The implicit dependency detector.
- 3. `button-lua`: The build description generator from Lua scripts.
+ 2. `button-lua`: The build description generator from Lua scripts.
 
 Optionally, there is also the Makefile-to-Button build description converter
 (`button-make`). This is only needed if you want to automatically convert
@@ -71,26 +70,6 @@ There should now be a `button` executable in the current directory. Copy it to a
 directory that is in your `$PATH` and run it to make sure it is working:
 
     $ button help
-
-### Building `button-deps`
-
- 1. Get the source:
-
-    ```bash
-    $ git clone https://github.com/jasonwhite/button-deps.git && cd button-deps
-    ```
-
- 2. Build it:
-
-    ```bash
-    $ dub build --build=release
-    ```
-
-There should now be a `button-deps` executable in the current directory. Copy
-it to a directory that is in your `$PATH` and run it to make sure it is working:
-
-    $ button-deps
-    Usage: button-deps [--json FILE] -- program [arg...]
 
 ### Building `button-lua`
 

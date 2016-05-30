@@ -132,20 +132,9 @@ error-prone.
 
 Any task in the build graph, when executed, can tell Button about its input and
 output resources. This is a generalized way of allowing implicit dependency
-detection. Tasks can be wrapped in another program that knows how to tell Button
-about detected dependencies. [`button-deps`][button-deps] is one such wrapper
-program. It has fast ad hoc detection for various compilers but falls back to
-tracing system calls for programs it doesn't know about. For example, in order
-to do implicit dependency detection for the task:
-
-    gcc -c foo.c -o foo.o
-
-You would instead specify:
-
-    button-deps gcc -c foo.c -o foo.o
-
-When executed, it tells Button about any headers that were `#include`d or
-transitively `#include`d.
+detection. Button has fast ad hoc detection for various compilers but falls back
+to tracing system calls for programs it doesn't know about. This all happens
+behind the scenes without you having to do anything special.
 
 #### Restrictions
 
@@ -158,8 +147,6 @@ description. (If you don't do it, Cthulhu will *find* you).
 Allowing an implicit dependency to change the build order while the build is
 running could lead to incorrect builds. More often, however, it is a mistake in
 the build description and, thus, this scenario is strictly forbidden.
-
-[button-deps]: https://github.com/jasonwhite/button-deps
 
 ### Recursive Builds
 
