@@ -29,6 +29,9 @@ shared static this()
         "button": &base,
         "button-lua": &base,
         "dmd": &dmd,
+        "gcc": &gcc,
+        "g++": &gcc,
+        "c++": &gcc,
     ];
 }
 
