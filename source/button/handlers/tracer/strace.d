@@ -8,15 +8,14 @@
  * just runs the command with strace and parses the output. It would be better
  * to use ptrace directly, but the ptrace API is the stuff of nightmares.
  */
-module button.handlers.tracer;
+module button.handlers.tracer.strace;
+
+version (linux):
 
 import button.log;
 import button.resource;
 
 import io.file;
-
-version (Posix)
-{
 
 private struct Trace
 {
@@ -254,6 +253,4 @@ int execute(
     strace.dump(inputs, outputs);
 
     return 0;
-}
-
 }
