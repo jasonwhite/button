@@ -40,7 +40,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
      * synchronized statement. A less heavy-weight implementation should be used
      * instead.
      */
-    class Data
+    static class Data
     {
         // Number of incoming edges for this vertex.
         size_t degreeIn;
@@ -298,10 +298,8 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
      * Bookkeeping structure for helping keep track of vertices that have been
      * visited.
      */
-    struct Visited(Value)
+    static struct Visited(Value)
     {
-        private import std.range : ElementType, isInputRange;
-
         Value[A] visitedA;
         Value[B] visitedB;
 
@@ -559,7 +557,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * A strongly connected component.
      */
-    struct SCC
+    static struct SCC
     {
         A[] _verticesA;
         B[] _verticesB;
@@ -574,7 +572,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
     /**
      * Range of strongly connected components in the graph.
      */
-    private struct Tarjan
+    private static struct Tarjan
     {
         alias G = Graph!(A, B, EdgeDataAB, EdgeDataBA);
 
@@ -600,11 +598,7 @@ class Graph(A, B, EdgeDataAB = size_t, EdgeDataBA = size_t)
 
         this(G graph)
         {
-            import std.array : appender;
-
             _graph = graph;
-            _stackA = appender!(A[]);
-            _stackB = appender!(B[]);
         }
 
         int stronglyConnected(V1)(V1 v, scope int delegate(SCC c) dg)
