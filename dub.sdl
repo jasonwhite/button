@@ -1,12 +1,29 @@
 name "button"
-description "A build system that aims to be correct, scalable, and robust."
+description "A correct, scalable, and robust build system."
 copyright "Copyright © 2016, Jason White"
 authors "Jason White"
 license "MIT"
 
-dependency "io" version=">=0.0.7"
+targetType "executable"
+sourcePaths "source/button/app" "source/button/core"
+
 dependency "darg" version=">=0.0.4"
+dependency ":core" version="*"
 
-sourcePaths "source/button" "source/util"
+subPackage {
+    name "util"
+    targetType "library"
+    sourcePaths "source/button/util"
+    libs "sqlite3" platform="posix"
+}
 
-libs "sqlite3" platform="posix"
+subPackage {
+    name "core"
+    description "The core build system functionality."
+
+    targetType "library"
+    sourcePaths "source/button/core" "source/button/util"
+
+    dependency "io" version=">=0.0.7"
+    dependency "button:util" version="*"
+}
