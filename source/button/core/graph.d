@@ -818,7 +818,7 @@ unittest
 unittest
 {
     import std.algorithm.comparison : equal;
-    import util.change;
+    import button.util.change;
     import button.core.edge;
 
     alias C = Change;
