@@ -4,9 +4,13 @@
  * Authors:   Jason White
  *
  * Description:
- * The tracer traces system calls to determine inputs and outputs. For now, it
- * just runs the command with strace and parses the output. It would be better
- * to use ptrace directly, but the ptrace API is the stuff of nightmares.
+ * The tracer traces system calls to determine inputs and outputs. This is very
+ * slow and should only be used as a last resort when there are no other
+ * suitable handlers.
+ *
+ * FIXME: Implement this using ptrace directly. This will eliminate the
+ * dependency on strace, as it is not installed by default. It will also
+ * eliminate the small amount of overhead of spawning an extra process.
  */
 module button.core.handlers.tracer.strace;
 

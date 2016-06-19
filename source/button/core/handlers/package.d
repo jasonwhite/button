@@ -17,7 +17,8 @@
 module button.core.handlers;
 
 // List of all handler types
-public import button.core.handlers.base   : base   = execute;
-public import button.core.handlers.dmd    : dmd    = execute;
-public import button.core.handlers.gcc    : gcc    = execute;
-public import button.core.handlers.tracer : tracer = execute;
+public import button.core.handlers.base      : base      = execute;
+public import button.core.handlers.recursive : recursive = execute;
+public import button.core.handlers.dmd       : dmd       = execute;
+public import button.core.handlers.gcc       : gcc       = execute;
+public import button.core.handlers.tracer    : tracer    = execute;

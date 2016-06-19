@@ -26,7 +26,7 @@ immutable Handler[string] handlers;
 shared static this()
 {
     handlers = [
-        "button": &base,
+        "button": &recursive,
         "button-lua": &base,
         "dmd": &dmd,
         "gcc": &gcc,
@@ -58,7 +58,6 @@ Handler selectHandler(const(string)[] args)
             return *p;
     }
 
-    // TODO: Default to the tracer
     return &tracer;
 }
 

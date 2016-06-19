@@ -4,15 +4,17 @@
  * Authors:   Jason White
  *
  * Description:
- * Delegates dependency detection to the child process. This is done by creating
- * pipes for the child process to send back the dependency information. The
- * environment variables BUTTON_INPUTS and BUTTON_OUTPUTS are set to the file
- * descriptors that the child should write to. This is also useful for the child
- * process to determine if it is running under this build system or not. The
- * child only needs to check if both of those environment variables are set.
+ * Delegates dependency detection to the child process.
  *
- * Button sends build inputs and outputs to a parent Button process using this
- * mechanism.
+ * This is done by creating pipes for the child process to send back the
+ * dependency information. The environment variables BUTTON_INPUTS and
+ * BUTTON_OUTPUTS are set to the file descriptors that the child should write
+ * to. This is also useful for the child process to determine if it is running
+ * under this build system or not. The child only needs to check if both of
+ * those environment variables are set.
+ *
+ * This handler should be used for commands that know how to communicate with
+ * Button. It is also commonly used by other handlers to run the command.
  */
 module button.core.handlers.base;
 
