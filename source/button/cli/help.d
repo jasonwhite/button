@@ -6,11 +6,13 @@
  * Description:
  * Handles command line arguments.
  */
-module button.subcommands.help;
+module button.cli.help;
 
-import button.subcommands.parsing;
+import button.cli.options;
 
 import io.text, io.file.stdio;
+
+import darg;
 
 int displayHelp(string command)
 {

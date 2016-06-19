@@ -2,12 +2,15 @@
  * Copyright: Copyright Jason White, 2016
  * License:   MIT
  * Authors:   Jason White
+ *
+ * Description:
+ * All command line interface options.
  */
-module button.subcommands.parsing;
+module button.cli.options;
 
 import std.meta : AliasSeq;
 
-public import darg;
+import darg;
 
 struct Command
 {
@@ -36,6 +39,7 @@ struct GlobalOptions
     const(string)[] args;
 }
 
+// Generate usage and help strings at compile-time.
 immutable globalUsage = usageString!GlobalOptions("button");
 immutable globalHelp  = helpString!GlobalOptions();
 
@@ -56,7 +60,7 @@ struct VersionOptions
 
 @Command("build")
 @Description("Runs a build.")
-struct UpdateOptions
+struct BuildOptions
 {
     @Option("file", "f")
     @Help("Path to the build description.")
@@ -100,7 +104,6 @@ struct UpdateOptions
     size_t delay = 50;
 }
 
-// TODO: Allow graphing of just the build description.
 @Command("graph")
 @Description("Generates a graph for input into GraphViz.")
 struct GraphOptions
@@ -221,7 +224,7 @@ struct GCOptions
 alias OptionsList = AliasSeq!(
         HelpOptions,
         VersionOptions,
-        UpdateOptions,
+        BuildOptions,
         GraphOptions,
         StatusOptions,
         CleanOptions,

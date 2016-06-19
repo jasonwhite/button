@@ -6,13 +6,9 @@
  * Description:
  * Generates input for GraphViz.
  */
-module button.subcommands.graph;
+module button.cli.graph;
 
-import button.subcommands.parsing;
-
-import std.array : array;
-import std.algorithm.iteration : filter;
-import std.getopt;
+import button.cli.options : GraphOptions, GlobalOptions;
 
 import io.text,
        io.file;
@@ -28,6 +24,8 @@ import button.resource,
 
 int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
 {
+    import std.array : array;
+    import std.algorithm.iteration : filter;
     import std.parallelism : TaskPool, totalCPUs;
 
     if (opts.threads == 0)

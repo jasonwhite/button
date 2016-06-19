@@ -6,9 +6,9 @@
  * Description:
  * Command to delete outputs.
  */
-module button.subcommands.clean;
+module button.cli.clean;
 
-import button.subcommands.parsing;
+import button.cli.options : CleanOptions, GlobalOptions;
 
 import io.text, io.file.stdio;
 

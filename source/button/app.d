@@ -6,12 +6,12 @@
  * Description:
  * Program entry point.
  */
-import button.subcommands;
+import button.cli;
 
 import std.meta : AliasSeq;
 
 import io.text;
-
+import darg;
 
 /**
  * List of command functions.
@@ -19,7 +19,7 @@ import io.text;
 alias Commands = AliasSeq!(
         helpCommand,
         displayVersion,
-        updateCommand,
+        buildCommand,
         graphCommand,
         statusCommand,
         cleanCommand,
@@ -44,11 +44,8 @@ else
         }
         catch (ArgParseError e)
         {
-            // Generate usage string at compile time.
-            static immutable usage = usageString!GlobalOptions("button");
-
             println("Error parsing arguments: ", e.msg, "\n");
-            println(usage);
+            println(globalUsage);
             return 1;
         }
 

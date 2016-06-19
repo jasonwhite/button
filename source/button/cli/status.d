@@ -6,9 +6,9 @@
  * Description:
  * Displays status about the build.
  */
-module button.subcommands.status;
+module button.cli.status;
 
-import button.subcommands.parsing;
+import button.cli.options : StatusOptions, GlobalOptions;
 
 import std.getopt;
 import std.range : empty;

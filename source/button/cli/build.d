@@ -4,13 +4,13 @@
  * Authors:   Jason White
  *
  * Description:
- * Handles the 'update' or 'build' command.
+ * Handles the 'build' command.
  */
-module button.subcommands.update;
+module button.cli.build;
 
 import std.parallelism : TaskPool;
 
-import button.subcommands.parsing;
+import button.cli.options : BuildOptions, GlobalOptions;
 
 import io.text, io.file;
 
@@ -27,7 +27,7 @@ import button.watcher;
 /**
  * Returns a build logger based on the command options.
  */
-Logger buildLogger(in UpdateOptions opts)
+Logger buildLogger(in BuildOptions opts)
 {
     import button.log.file;
     return new FileLogger(stdout, opts.verbose);
@@ -40,7 +40,7 @@ Logger buildLogger(in UpdateOptions opts)
  * specified, once the build finishes, we watch for changes to inputs and run
  * another build.
  */
-int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
+int buildCommand(BuildOptions opts, GlobalOptions globalOpts)
 {
     import std.parallelism : totalCPUs;
 
@@ -82,7 +82,7 @@ int updateCommand(UpdateOptions opts, GlobalOptions globalOpts)
     }
 }
 
-int doBuild(string path, BuildState state, UpdateOptions opts, TaskPool pool,
+int doBuild(string path, BuildState state, BuildOptions opts, TaskPool pool,
         Logger logger, TextColor color)
 {
     import std.datetime : StopWatch, AutoStart;
@@ -140,7 +140,7 @@ int doBuild(string path, BuildState state, UpdateOptions opts, TaskPool pool,
     return 0;
 }
 
-int doAutoBuild(string path, BuildState state, UpdateOptions opts,
+int doAutoBuild(string path, BuildState state, BuildOptions opts,
         TaskPool pool, Logger logger, TextColor color)
 {
     println(color.status, ":: Waiting for changes...", color.reset);
