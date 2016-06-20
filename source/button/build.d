@@ -19,7 +19,7 @@ import button.state;
 import button.textcolor;
 import button.rule;
 import button.log;
-
+import button.context;
 
 alias BuildStateGraph = Graph!(
         Index!Resource,
@@ -640,29 +640,16 @@ void syncStateImplicit(BuildState state, Index!Task v,
     }
 }
 
-struct VisitorContext
-{
-    BuildState state;
-
-    bool dryRun;
-
-    bool verbose;
-
-    TextColor color;
-
-    Logger logger;
-}
-
 /**
  * Called when a resource vertex is visited.
  *
  * Returns true if we should continue traversing the graph.
  */
-bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn,
+bool visitResource(BuildContext* ctx, Index!Resource v, size_t degreeIn,
         size_t degreeChanged)
 {
     scope (success)
-        context.state.removePending(v);
+        ctx.state.removePending(v);
 
     // Do not consider ourselves changed if none of our dependencies changed.
     if (degreeChanged == 0)
@@ -676,10 +663,10 @@ bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn,
 
     // This is an output resource. Its parent task may have changed it. Thus,
     // check for any change.
-    auto r = context.state[v];
+    auto r = ctx.state[v];
     if (r.update())
     {
-        context.state[v] = r;
+        ctx.state[v] = r;
         return true;
     }
 
@@ -691,41 +678,41 @@ bool visitResource(VisitorContext* context, Index!Resource v, size_t degreeIn,
  *
  * Returns true if we should continue traversing the graph.
  */
-bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
+bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
         size_t degreeChanged)
 {
     import core.time : TickDuration;
     import std.format : format;
 
-    immutable pending = context.state.isPending(v);
+    immutable pending = ctx.state.isPending(v);
 
     if (degreeChanged == 0 && !pending)
         return false;
 
     // We add this as pending if it isn't already just in case the build is
     // interrupted or if it fails.
-    if (!pending) context.state.addPending(v);
+    if (!pending) ctx.state.addPending(v);
 
-    auto task = context.state[v];
+    auto task = ctx.state[v];
 
-    auto taskLogger = context.logger.taskStarted(v, task, context.dryRun);
+    auto taskLogger = ctx.logger.taskStarted(v, task, ctx.dryRun);
 
     // Assume the command would succeed in a dryrun
-    if (context.dryRun)
+    if (ctx.dryRun)
     {
         taskLogger.succeeded(TickDuration.zero);
         return true;
     }
 
-    auto result = task.execute(taskLogger);
+    auto result = task.execute(*ctx, taskLogger);
 
     try
     {
         if (!result.success)
             throw new TaskError("Task failed");
 
-        synchronized (context.state)
-            syncStateImplicit(context.state, v, result.inputs, result.outputs);
+        synchronized (ctx.state)
+            syncStateImplicit(ctx.state, v, result.inputs, result.outputs);
     }
     catch (TaskError e)
     {
@@ -736,7 +723,7 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
     // Only remove this from the set of pending tasks if it succeeds completely.
     // If it fails, it should get executed again on the next run such that other
     // tasks that depend on this (if any) can be executed.
-    context.state.removePending(v);
+    ctx.state.removePending(v);
 
     taskLogger.succeeded(result.duration);
 
@@ -748,15 +735,9 @@ bool visitTask(VisitorContext* context, Index!Task v, size_t degreeIn,
  *
  * This is the heart of the build system. Everything else is just support code.
  */
-void build(BuildStateGraph graph, BuildState state, TaskPool pool,
-        bool dryRun, bool verbose, TextColor color, Logger logger)
+void build(BuildStateGraph graph, ref BuildContext context)
 {
-    import std.algorithm : filter, map;
-    import std.array : array;
-
-    auto ctx = VisitorContext(state, dryRun, verbose, color, logger);
-
-    graph.traverse!(visitResource, visitTask)(&ctx, pool);
+    graph.traverse!(visitResource, visitTask)(&context, context.pool);
 }
 
 /**

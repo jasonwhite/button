@@ -13,6 +13,7 @@ module button.handlers.gcc;
 
 import button.log;
 import button.resource;
+import button.context;
 
 import std.range.primitives : isInputRange, ElementEncodingType,
                               front, empty, popFront;
@@ -294,6 +295,7 @@ unittest
 }
 
 int execute(
+        ref BuildContext ctx,
         const(string)[] args,
         string workDir,
         ref Resources inputs,
@@ -315,7 +317,7 @@ int execute(
     // Tell gcc to write dependencies to our temporary file.
     args ~= ["-MMD", "-MF", depsPath];
 
-    auto exitCode = base(args, workDir, inputs, outputs, logger);
+    auto exitCode = base(ctx, args, workDir, inputs, outputs, logger);
 
     if (exitCode != 0)
         return exitCode;

@@ -23,6 +23,7 @@ import button.task;
 import button.textcolor;
 import button.log;
 import button.watcher;
+import button.context;
 
 /**
  * Returns a build logger based on the command options.
@@ -69,21 +70,22 @@ int buildCommand(BuildOptions opts, GlobalOptions globalOpts)
         return 1;
     }
 
+    auto context = BuildContext(pool, logger, state, opts.dryRun, opts.verbose, color);
+
     if (!opts.autopilot)
     {
-        return doBuild(path, state, opts, pool, logger, color);
+        return doBuild(context, path);
     }
     else
     {
         // Do the initial build, checking for changes the old-fashioned way.
-        doBuild(path, state, opts, pool, logger, color);
+        doBuild(context, path);
 
-        return doAutoBuild(path, state, opts, pool, logger, color);
+        return doAutoBuild(context, path, opts.watchDir, opts.delay);
     }
 }
 
-int doBuild(string path, BuildState state, BuildOptions opts, TaskPool pool,
-        Logger logger, TextColor color)
+int doBuild(ref BuildContext ctx, string path)
 {
     import std.datetime : StopWatch, AutoStart;
 
@@ -95,44 +97,44 @@ int doBuild(string path, BuildState state, BuildOptions opts, TaskPool pool,
         import core.time : Duration;
         sw.stop();
 
-        if (opts.verbose)
+        if (ctx.verbose)
         {
-            println(color.status, ":: Total time taken: ", color.reset,
+            println(ctx.color.status, ":: Total time taken: ", ctx.color.reset,
                     cast(Duration)sw.peek());
         }
     }
 
     try
     {
-        state.begin();
+        ctx.state.begin();
         scope (exit)
         {
-            if (opts.dryRun)
-                state.rollback();
+            if (ctx.dryRun)
+                ctx.state.rollback();
             else
-                state.commit();
+                ctx.state.commit();
         }
 
-        syncBuildState(state, pool, path, opts.verbose, color);
+        syncBuildState(ctx, path);
 
-        if (opts.verbose)
-            println(color.status, ":: Checking for changes...", color.reset);
+        if (ctx.verbose)
+            println(ctx.color.status, ":: Checking for changes...", ctx.color.reset);
 
-        queueChanges(state, pool, color);
+        queueChanges(ctx.state, ctx.pool, ctx.color);
 
-        update(state, pool, opts.dryRun, opts.verbose, color, logger);
-        publishResources(state);
+        update(ctx);
+        publishResources(ctx.state);
     }
     catch (BuildException e)
     {
-        stderr.println(color.status, ":: ", color.error,
-                "Error", color.reset, ": ", e.msg);
+        stderr.println(ctx.color.status, ":: ", ctx.color.error,
+                "Error", ctx.color.reset, ": ", e.msg);
         return 1;
     }
     catch (TaskError e)
     {
-        stderr.println(color.status, ":: ", color.error,
-                "Build failed!", color.reset,
+        stderr.println(ctx.color.status, ":: ", ctx.color.error,
+                "Build failed!", ctx.color.reset,
                 " See the output above for details.");
         return 1;
     }
@@ -140,21 +142,21 @@ int doBuild(string path, BuildState state, BuildOptions opts, TaskPool pool,
     return 0;
 }
 
-int doAutoBuild(string path, BuildState state, BuildOptions opts,
-        TaskPool pool, Logger logger, TextColor color)
+int doAutoBuild(ref BuildContext ctx, string path,
+        string watchDir, size_t delay)
 {
-    println(color.status, ":: Waiting for changes...", color.reset);
+    println(ctx.color.status, ":: Waiting for changes...", ctx.color.reset);
 
-    state.begin();
+    ctx.state.begin();
     scope (exit)
     {
-        if (opts.dryRun)
-            state.rollback();
+        if (ctx.dryRun)
+            ctx.state.rollback();
         else
-            state.commit();
+            ctx.state.commit();
     }
 
-    foreach (changes; ChangeChunks(state, opts.watchDir, opts.delay))
+    foreach (changes; ChangeChunks(ctx.state, watchDir, delay))
     {
         try
         {
@@ -163,103 +165,102 @@ int doAutoBuild(string path, BuildState state, BuildOptions opts,
             foreach (v; changes)
             {
                 // Check if the resource contents actually changed
-                auto r = state[v];
+                auto r = ctx.state[v];
 
                 if (r.update())
                 {
-                    state.addPending(v);
-                    state[v] = r;
+                    ctx.state.addPending(v);
+                    ctx.state[v] = r;
                     ++changed;
                 }
             }
 
             if (changed > 0)
             {
-                syncBuildState(state, pool, path, opts.verbose, color);
-                update(state, pool, opts.dryRun, opts.verbose, color, logger);
-                println(color.status, ":: Waiting for changes...", color.reset);
+                syncBuildState(ctx, path);
+                update(ctx);
+                println(ctx.color.status, ":: Waiting for changes...", ctx.color.reset);
             }
         }
         catch (BuildException e)
         {
-            stderr.println(color.status, ":: ", color.error,
-                    "Error", color.reset, ": ", e.msg);
+            stderr.println(ctx.color.status, ":: ", ctx.color.error,
+                    "Error", ctx.color.reset, ": ", e.msg);
             continue;
         }
         catch (TaskError e)
         {
-            stderr.println(color.status, ":: ", color.error,
-                    "Build failed!", color.reset,
+            stderr.println(ctx.color.status, ":: ", ctx.color.error,
+                    "Build failed!", ctx.color.reset,
                     " See the output above for details.");
             continue;
         }
     }
 
-    //publishResources(state);
-
-    //return 0;
+    // Unreachable
 }
 
 /**
  * Updates the database with any changes to the build description.
  */
-void syncBuildState(BuildState state, TaskPool pool, string path, bool verbose, TextColor color)
+void syncBuildState(ref BuildContext ctx, string path)
 {
     // TODO: Don't store the build description in the database. The parent build
     // system should store the change state of the build description and tell
     // the child which input resources have changed upon an update.
-    auto r = state[BuildState.buildDescId];
+    auto r = ctx.state[BuildState.buildDescId];
     r.path = path;
     if (r.update())
     {
-        if (verbose)
-            println(color.status, ":: Build description changed. Syncing with the database...",
-                    color.reset);
+        if (ctx.verbose)
+            println(ctx.color.status,
+                    ":: Build description changed. Syncing with the database...",
+                    ctx.color.reset);
 
-        path.syncState(state, pool);
+        path.syncState(ctx.state, ctx.pool);
 
         // Update the build description resource
-        state[BuildState.buildDescId] = r;
+        ctx.state[BuildState.buildDescId] = r;
     }
 }
 
 /**
  * Builds pending vertices.
  */
-void update(BuildState state, TaskPool pool, bool dryRun, bool verbose,
-        TextColor color, Logger logger)
+void update(ref BuildContext ctx)
 {
     import std.array : array;
     import std.algorithm.iteration : filter;
 
-    auto resources = state.pending!Resource.array;
-    auto tasks     = state.pending!Task.array;
+    auto resources = ctx.state.pending!Resource.array;
+    auto tasks     = ctx.state.pending!Task.array;
 
     if (resources.length == 0 && tasks.length == 0)
     {
-        if (verbose)
+        if (ctx.verbose)
         {
-            println(color.status, ":: ", color.success,
-                    "Nothing to do. Everything is up to date.", color.reset);
+            println(ctx.color.status, ":: ", ctx.color.success,
+                    "Nothing to do. Everything is up to date.", ctx.color.reset);
         }
 
         return;
     }
 
     // Print what we found.
-    if (verbose)
+    if (ctx.verbose)
     {
         printfln(" - Found %s%d%s modified resource(s)",
-                color.boldBlue, resources.length, color.reset);
+                ctx.color.boldBlue, resources.length, ctx.color.reset);
         printfln(" - Found %s%d%s pending task(s)",
-                color.boldBlue, tasks.length, color.reset);
+                ctx.color.boldBlue, tasks.length, ctx.color.reset);
 
-        println(color.status, ":: Building...", color.reset);
+        println(ctx.color.status, ":: Building...", ctx.color.reset);
     }
 
-    auto subgraph = state.buildGraph(resources, tasks);
-    subgraph.build(state, pool, dryRun, verbose, color, logger);
+    auto subgraph = ctx.state.buildGraph(resources, tasks);
+    subgraph.build(ctx);
 
-    if (verbose)
-        println(color.status, ":: ", color.success, "Build succeeded", color.reset);
+    if (ctx.verbose)
+        println(ctx.color.status, ":: ", ctx.color.success, "Build succeeded",
+                ctx.color.reset);
 }

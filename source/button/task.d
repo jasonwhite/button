@@ -8,6 +8,7 @@ module button.task;
 import button.command;
 import button.log;
 import button.resource;
+import button.context;
 
 /**
  * Thrown if a task fails.
@@ -217,7 +218,7 @@ struct Task
         assert(Task([["a", "b"]], "a") == Task([["a", "b"]], "a"));
     }
 
-    Result execute(TaskLogger logger)
+    Result execute(ref BuildContext ctx, TaskLogger logger)
     {
         import std.array : appender;
         import std.datetime : StopWatch, AutoStart;
@@ -230,7 +231,7 @@ struct Task
 
         foreach (command; commands)
         {
-            auto result = command.execute(workingDirectory, logger);
+            auto result = command.execute(ctx, workingDirectory, logger);
 
             // FIXME: Commands may have temporary inputs and outputs. For
             // example, if one command creates a file and a later command

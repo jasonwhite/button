@@ -18,6 +18,7 @@ version (linux):
 
 import button.log;
 import button.resource;
+import button.context;
 
 import io.file;
 
@@ -215,6 +216,7 @@ private struct Trace
 }
 
 int execute(
+        ref BuildContext ctx,
         const(string)[] args,
         string workDir,
         ref Resources inputs,
@@ -242,7 +244,7 @@ int execute(
         "-e", "trace=open,creat,rename,mkdir,chdir",
         ] ~ args;
 
-    auto exitCode = base(traceArgs, workDir, inputs, outputs, logger);
+    auto exitCode = base(ctx, traceArgs, workDir, inputs, outputs, logger);
 
     if (exitCode != 0)
     {

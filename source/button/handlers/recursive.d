@@ -26,8 +26,15 @@ module button.handlers.recursive;
 
 import button.log;
 import button.resource;
+import button.context;
+import button.build;
+
+import button.cli;
+
+import darg;
 
 int execute(
+        ref BuildContext ctx,
         const(string)[] args,
         string workDir,
         ref Resources inputs,
@@ -37,7 +44,14 @@ int execute(
 {
     import button.handlers.base : base = execute;
 
-    // TODO: Parse the arguments. Unfortunately, this cannot be done without
-    // bundling the front-end of the build system into the back-end.
-    return base(args, workDir, inputs, outputs, logger);
+    auto globalOpts = parseArgs!GlobalOptions(args[1 .. $], Config.ignoreUnknown);
+    auto buildOpts  = parseArgs!BuildOptions(globalOpts.args);
+
+    // Not the build command, forward to the base handler.
+    if (globalOpts.command != "build")
+        return base(ctx, args, workDir, inputs, outputs, logger);
+
+    // TODO: Get the build state database and run the build
+
+    return base(ctx, args, workDir, inputs, outputs, logger);
 }

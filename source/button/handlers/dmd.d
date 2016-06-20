@@ -15,6 +15,7 @@ module button.handlers.dmd;
 
 import button.log;
 import button.resource;
+import button.context;
 
 import std.path;
 import io.file;
@@ -245,6 +246,7 @@ private Options parseArgs(const(string)[] args) pure
 }
 
 int execute(
+        ref BuildContext ctx,
         const(string)[] args,
         string workDir,
         ref Resources inputs,
@@ -283,7 +285,7 @@ int execute(
     // Delete the temporary -deps file when done.
     scope (exit) if (opts.depsFile is null) remove(depsPath);
 
-    auto exitCode = base(args, workDir, inputs, outputs, logger);
+    auto exitCode = base(ctx, args, workDir, inputs, outputs, logger);
 
     if (exitCode != 0)
     {

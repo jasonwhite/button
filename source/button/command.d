@@ -7,6 +7,7 @@ module button.command;
 
 import button.log;
 import button.resource;
+import button.context;
 
 /**
  * Thrown if a command fails.
@@ -186,7 +187,7 @@ struct Command
     /**
      * Executes the command.
      */
-    Result execute(string workDir, TaskLogger logger) const
+    Result execute(ref BuildContext ctx, string workDir, TaskLogger logger) const
     {
         import std.datetime : StopWatch, AutoStart;
         import button.handler : executeHandler = execute;
@@ -197,6 +198,7 @@ struct Command
         auto sw = StopWatch(AutoStart.yes);
 
         immutable status = executeHandler(
+                ctx,
                 args,
                 workDir,
                 inputs, outputs,

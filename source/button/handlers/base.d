@@ -20,6 +20,7 @@ module button.handlers.base;
 
 import button.log;
 import button.resource;
+import button.context;
 
 // Open /dev/null to be used by all child processes as its standard input.
 version (Posix)
@@ -43,6 +44,7 @@ version (Posix)
 
 version (Posix)
 int execute(
+        ref BuildContext ctx,
         const(string)[] args,
         string workDir,
         ref Resources inputs,

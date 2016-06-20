@@ -11,10 +11,12 @@ module button.handler;
 
 import button.log;
 import button.resource;
+import button.context;
 
 import button.handlers;
 
 alias Handler = int function(
+        ref BuildContext ctx,
         const(string)[] args,
         string workDir,
         ref Resources inputs,
@@ -62,6 +64,7 @@ Handler selectHandler(const(string)[] args)
 }
 
 int execute(
+        ref BuildContext ctx,
         const(string)[] args,
         string workDir,
         ref Resources inputs,
@@ -71,5 +74,5 @@ int execute(
 {
     auto handler = selectHandler(args);
 
-    return handler(args, workDir, inputs, outputs, logger);
+    return handler(ctx, args, workDir, inputs, outputs, logger);
 }
