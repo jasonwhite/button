@@ -47,8 +47,8 @@ class BuildException : Exception
 {
     import std.path : dirName, baseName, buildNormalizedPath;
 
-    immutable string dir  = dirName(fileName);
-    immutable string base = baseName(fileName);
+    immutable dir  = dirName(fileName);
+    immutable base = baseName(fileName);
 
     string prefix;
 
@@ -850,36 +850,14 @@ string findBuildPath(string root)
 }
 
 /**
- * Changes the current working directory to be the parent directory of the build
- * description path. The new path to the build description is returned.
- */
-string changeToBuildPath(string path)
-{
-    import std.file : chdir, FileException;
-    import std.path : dirName, baseName;
-
-    try
-    {
-        chdir(path.dirName);
-    }
-    catch (FileException e)
-    {
-        // Rethrow
-        throw new BuildException(e.msg);
-    }
-
-    return path.baseName;
-}
-
-/**
- * Gets the path to the build description.
+ * Returns the path to the build description.
  */
 string buildDescriptionPath(string path)
 {
     import std.file : getcwd;
 
-    if (path is null)
-        path = findBuildPath(getcwd());
+    if (!path.length)
+        return findBuildPath(getcwd());
 
-    return path.changeToBuildPath;
+    return path;
 }

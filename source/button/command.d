@@ -95,7 +95,7 @@ struct Command
 
     // Root of the build directory. This is used to normalize implicit resource
     // paths.
-    private static string buildRoot;
+    string buildRoot;
 
     /**
      * The result of executing a command.
@@ -118,12 +118,6 @@ struct Command
          * How long it took the command to run from start to finish.
          */
         TickDuration duration;
-    }
-
-    static this()
-    {
-        import std.file : getcwd;
-        buildRoot = getcwd();
     }
 
     this(immutable(string)[] args)
@@ -189,18 +183,19 @@ struct Command
      */
     Result execute(ref BuildContext ctx, string workDir, TaskLogger logger) const
     {
+        import std.path : buildPath;
         import std.datetime : StopWatch, AutoStart;
         import button.handler : executeHandler = execute;
 
-        auto inputs  = Resources(buildRoot, workDir);
-        auto outputs = Resources(buildRoot, workDir);
+        auto inputs  = Resources(ctx.root, workDir);
+        auto outputs = Resources(ctx.root, workDir);
 
         auto sw = StopWatch(AutoStart.yes);
 
         immutable status = executeHandler(
                 ctx,
                 args,
-                workDir,
+                buildPath(ctx.root, workDir),
                 inputs, outputs,
                 logger
                 );

@@ -44,6 +44,7 @@ Logger buildLogger(in BuildOptions opts)
 int buildCommand(BuildOptions opts, GlobalOptions globalOpts)
 {
     import std.parallelism : totalCPUs;
+    import std.path : dirName, absolutePath;
 
     auto logger = buildLogger(opts);
 
@@ -70,7 +71,8 @@ int buildCommand(BuildOptions opts, GlobalOptions globalOpts)
         return 1;
     }
 
-    auto context = BuildContext(pool, logger, state, opts.dryRun, opts.verbose, color);
+    auto context = BuildContext(absolutePath(dirName(path)), pool, logger,
+            state, opts.dryRun, opts.verbose, color);
 
     if (!opts.autopilot)
     {

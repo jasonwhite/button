@@ -22,6 +22,8 @@ import button.textcolor : TextColor;
  */
 struct BuildContext
 {
+    string root;
+
     TaskPool pool;
     Logger logger;
     BuildState state;
