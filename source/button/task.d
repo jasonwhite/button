@@ -98,7 +98,6 @@ unittest
  */
 struct Task
 {
-    import core.time : TickDuration;
     import std.datetime : SysTime;
 
     TaskKey key;
@@ -124,24 +123,11 @@ struct Task
      */
     struct Result
     {
-        import core.time : TickDuration;
-
-        /**
-         * True if all the commands in the task succeeded.
-         */
-        bool success;
-
         /**
          * List of raw byte arrays of implicit inputs/outputs. There is one byte
          * array per command.
          */
         Resource[] inputs, outputs;
-
-        /**
-         * How long it took the task, including all of its commands, to run from
-         * start to finish.
-         */
-        TickDuration duration;
     }
 
     this(TaskKey key)
@@ -221,13 +207,10 @@ struct Task
     Result execute(ref BuildContext ctx, TaskLogger logger)
     {
         import std.array : appender;
-        import std.datetime : StopWatch, AutoStart;
 
         // FIXME: Use a set instead?
         auto inputs  = appender!(Resource[]);
         auto outputs = appender!(Resource[]);
-
-        auto sw = StopWatch(AutoStart.yes);
 
         foreach (command; commands)
         {
@@ -239,21 +222,8 @@ struct Task
             // sets.
             inputs.put(result.inputs);
             outputs.put(result.outputs);
-
-            if (result.status != 0)
-            {
-                sw.stop();
-
-                return Result(
-                        false, // Failed
-                        inputs.data, outputs.data,
-                        sw.peek() // Task duration
-                        );
-            }
         }
 
-        sw.stop();
-
-        return Result(true, inputs.data, outputs.data, sw.peek());
+        return Result(inputs.data, outputs.data);
     }
 }

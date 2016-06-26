@@ -682,8 +682,10 @@ bool visitResource(BuildContext* ctx, Index!Resource v, size_t degreeIn,
 bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
         size_t degreeChanged)
 {
+    import std.datetime : StopWatch, AutoStart;
     import core.time : TickDuration;
     import std.format : format;
+    import std.exception : collectException;
 
     immutable pending = ctx.state.isPending(v);
 
@@ -705,19 +707,30 @@ bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
         return true;
     }
 
-    auto result = task.execute(*ctx, taskLogger);
+    auto sw = StopWatch(AutoStart.yes);
 
-    try
+    Task.Result result;
+    Exception e = task.execute(*ctx, taskLogger).collectException(result);
+
+    sw.stop();
+
+    immutable duration = sw.peek();
+
+    if (e)
     {
-        if (!result.success)
-            throw new TaskError("Task failed");
-
-        synchronized (ctx.state)
-            syncStateImplicit(ctx.state, v, result.inputs, result.outputs);
+        taskLogger.failed(duration, e);
+        throw e;
     }
-    catch (TaskError e)
+
+    synchronized (ctx.state)
     {
-        taskLogger.failed(result.duration, e);
+        e = syncStateImplicit(ctx.state, v, result.inputs, result.outputs)
+                .collectException;
+    }
+
+    if (e)
+    {
+        taskLogger.failed(duration, e);
         throw e;
     }
 
@@ -726,7 +739,7 @@ bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
     // tasks that depend on this (if any) can be executed.
     ctx.state.removePending(v);
 
-    taskLogger.succeeded(result.duration);
+    taskLogger.succeeded(duration);
 
     return true;
 }

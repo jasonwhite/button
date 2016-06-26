@@ -269,7 +269,7 @@ build again. `button.json` should then look like this:
     $ button build
      > gcc foo.o bar.o -o foobar
     gcc: error: bar.o: No such file or directory
-       ➥ Task Error: Task failed
+       ➥ Error: Task failed
     :: Build failed! See the output above for details.
 
 Linking failed because `bar.o` doesn't exist on disk! Button deleted `bar.o`.

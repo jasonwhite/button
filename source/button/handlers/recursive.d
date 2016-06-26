@@ -35,7 +35,7 @@ import button.cli;
 
 import darg;
 
-int execute(
+void execute(
         ref BuildContext ctx,
         const(string)[] args,
         string workDir,
@@ -53,7 +53,10 @@ int execute(
 
     // Not the build command, forward to the base handler.
     if (globalOpts.command != "build")
-        return base(ctx, args, workDir, inputs, outputs, logger);
+    {
+        base(ctx, args, workDir, inputs, outputs, logger);
+        return;
+    }
 
     string path;
 
@@ -104,8 +107,6 @@ int execute(
         else
             outputs.put(state[v]);
     }
-
-    return 0;
 }
 
 /**

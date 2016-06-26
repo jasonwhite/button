@@ -82,7 +82,7 @@ final class FileLogger : Logger
             }
         }
 
-        void failed(TickDuration duration, TaskError e)
+        void failed(TickDuration duration, Exception e)
         {
             import std.string : wrap;
 
@@ -94,9 +94,9 @@ final class FileLogger : Logger
                 printOutput();
                 printTail(duration);
 
-                enum indent = "                 ";
+                enum indent = "             ";
 
-                file.print(color.status, "   ➥ ", color.error, "Task Error: ",
+                file.print(color.status, "   ➥ ", color.error, "Error: ",
                         color.reset, wrap(e.msg, 80, "", indent, 4));
             }
         }

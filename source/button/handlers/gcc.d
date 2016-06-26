@@ -294,7 +294,7 @@ unittest
                 ).array));
 }
 
-int execute(
+void execute(
         ref BuildContext ctx,
         const(string)[] args,
         string workDir,
@@ -317,10 +317,7 @@ int execute(
     // Tell gcc to write dependencies to our temporary file.
     args ~= ["-MMD", "-MF", depsPath];
 
-    auto exitCode = base(ctx, args, workDir, inputs, outputs, logger);
-
-    if (exitCode != 0)
-        return exitCode;
+    base(ctx, args, workDir, inputs, outputs, logger);
 
     // TODO: Parse the command line arguments for -I and -o options.
 
@@ -331,6 +328,4 @@ int execute(
         outputs.put(rule.target);
         inputs.put(rule.deps);
     }
-
-    return 0;
 }

@@ -43,7 +43,7 @@ version (Posix)
 }
 
 version (Posix)
-int execute(
+void execute(
         ref BuildContext ctx,
         const(string)[] args,
         string workDir,
@@ -65,6 +65,7 @@ int execute(
     import std.array : array;
 
     import button.deps : deps;
+    import button.command : CommandError;
 
     int[2] stdfds, inputfds, outputfds;
 
@@ -117,7 +118,10 @@ int execute(
     outputs.put(implicit.outputs.deps);
 
     // Wait for the child to exit
-    return waitFor(pid);
+    immutable exitCode = waitFor(pid);
+
+    if (exitCode != 0)
+        throw new CommandError(exitCode);
 }
 
 private version (Posix)

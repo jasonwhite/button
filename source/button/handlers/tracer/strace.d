@@ -215,7 +215,7 @@ private struct Trace
     }
 }
 
-int execute(
+void execute(
         ref BuildContext ctx,
         const(string)[] args,
         string workDir,
@@ -244,19 +244,10 @@ int execute(
         "-e", "trace=open,creat,rename,mkdir,chdir",
         ] ~ args;
 
-    auto exitCode = base(ctx, traceArgs, workDir, inputs, outputs, logger);
-
-    if (exitCode != 0)
-    {
-        // If the command failed, don't bother trying to figure out implicit
-        // dependencies. They will be ignored by the build system anyway.
-        return exitCode;
-    }
+    base(ctx, traceArgs, workDir, inputs, outputs, logger);
 
     // Parse the trace log to determine dependencies
     auto strace = Trace();
     strace.parse(File(traceLog));
     strace.dump(inputs, outputs);
-
-    return 0;
 }

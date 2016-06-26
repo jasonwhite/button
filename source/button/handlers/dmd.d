@@ -245,7 +245,7 @@ private Options parseArgs(const(string)[] args) pure
     return opts;
 }
 
-int execute(
+void execute(
         ref BuildContext ctx,
         const(string)[] args,
         string workDir,
@@ -285,14 +285,7 @@ int execute(
     // Delete the temporary -deps file when done.
     scope (exit) if (opts.depsFile is null) remove(depsPath);
 
-    auto exitCode = base(ctx, args, workDir, inputs, outputs, logger);
-
-    if (exitCode != 0)
-    {
-        // If the compilation failed, don't bother trying to figure out implicit
-        // dependencies. They will be ignored by the build system anyway.
-        return exitCode;
-    }
+    base(ctx, args, workDir, inputs, outputs, logger);
 
     // Add the inputs from the dependency file.
     static r = regex(`\((.*?)\)`);
@@ -333,6 +326,4 @@ int execute(
             outputs.put(opts.objects);
         }
     }
-
-    return 0;
 }

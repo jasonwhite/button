@@ -132,7 +132,7 @@ int doBuild(ref BuildContext ctx, string path)
                 "Error", ctx.color.reset, ": ", e.msg);
         return 1;
     }
-    catch (TaskError e)
+    catch (Exception e)
     {
         stderr.println(ctx.color.status, ":: ", ctx.color.error,
                 "Build failed!", ctx.color.reset,

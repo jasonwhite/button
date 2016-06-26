@@ -14,9 +14,15 @@ import button.context;
  */
 class CommandError : Exception
 {
-    this(string msg)
+    int exitCode;
+
+    this(int exitCode)
     {
-        super(msg);
+        import std.format : format;
+
+        super("Command failed with exit code %d".format(exitCode));
+
+        this.exitCode = exitCode;
     }
 }
 
@@ -105,11 +111,6 @@ struct Command
         import core.time : TickDuration;
 
         /**
-         * The command's exit status code
-         */
-        int status;
-
-        /**
          * Implicit input and output resources this command used.
          */
         Resource[] inputs, outputs;
@@ -192,7 +193,7 @@ struct Command
 
         auto sw = StopWatch(AutoStart.yes);
 
-        immutable status = executeHandler(
+        executeHandler(
                 ctx,
                 args,
                 buildPath(ctx.root, workDir),
@@ -200,6 +201,6 @@ struct Command
                 logger
                 );
 
-        return Result(status, inputs.data, outputs.data, sw.peek());
+        return Result(inputs.data, outputs.data, sw.peek());
     }
 }

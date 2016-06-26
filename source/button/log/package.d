@@ -41,7 +41,7 @@ interface TaskLogger
      * Called when the task has failed. There will be no more output events
      * after this.
      */
-    void failed(TickDuration duration, TaskError e);
+    void failed(TickDuration duration, Exception e);
 
     /**
      * Called when the task has completed successfully. There will be no more

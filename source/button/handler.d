@@ -15,7 +15,7 @@ import button.context;
 
 import button.handlers;
 
-alias Handler = int function(
+alias Handler = void function(
         ref BuildContext ctx,
         const(string)[] args,
         string workDir,
@@ -63,7 +63,7 @@ Handler selectHandler(const(string)[] args)
     return &tracer;
 }
 
-int execute(
+void execute(
         ref BuildContext ctx,
         const(string)[] args,
         string workDir,
@@ -74,5 +74,5 @@ int execute(
 {
     auto handler = selectHandler(args);
 
-    return handler(ctx, args, workDir, inputs, outputs, logger);
+    handler(ctx, args, workDir, inputs, outputs, logger);
 }
