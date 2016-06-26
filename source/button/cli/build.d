@@ -125,7 +125,6 @@ int doBuild(ref BuildContext ctx, string path)
         queueChanges(ctx.state, ctx.pool, ctx.color);
 
         update(ctx);
-        publishResources(ctx.state);
     }
     catch (BuildException e)
     {

@@ -504,6 +504,7 @@ void queueChanges(BuildState state, TaskPool pool, TextColor color)
             {
                 // An output changed. In this case, it must be regenerated. So, we
                 // add its task to the queue.
+                // TODO: Use the logger to do this instead.
                 synchronized println(
                         " - ", color.warning, "Warning", color.reset,
                         ": Output file `", color.purple, r, color.reset,
@@ -769,58 +770,6 @@ void clean(BuildState state, bool dryRun)
             assert(incoming.length == 1,
                     "Output resource has does not have 1 incoming edge!");
             state.addPending(incoming[0].vertex);
-        }
-    }
-}
-
-/**
- * If this build system is running under itself, send back all of its
- * inputs and outputs.
- */
-void publishResources(BuildState state)
-{
-    import std.process;
-    import std.conv : to;
-    import io.file.stream;
-    import button.deps;
-
-    auto inputsHandle  = environment.get("BUTTON_INPUTS");
-    auto outputsHandle = environment.get("BUTTON_OUTPUTS");
-
-    if (inputsHandle is null || outputsHandle is null)
-        return;
-
-    version (Posix)
-    {
-        auto inputs  = File(inputsHandle.to!int);
-        auto outputs = File(outputsHandle.to!int);
-
-        foreach (v; state.enumerate!(Index!Resource))
-        {
-            immutable degreeIn  = state.degreeIn(v);
-            immutable degreeOut = state.degreeOut(v);
-
-            if (degreeIn == 0 && degreeOut == 0)
-                continue; // Dangling resource
-
-            auto r = state[v];
-
-            auto dep = Dependency(
-                    cast(ulong)r.lastModified.stdTime,
-                    r.checksum,
-                    r.path.length.to!uint
-                    );
-
-            if (degreeIn == 0)
-            {
-                inputs.write((&dep)[0 .. 1]);
-                inputs.write(r.path);
-            }
-            else
-            {
-                outputs.write((&dep)[0 .. 1]);
-                outputs.write(r.path);
-            }
         }
     }
 }
