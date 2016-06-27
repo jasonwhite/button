@@ -734,12 +734,12 @@ bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
         throw e;
     }
 
+    taskLogger.succeeded(duration);
+
     // Only remove this from the set of pending tasks if it succeeds completely.
     // If it fails, it should get executed again on the next run such that other
     // tasks that depend on this (if any) can be executed.
     ctx.state.removePending(v);
-
-    taskLogger.succeeded(duration);
 
     return true;
 }
