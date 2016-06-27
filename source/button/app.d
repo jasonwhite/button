@@ -25,6 +25,7 @@ alias Commands = AliasSeq!(
         cleanCommand,
         collectGarbage,
         initCommand,
+        convertCommand,
         );
 
 version (unittest)

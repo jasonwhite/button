@@ -161,7 +161,7 @@ Graph!(Resource, Task) explicitGraph(BuildState state)
  *
  * Throws: BuildException if the build description could not be opened.
  */
-Rules parseBuildDescription(string path)
+Rules rules(string path)
 {
     import io.file;
     import io.range : byBlock;
@@ -305,7 +305,7 @@ void syncState(R)(R rules, BuildState state, TaskPool pool, bool dryRun = false)
 /// Ditto
 void syncState(string path, BuildState state, TaskPool pool, bool dryRun = false)
 {
-    syncState(parseBuildDescription(path), state, pool, dryRun);
+    syncState(rules(path), state, pool, dryRun);
 }
 
 /**

@@ -200,6 +200,30 @@ struct InitOptions
     string dir = ".";
 }
 
+enum ConvertFormat
+{
+    bash,
+}
+
+@Command("convert")
+@Description("Converts the build description to another format for other build systems.")
+struct ConvertOptions
+{
+    @Option("file", "f")
+    @Help("Path to the build description.")
+    string path;
+
+    @Option("format")
+    @Help("Format of build description to convert to. Default is 'bash'.")
+    @MetaVar("{bash}")
+    ConvertFormat type;
+
+    @Argument("output")
+    @Help("Path to the output file.")
+    @MetaVar("FILE")
+    string output;
+}
+
 @Command("gc")
 @Description("EXPERIMENTAL")
 struct GCOptions
@@ -229,7 +253,8 @@ alias OptionsList = AliasSeq!(
         StatusOptions,
         CleanOptions,
         InitOptions,
-        GCOptions
+        GCOptions,
+        ConvertOptions,
         );
 
 /**

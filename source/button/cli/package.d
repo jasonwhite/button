@@ -13,3 +13,4 @@ public import button.cli.status;
 public import button.cli.clean;
 public import button.cli.init;
 public import button.cli.gc;
+public import button.cli.convert;

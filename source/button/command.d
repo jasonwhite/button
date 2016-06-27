@@ -31,7 +31,7 @@ class CommandError : Exception
  * shell. This is mostly used for cosmetic purposes when printing out argument
  * arrays where they could be copy-pasted into a shell.
  */
-private string escapeShellArg(string arg) pure
+string escapeShellArg(string arg) pure
 {
     import std.array : appender;
     import std.algorithm.searching : findAmong;
