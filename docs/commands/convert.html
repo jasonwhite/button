@@ -5,13 +5,13 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>button init - Button</title>
-  <meta name="description" content="Initializes a directory with an initial build description. This is similar toGit’s init command.">
+  <title>button convert - Button</title>
+  <meta name="description" content="Converts the JSON build description to another format to be used by other buildsystems.">
 
   <link rel="stylesheet" href="/button/assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="/button/assets/css/main.css">
 
-  <link rel="canonical" href="https://jasonwhite.github.io/button/docs/commands/init">
+  <link rel="canonical" href="https://jasonwhite.github.io/button/docs/commands/convert">
 </head>
 
     <body>
@@ -63,7 +63,7 @@
         
     
         
-            <li><a href="/button/docs/commands/convert">button convert</a></li>
+            <li class="active"><a href="/button/docs/commands/convert">button convert</a></li>
         
     
         
@@ -75,7 +75,7 @@
         
     
         
-            <li class="active"><a href="/button/docs/commands/init">button init</a></li>
+            <li><a href="/button/docs/commands/init">button init</a></li>
         
     
 </ul>
@@ -83,28 +83,36 @@
                 </div>
                 <div class="col-lg-10 col-md-9">
                     <article>
-                        <div class="page-header"><h1>button init</h1></div>
-                        <p>Initializes a directory with an initial build description. This is similar to
-Git’s <code class="highlighter-rouge">init</code> command.</p>
+                        <div class="page-header"><h1>button convert</h1></div>
+                        <p>Converts the JSON build description to another format to be used by other build
+systems.</p>
 
-<p>Note that this command is not mandatory. It is just useful for quickly getting
-started on a new project.</p>
+<p>Currently, only Bash output is supported. Support for other formats may come in
+the future if there is a need for them.</p>
 
-<p>This command will <em>not</em> overwrite any existing files.</p>
+<p>This command can be useful to lower the barrier for contributing to a project.
+If someone has to install Button in order to build your project, that is yet
+another filter to potential contributors. To help mitigate this effect, you can
+generate a shell script using this command and commit the output to your
+repository. Ideally, generating the shell script and committing it should be
+automated with a continuous integration server. To aid this workflow, the output
+of <code class="highlighter-rouge">button convert</code> is deterministic so that it plays well with version control
+systems.</p>
 
 <h2 id="examples">Examples</h2>
 
-<p>To create a <code class="highlighter-rouge">my_project</code> directory with a starting build description inside:</p>
+<p>To generate and run a Bash script of the build description <code class="highlighter-rouge">button.json</code>:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>$ button init my_project
-$ cd my_project
-$ button build
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button convert build.sh
+$ ./build.sh
 </code></pre>
 </div>
 
-<p>To create a starting build description in the current directory:</p>
+<p>If the build description is in another file, use the <code class="highlighter-rouge">-f</code> flag to specify where
+it is:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>$ button init
+<div class="highlighter-rouge"><pre class="highlight"><code>$ button convert -f path.to.build.description.json build.sh
+$ ./build.sh
 </code></pre>
 </div>
 
@@ -112,10 +120,30 @@ $ button build
 
 <ul>
   <li>
-    <p><code class="highlighter-rouge">dir</code></p>
+    <p><code class="highlighter-rouge">output</code></p>
 
-    <p>The directory to initialize. If not specified, defaults to the current
- directory.</p>
+    <p>The file to write the output to. Depending on the format and platform, this
+ file is made executable.</p>
+  </li>
+</ul>
+
+<h2 id="optional-arguments">Optional Arguments</h2>
+
+<ul>
+  <li>
+    <p><code class="highlighter-rouge">--file</code>, <code class="highlighter-rouge">-f &lt;string&gt;</code></p>
+
+    <p>Specifies the path to the build description. If not specified, Button
+ searches for a file named <code class="highlighter-rouge">button.json</code> in the current directory and all
+ parent directories. Thus, you can invoke this command in any subdirectory of
+ your project.</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">--format {bash}</code></p>
+
+    <p>Format of the build description to convert to. Defaults to <code class="highlighter-rouge">bash</code>.</p>
+
+    <p>Only <code class="highlighter-rouge">bash</code> is currently supported.</p>
   </li>
 </ul>
 
@@ -130,7 +158,7 @@ $ button build
       </div>
       <div class="pull-right">
           <p class="text-right">
-              <a href="https://github.com/jasonwhite/button/tree/master/docs/_docs/commands/init.md">Help improve this page</a>
+              <a href="https://github.com/jasonwhite/button/tree/master/docs/_docs/commands/convert.md">Help improve this page</a>
           </p>
       </div>
   </div>
