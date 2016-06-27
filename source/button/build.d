@@ -755,39 +755,6 @@ void build(BuildStateGraph graph, ref BuildContext context)
 }
 
 /**
- * Deletes all outputs from the file system.
- */
-void clean(BuildState state, bool dryRun)
-{
-    import io.text, io.file.stdio;
-    import std.range : takeOne;
-
-    foreach (id; state.enumerate!(Index!Resource))
-    {
-        if (state.degreeIn(id) > 0)
-        {
-            auto r = state[id];
-
-            println("Deleting `", r, "`");
-
-            r.remove(dryRun);
-
-            // Update the database with the new status of the resource.
-            state[id] = r;
-
-            // We want to build this the next time around, so mark its task as
-            // pending.
-            auto incoming = state
-                .incoming!(NeighborIndex!(Index!Resource))(id)
-                .takeOne;
-            assert(incoming.length == 1,
-                    "Output resource has does not have 1 incoming edge!");
-            state.addPending(incoming[0].vertex);
-        }
-    }
-}
-
-/**
  * Finds the path to the build description.
  *
  * Throws: BuildException if no build description could be found.

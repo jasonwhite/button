@@ -51,7 +51,7 @@ int cleanCommand(CleanOptions opts, GlobalOptions globalOpts)
             clean(state, opts.dryRun);
         }
 
-        // Close the database before deleting it.
+        // Close the database before (potentially) deleting it.
         state.close();
 
         if (opts.purge)
@@ -68,4 +68,39 @@ int cleanCommand(CleanOptions opts, GlobalOptions globalOpts)
     }
 
     return 0;
+}
+
+/**
+ * Deletes all outputs from the file system.
+ */
+void clean(BuildState state, bool dryRun)
+{
+    import io.text, io.file.stdio;
+    import std.range : takeOne;
+    import button.resource : Resource;
+
+    foreach (id; state.enumerate!(Index!Resource))
+    {
+        if (state.degreeIn(id) > 0)
+        {
+            auto r = state[id];
+
+            println("Deleting `", r, "`");
+
+            r.remove(dryRun);
+
+            // Update the database with the new status of the resource.
+            state[id] = r;
+
+            // We want to build this the next time around, so mark its task as
+            // pending.
+            auto incoming = state
+                .incoming!(NeighborIndex!(Index!Resource))(id)
+                .takeOne;
+            assert(incoming.length == 1,
+                    "Output resource has does not have 1 incoming edge! "~
+                    "Something has gone horribly wrong!");
+            state.addPending(incoming[0].vertex);
+        }
+    }
 }
