@@ -29,10 +29,21 @@ Unsupported platforms:
 
 Supported for OS X and Windows will be coming in the future.
 
-## Compiling From Source
+## Installation Packages
 
-Unfortunately, there are no operating system packages for Button yet. It must be
-built from source.
+Installation packages are rather sparse at the moment. If your distribution is
+not supported below, please see the [Compiling From
+Source](#compiling-from-source) section. If you decide to create a package for
+your distribution, a pull request adding it to this section would be very
+appreciated.
+
+### Arch Linux
+
+Install [button][button-aur] from the Arch User Repository (AUR).
+
+[button-aur]: https://aur.archlinux.org/packages/button/
+
+## Compiling From Source
 
 ### Installing Dependencies
 
