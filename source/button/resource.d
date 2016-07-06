@@ -72,13 +72,12 @@ private DigestType!Hash digestFile(Hash)(string path)
 struct Resource
 {
     import std.datetime : SysTime;
-    import std.digest.digest : DigestType;
     import std.digest.sha : SHA256;
 
     /**
      * Digest to use to determine changes.
      */
-    alias Digest = SHA256;
+    alias Hash = SHA256;
 
     enum Status
     {
@@ -102,7 +101,7 @@ struct Resource
      *
      * TODO: If this is a directory, checksum the sorted list of its contents.
      */
-    DigestType!Digest checksum;
+    DigestType!Hash checksum;
 
     this(ResourceId path, SysTime lastModified = Status.unknown,
             const(ubyte[]) checksum = []) pure
@@ -192,7 +191,7 @@ struct Resource
 
             if (lastModified != Status.notFound)
             {
-                auto checksum = digestFile!Digest(path);
+                auto checksum = digestFile!Hash(path);
                 if (checksum != this.checksum)
                 {
                     this.checksum = checksum;
