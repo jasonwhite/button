@@ -49,7 +49,6 @@ void execute(
     import std.path : dirName, absolutePath, buildPath;
 
     auto globalOpts = parseArgs!GlobalOptions(args[1 .. $], Config.ignoreUnknown);
-    auto opts = parseArgs!BuildOptions(globalOpts.args);
 
     // Not the build command, forward to the base handler.
     if (globalOpts.command != "build")
@@ -57,6 +56,8 @@ void execute(
         base(ctx, args, workDir, inputs, outputs, logger);
         return;
     }
+
+    auto opts = parseArgs!BuildOptions(globalOpts.args);
 
     string path;
 
