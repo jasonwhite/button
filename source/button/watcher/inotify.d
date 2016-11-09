@@ -75,9 +75,9 @@ struct ChangeChunks
 
     this(BuildState state, string watchDir, size_t delay)
     {
-        import std.path : filenameCmp, dirName;
+        import std.path : filenameCmp, dirName, buildNormalizedPath;
         import std.container.rbtree;
-        import std.file : exists, buildNormalizedPath;
+        import std.file : exists;
         import core.sys.linux.sys.inotify;
         import io.file.stream : sysEnforce;
         import std.conv : to;
