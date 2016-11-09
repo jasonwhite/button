@@ -460,10 +460,10 @@ void checkRaces(Graph!(Resource, Task) graph)
     }
 
     throw new BuildException(
-        "Found %d race conditions:\n"
-        "%s\n"
-        "Use `button graph` to see which tasks they are."
-        .format(
+        format(
+            "Found %d race conditions:\n" ~
+                "%s\n" ~
+                "Use `button graph` to see which tasks they are.",
             races.length,
             races.map!(r => " * `%s` is an output of %d tasks".format(r[0], r[1]))
                  .joiner("\n")
