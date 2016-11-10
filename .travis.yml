@@ -4,7 +4,7 @@ dist: trusty
 language: d
 
 d:
- - dmd
+ - dmd-2.071.2
 
 # Ruby is needed to build the Jekyll docs
 before_install:
