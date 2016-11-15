@@ -178,9 +178,12 @@ int doAutoBuild(ref BuildContext ctx, string path,
 
             if (changed > 0)
             {
+                println(ctx.color.status, ":: Change detected. Building...",
+                        ctx.color.reset);
                 syncBuildState(ctx, path);
                 update(ctx);
-                println(ctx.color.status, ":: Waiting for changes...", ctx.color.reset);
+                println(ctx.color.status, ":: Waiting for changes...",
+                        ctx.color.reset);
             }
         }
         catch (BuildException e)
