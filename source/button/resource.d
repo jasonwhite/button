@@ -65,9 +65,72 @@ private DigestType!Hash digestFile(Hash)(string path)
 }
 
 /**
- * A representation of a file on the disk.
+ * Computes a stable checksum for the given directory.
  *
- * TODO: Support directories as well as files.
+ * Note that we cannot use std.file.dirEntries here. dirEntries() yields the
+ * full path to the directory entries. We only want the file name, not the path
+ * to it. Thus, we're forced to list the directory contents the old fashioned
+ * way.
+ */
+version (Posix)
+private DigestType!Hash digestDir(Hash)(const(char)* path)
+    if (isDigest!Hash)
+{
+    import core.stdc.string : strlen;
+    import std.array : Appender;
+    import std.algorithm.sorting : sort;
+    import core.sys.posix.dirent : DIR, dirent, opendir, closedir, readdir;
+
+    Appender!(string[]) entries;
+
+    if (DIR* dir = opendir(path))
+    {
+        scope (exit) closedir(dir);
+
+        while (true)
+        {
+            dirent* entry = readdir(dir);
+            if (!entry) break;
+
+            entries.put(entry.d_name[0 .. strlen(entry.d_name.ptr)].idup);
+        }
+    }
+    else
+    {
+        // In this case, this is either not a directory or it doesn't exist.
+        return typeof(return).init;
+    }
+
+    // The order in which files are listed is not guaranteed to be sorted.
+    // Whether or not it is sorted depends on the file system implementation.
+    // Thus, we sort them to eliminate that potential source of non-determinism.
+    sort(entries.data);
+
+    Hash digest;
+    digest.start();
+
+    foreach (name; entries.data)
+    {
+        digest.put(cast(const(ubyte)[])name);
+        digest.put(cast(ubyte)0); // Null terminator
+    }
+
+    return digest.finish();
+}
+
+/**
+ * Computes a stable checksum for the given directory.
+ */
+private DigestType!Hash digestDir(Hash)(string path)
+    if (isDigest!Hash)
+{
+    import std.internal.cstring : tempCString;
+
+    return digestDir!Hash(path.tempCString());
+}
+
+/**
+ * A representation of a file on the disk.
  */
 struct Resource
 {
@@ -98,8 +161,6 @@ struct Resource
 
     /**
      * Checksum of the file.
-     *
-     * TODO: If this is a directory, checksum the sorted list of its contents.
      */
     DigestType!Hash checksum;
 
@@ -180,32 +241,61 @@ struct Resource
      */
     bool update()
     {
-        import std.file : timeLastModified, FileException;
-
-        immutable lastModified = timeLastModified(path, Status.notFound);
-
-        if (lastModified != this.lastModified)
+        version (Posix)
         {
-            import std.digest.md;
-            this.lastModified = lastModified;
+            import core.sys.posix.sys.stat : lstat, stat_t, S_IFMT, S_IFDIR,
+                   S_IFREG;
+            import io.file.stream : SysException;
+            import core.stdc.errno : errno, ENOENT;
+            import std.datetime : unixTimeToStdTime;
+            import std.internal.cstring : tempCString;
 
-            if (lastModified != Status.notFound)
+            stat_t statbuf = void;
+
+            auto tmpPath = path.tempCString();
+
+            if (lstat(tmpPath, &statbuf) != 0)
             {
-                auto checksum = digestFile!Hash(path);
+                if (errno == ENOENT)
+                {
+                    if (this.lastModified != Status.notFound)
+                    {
+                        this.lastModified = Status.notFound;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                throw new SysException("Failed to stat resource");
+            }
+
+            immutable lastModified = SysTime(unixTimeToStdTime(statbuf.st_mtime));
+            if (lastModified != this.lastModified)
+            {
+                this.lastModified = lastModified;
+
+                DigestType!Hash checksum;
+
+                // Files and directories are hashed differently.
+                if ((statbuf.st_mode & S_IFMT) == S_IFREG)
+                    checksum = digestFile!Hash(path);
+                else if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
+                    checksum = digestDir!Hash(tmpPath);
+
                 if (checksum != this.checksum)
                 {
                     this.checksum = checksum;
                     return true;
                 }
-
-                // Checksum didn't change.
-                return false;
             }
 
-            return true;
+            return false;
         }
-
-        return false;
+        else
+        {
+            static assert(false, "Not implemented yet.");
+        }
     }
 
     /**
