@@ -144,8 +144,17 @@ struct Resource
 
     enum Status
     {
-        unknown  = SysTime.max,
-        notFound = SysTime.min,
+        // The state of the resource is not known.
+        unknown,
+
+        // The path does not exist on disk.
+        missing,
+
+        // The path refers to a file.
+        file,
+
+        // The path refers to a directory.
+        directory,
     }
 
     /**
@@ -155,22 +164,22 @@ struct Resource
     ResourceId path;
 
     /**
-     * Last time the file was modified.
+     * Status of the file.
      */
-    SysTime lastModified = Status.unknown;
+    Status status = Status.unknown;
 
     /**
      * Checksum of the file.
      */
     DigestType!Hash checksum;
 
-    this(ResourceId path, SysTime lastModified = Status.unknown,
+    this(ResourceId path, Status status = Status.unknown,
             const(ubyte[]) checksum = []) pure
     {
         import std.algorithm.comparison : min;
 
         this.path = path;
-        this.lastModified = lastModified;
+        this.status = status;
 
         // The only times the length will be different are:
         //  - The database is corrupt
@@ -228,8 +237,10 @@ struct Resource
         assert(Resource("a") < Resource("b"));
         assert(Resource("b") > Resource("a"));
 
-        assert(Resource("test", SysTime(1)) == Resource("test", SysTime(1)));
-        assert(Resource("test", SysTime(1)) == Resource("test", SysTime(2)));
+        assert(Resource("test", Resource.Status.unknown) ==
+               Resource("test", Resource.Status.unknown));
+        assert(Resource("test", Resource.Status.file) ==
+               Resource("test", Resource.Status.directory));
     }
 
     /**
@@ -254,40 +265,40 @@ struct Resource
 
             auto tmpPath = path.tempCString();
 
+            Status newStatus;
+            DigestType!Hash newChecksum;
+
             if (lstat(tmpPath, &statbuf) != 0)
             {
                 if (errno == ENOENT)
-                {
-                    if (this.lastModified != Status.notFound)
-                    {
-                        this.lastModified = Status.notFound;
-                        return true;
-                    }
-
-                    return false;
-                }
-
-                throw new SysException("Failed to stat resource");
+                    newStatus = Status.missing;
+                else
+                    throw new SysException("Failed to stat resource");
+            }
+            else if ((statbuf.st_mode & S_IFMT) == S_IFREG)
+            {
+                newChecksum = digestFile!Hash(path);
+                newStatus = Status.file;
+            }
+            else if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
+            {
+                newChecksum = digestDir!Hash(tmpPath);
+                newStatus = Status.directory;
+            }
+            else
+            {
+                // The resource is neither a file nor a directory. It could be a
+                // special file such as a FIFO, block device, etc. In those
+                // cases, we cannot be expected to track changes to those types
+                // of files.
+                newStatus = Status.unknown;
             }
 
-            immutable lastModified = SysTime(unixTimeToStdTime(statbuf.st_mtime));
-            if (lastModified != this.lastModified)
+            if (newStatus != status || checksum != newChecksum)
             {
-                this.lastModified = lastModified;
-
-                DigestType!Hash checksum;
-
-                // Files and directories are hashed differently.
-                if ((statbuf.st_mode & S_IFMT) == S_IFREG)
-                    checksum = digestFile!Hash(path);
-                else if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
-                    checksum = digestDir!Hash(tmpPath);
-
-                if (checksum != this.checksum)
-                {
-                    this.checksum = checksum;
-                    return true;
-                }
+                status = newStatus;
+                checksum = newChecksum;
+                return true;
             }
 
             return false;
@@ -303,7 +314,7 @@ struct Resource
      */
     @property bool statusKnown() const pure nothrow
     {
-        return lastModified != Status.unknown;
+        return status != Status.unknown;
     }
 
     /**
@@ -333,7 +344,7 @@ struct Resource
             }
         }
 
-        lastModified = Status.notFound;
+        status = Status.missing;
     }
 }
 

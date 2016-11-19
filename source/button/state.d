@@ -25,7 +25,7 @@ private immutable resourcesTable = q"{
 CREATE TABLE IF NOT EXISTS resource (
     id              INTEGER NOT NULL,
     path            TEXT    NOT NULL,
-    lastModified    INTEGER NOT NULL,
+    status          INTEGER NOT NULL,
     checksum        BLOB    NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (path)
@@ -197,10 +197,9 @@ class InvalidEdge : Exception
  */
 Vertex parse(Vertex : Resource)(SQLite3.Statement s)
 {
-    import std.datetime : SysTime;
     return Resource(
-            s.get!string(0),        // Path
-            SysTime(s.get!long(1)), // Last modified
+            s.get!string(0), // Path
+            cast(Resource.Status)s.get!long(1), // Status
             cast(ubyte[])s.get!(void[])(2) // Checksum
             );
 }
@@ -439,7 +438,7 @@ class BuildState : SQLite3
         // Add the build description resource if it doesn't already exist.
         execute(
             `INSERT OR IGNORE INTO resource` ~
-            `    (id,path,lastModified,checksum)` ~
+            `    (id,path,status,checksum)` ~
             `    VALUES (?,?,?,?)`
             , buildDescId, "", 0, 0
             );
@@ -448,7 +447,7 @@ class BuildState : SQLite3
         // executing statements for every query. For queries that only run once,
         // it is not necessary to prepare them here.
         sqlInsertResource = new Statement(
-                `INSERT INTO resource(path, lastModified, checksum)` ~
+                `INSERT INTO resource(path, status, checksum)` ~
                 ` VALUES(?, ?, ?)`
                 );
         sqlInsertTask = new Statement(
@@ -457,7 +456,7 @@ class BuildState : SQLite3
                 );
         sqlAddResource = new Statement(
                 `INSERT OR IGNORE INTO resource` ~
-                ` (path, lastModified, checksum)` ~
+                ` (path, status, checksum)` ~
                 ` VALUES(?, ?, ?)`
                 );
         sqlAddTask = new Statement(
@@ -484,7 +483,7 @@ class BuildState : SQLite3
                 `SELECT id FROM task WHERE commands=? AND workDir=?`
                 );
         sqlResourceByIndex = new Statement(
-                `SELECT path,lastModified,checksum` ~
+                `SELECT path,status,checksum` ~
                 ` FROM resource WHERE id=?`
                 );
         sqlTaskByIndex = new Statement(
@@ -492,7 +491,7 @@ class BuildState : SQLite3
                 ` FROM task WHERE id=?`
                 );
         sqlResourceByKey = new Statement(
-               `SELECT path,lastModified,checksum` ~
+               `SELECT path,status,checksum` ~
                ` FROM resource WHERE path=?`
                 );
         sqlTaskByKey = new Statement(
@@ -501,7 +500,7 @@ class BuildState : SQLite3
                 );
         sqlUpdateResource = new Statement(
                 `UPDATE resource` ~
-                ` SET path=?,lastModified=?,checksum=?` ~
+                ` SET path=?,status=?,checksum=?` ~
                 ` WHERE id=?`
                 );
         sqlUpdateTask = new Statement(
@@ -599,7 +598,7 @@ class BuildState : SQLite3
             scope (exit) s.reset();
 
             s.bind(resource.path,
-                   resource.lastModified.stdTime,
+                   resource.status,
                    resource.checksum);
             s.step();
         }
@@ -630,12 +629,10 @@ class BuildState : SQLite3
 
     unittest
     {
-        import std.datetime : SysTime;
-
         auto state = new BuildState;
 
         {
-            immutable vertex = Resource("foo.c", SysTime(9001));
+            immutable vertex = Resource("foo.c", Resource.Status.file);
 
             auto id = state.put(vertex);
             assert(state[id] == vertex);
@@ -661,7 +658,7 @@ class BuildState : SQLite3
             scope (exit) s.reset();
 
             s.bind(resource.path,
-                   resource.lastModified.stdTime,
+                   resource.status,
                    resource.checksum);
             s.step();
         }
@@ -866,7 +863,7 @@ class BuildState : SQLite3
         synchronized (s)
         {
             scope (exit) s.reset();
-            s.bind(v.path, v.lastModified.stdTime, v.checksum, index);
+            s.bind(v.path, v.status, v.checksum, index);
             s.step();
         }
     }
@@ -896,22 +893,21 @@ class BuildState : SQLite3
     @property auto enumerate(T : Resource)()
     {
         return prepare(
-                `SELECT path,lastModified,checksum FROM resource WHERE id>1`
+                `SELECT path,status,checksum FROM resource WHERE id>1`
                 ).rows!(parse!T);
     }
 
     unittest
     {
         import std.algorithm : equal;
-        import std.datetime : SysTime;
 
         auto state = new BuildState;
 
         immutable vertices = [
-            Resource("foo.o", SysTime(42)),
-            Resource("foo.c", SysTime(1337)),
-            Resource("bar.c", SysTime(9001)),
-            Resource("bar.o", SysTime(0)),
+            Resource("foo.o", Resource.Status.unknown),
+            Resource("foo.c", Resource.Status.file),
+            Resource("bar.c", Resource.Status.missing),
+            Resource("bar.o", Resource.Status.missing),
             ];
 
         foreach (vertex; vertices)
@@ -1294,7 +1290,7 @@ class BuildState : SQLite3
     @property auto outgoing(Data : Resource)(Index!Task v, EdgeType type)
     {
         return prepare(
-                `SELECT resource.path, resource.lastModified, resource.checksum` ~
+                `SELECT resource.path, resource.status, resource.checksum` ~
                 ` FROM taskEdge AS e` ~
                 ` JOIN resource ON e."to"=resource.id` ~
                 ` WHERE e."from"=? AND type=?`, v, type
@@ -1348,7 +1344,7 @@ class BuildState : SQLite3
     @property auto incoming(Data : Resource)(Index!Task v, EdgeType type)
     {
         return prepare(
-                `SELECT resource.path, resource.lastModified, resource.checksum` ~
+                `SELECT resource.path, resource.status, resource.checksum` ~
                 ` FROM resourceEdge AS e` ~
                 ` JOIN resource ON e."from"=resource.id` ~
                 ` WHERE e."to"=? AND type=?`, v, type
