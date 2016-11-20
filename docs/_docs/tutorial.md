@@ -174,8 +174,9 @@ What happens if we `touch` a file (i.e., change its modification time stamp)?
 Nothing happened! Indeed, nothing *needs* to happen. The file itself didn't
 change -- only the metadata associated with the file. While other build systems
 use a file's time stamp to determine changes, Button determines changes based on
-the checksum of a file's contents. This might seem like it would get slow for
-many files, but the checksum is only recomputed if the time stamp changed.
+the checksum of a file's contents. This ensures 100% correctness when detecting
+changes to files. There are many cases where a file's contents can change but
+its timestamp remain the same.
 
 ### Modifying a File
 
