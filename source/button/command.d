@@ -162,29 +162,4 @@ struct Command
     {
         return args[0];
     }
-
-    /**
-     * Executes the command.
-     */
-    Result execute(ref BuildContext ctx, string workDir, TaskLogger logger) const
-    {
-        import std.path : buildPath;
-        import std.datetime : StopWatch, AutoStart;
-        import button.handler : executeHandler = execute;
-
-        auto inputs  = Resources(ctx.root, workDir);
-        auto outputs = Resources(ctx.root, workDir);
-
-        auto sw = StopWatch(AutoStart.yes);
-
-        executeHandler(
-                ctx,
-                args,
-                buildPath(ctx.root, workDir),
-                inputs, outputs,
-                logger
-                );
-
-        return Result(inputs.data, outputs.data, sw.peek());
-    }
 }

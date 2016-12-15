@@ -14,6 +14,8 @@ import button.resource;
 import button.context;
 
 import button.handlers;
+import button.command;
+import button.task;
 
 alias Handler = void function(
         ref BuildContext ctx,
@@ -75,4 +77,56 @@ void execute(
     auto handler = selectHandler(args);
 
     handler(ctx, args, workDir, inputs, outputs, logger);
+}
+
+/**
+ * Executes the task.
+ */
+Task.Result execute(const Task task, ref BuildContext ctx, TaskLogger logger)
+{
+    import std.array : appender;
+
+    // FIXME: Use a set instead?
+    auto inputs  = appender!(Resource[]);
+    auto outputs = appender!(Resource[]);
+
+    foreach (command; task.commands)
+    {
+        auto result = command.execute(ctx, task.workingDirectory, logger);
+
+        // FIXME: Commands may have temporary inputs and outputs. For
+        // example, if one command creates a file and a later command
+        // deletes it, it should not end up in either of the input or output
+        // sets.
+        inputs.put(result.inputs);
+        outputs.put(result.outputs);
+    }
+
+    return Task.Result(inputs.data, outputs.data);
+}
+
+/**
+ * Executes the command.
+ */
+Command.Result execute(const Command command, ref BuildContext ctx,
+    string workDir, TaskLogger logger)
+{
+    import std.path : buildPath;
+    import std.datetime : StopWatch, AutoStart;
+    import button.handler : executeHandler = execute;
+
+    auto inputs  = Resources(ctx.root, workDir);
+    auto outputs = Resources(ctx.root, workDir);
+
+    auto sw = StopWatch(AutoStart.yes);
+
+    executeHandler(
+            ctx,
+            command.args,
+            buildPath(ctx.root, workDir),
+            inputs, outputs,
+            logger
+            );
+
+    return Command.Result(inputs.data, outputs.data, sw.peek());
 }

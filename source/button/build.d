@@ -21,6 +21,7 @@ import button.rule;
 import button.log;
 import button.context;
 import button.exceptions;
+import button.handler;
 
 alias BuildStateGraph = Graph!(
         Index!Resource,
