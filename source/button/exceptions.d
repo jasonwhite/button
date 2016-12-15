@@ -11,15 +11,14 @@
  */
 module button.exceptions;
 
+import std.exception : basicExceptionCtors;
+
 /**
  * Thrown when an invalid command name is given to $(D runCommand).
  */
 class InvalidCommand : Exception
 {
-    this(string msg)
-    {
-        super(msg);
-    }
+    mixin basicExceptionCtors;
 }
 
 /**
@@ -29,11 +28,11 @@ class CommandError : Exception
 {
     int exitCode;
 
-    this(int exitCode)
+    this(int exitCode, string file = __FILE__, int line = __LINE__)
     {
         import std.format : format;
 
-        super("Command failed with exit code %d".format(exitCode));
+        super("Command failed with exit code %d".format(exitCode), file, line);
 
         this.exitCode = exitCode;
     }
@@ -44,11 +43,7 @@ class CommandError : Exception
  */
 class MakeParserError : Exception
 {
-    this(string msg)
-    {
-        // TODO: Include line information?
-        super(msg);
-    }
+    mixin basicExceptionCtors;
 }
 
 /**
@@ -56,10 +51,7 @@ class MakeParserError : Exception
  */
 class InvalidEdge : Exception
 {
-    this(string msg, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line);
-    }
+    mixin basicExceptionCtors;
 }
 
 /**
@@ -67,10 +59,7 @@ class InvalidEdge : Exception
  */
 class BuildException : Exception
 {
-    this(string msg)
-    {
-        super(msg);
-    }
+    mixin basicExceptionCtors;
 }
 
 /**
@@ -78,8 +67,5 @@ class BuildException : Exception
  */
 class TaskError : Exception
 {
-    this(string msg)
-    {
-        super(msg);
-    }
+    mixin basicExceptionCtors;
 }
