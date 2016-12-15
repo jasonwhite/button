@@ -5,6 +5,7 @@ language: d
 
 d:
  - dmd-2.071.2
+ - dmd-2.072.1
 
 # Ruby is needed to build the Jekyll docs
 before_install:
