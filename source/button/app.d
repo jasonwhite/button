@@ -7,6 +7,7 @@
  * Program entry point.
  */
 import button.cli;
+import button.exceptions;
 
 import std.meta : AliasSeq;
 

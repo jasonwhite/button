@@ -24,6 +24,7 @@ import button.textcolor;
 import button.log;
 import button.watcher;
 import button.context;
+import button.exceptions;
 
 /**
  * Returns a build logger based on the command options.

@@ -20,7 +20,8 @@ import button.resource,
        button.edgedata,
        button.graph,
        button.state,
-       button.build;
+       button.build,
+       button.exceptions;
 
 int graphCommand(GraphOptions opts, GlobalOptions globalOpts)
 {

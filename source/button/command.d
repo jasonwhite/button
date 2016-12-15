@@ -6,25 +6,9 @@
 module button.command;
 
 import button.log;
+import button.exceptions;
 import button.resource;
 import button.context;
-
-/**
- * Thrown if a command fails.
- */
-class CommandError : Exception
-{
-    int exitCode;
-
-    this(int exitCode)
-    {
-        import std.format : format;
-
-        super("Command failed with exit code %d".format(exitCode));
-
-        this.exitCode = exitCode;
-    }
-}
 
 /**
  * Escapes the argument according to the rules of bash, the most commonly used

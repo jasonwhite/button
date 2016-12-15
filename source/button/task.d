@@ -9,17 +9,7 @@ import button.command;
 import button.log;
 import button.resource;
 import button.context;
-
-/**
- * Thrown if a task fails.
- */
-class TaskError : Exception
-{
-    this(string msg)
-    {
-        super(msg);
-    }
-}
+import button.exceptions;
 
 /**
  * A task key must be unique.

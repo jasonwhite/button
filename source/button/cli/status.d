@@ -23,6 +23,7 @@ import button.resource;
 import button.state;
 import button.build;
 import button.textcolor;
+import button.exceptions;
 
 int statusCommand(StatusOptions opts, GlobalOptions globalOpts)
 {
