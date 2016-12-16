@@ -15,6 +15,7 @@ import button.cli.options : ConvertOptions, ConvertFormat, GlobalOptions;
 import button.build;
 import button.resource;
 import button.task;
+import button.exceptions;
 
 import io.file, io.text;
 

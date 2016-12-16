@@ -12,6 +12,7 @@
 module button.handlers.gcc;
 
 import button.log;
+import button.exceptions;
 import button.resource;
 import button.context;
 
@@ -19,18 +20,6 @@ import std.range.primitives : isInputRange, ElementEncodingType,
                               front, empty, popFront;
 
 import std.traits : isSomeChar;
-
-/**
- * Exception that is thrown on invalid GCC deps syntax.
- */
-class MakeParserError : Exception
-{
-    this(string msg)
-    {
-        // TODO: Include line information?
-        super(msg);
-    }
-}
 
 /**
  * Helper function to escape a character.

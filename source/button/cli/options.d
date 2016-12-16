@@ -12,6 +12,8 @@ import std.meta : AliasSeq;
 
 import darg;
 
+import button.exceptions;
+
 struct Command
 {
     string name;
@@ -256,17 +258,6 @@ alias OptionsList = AliasSeq!(
         GCOptions,
         ConvertOptions,
         );
-
-/**
- * Thrown when an invalid command name is given to $(D runCommand).
- */
-class InvalidCommand : Exception
-{
-    this(string msg)
-    {
-        super(msg);
-    }
-}
 
 /**
  * Using the list of command functions, runs a command from the specified

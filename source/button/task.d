@@ -9,17 +9,7 @@ import button.command;
 import button.log;
 import button.resource;
 import button.context;
-
-/**
- * Thrown if a task fails.
- */
-class TaskError : Exception
-{
-    this(string msg)
-    {
-        super(msg);
-    }
-}
+import button.exceptions;
 
 /**
  * A task key must be unique.
@@ -202,28 +192,5 @@ struct Task
         assert(Task([["a", "b"]], "a") <  Task([["a", "b"]], "b"));
         assert(Task([["a", "b"]], "b") >  Task([["a", "b"]], "a"));
         assert(Task([["a", "b"]], "a") == Task([["a", "b"]], "a"));
-    }
-
-    Result execute(ref BuildContext ctx, TaskLogger logger)
-    {
-        import std.array : appender;
-
-        // FIXME: Use a set instead?
-        auto inputs  = appender!(Resource[]);
-        auto outputs = appender!(Resource[]);
-
-        foreach (command; commands)
-        {
-            auto result = command.execute(ctx, workingDirectory, logger);
-
-            // FIXME: Commands may have temporary inputs and outputs. For
-            // example, if one command creates a file and a later command
-            // deletes it, it should not end up in either of the input or output
-            // sets.
-            inputs.put(result.inputs);
-            outputs.put(result.outputs);
-        }
-
-        return Result(inputs.data, outputs.data);
     }
 }

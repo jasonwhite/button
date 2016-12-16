@@ -9,6 +9,7 @@
 module button.state;
 
 import button.command;
+import button.exceptions;
 import button.resource;
 import button.task;
 import button.edge, button.edgedata;
@@ -179,17 +180,6 @@ alias Other(A : Task) = Resource; /// Ditto
  * Convenience template to construct an edge from the starting vertex.
  */
 alias NeighborIndex(V : Index!V) = EdgeIndex!(V, Other!V);
-
-/**
- * Thrown when an edge does not exist.
- */
-class InvalidEdge : Exception
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line);
-    }
-}
 
 /**
  * Deserializes a vertex from a SQLite statement. This assumes that the

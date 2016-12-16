@@ -16,7 +16,8 @@ import button.state,
        button.rule,
        button.graph,
        button.build,
-       button.textcolor;
+       button.textcolor,
+       button.exceptions;
 
 /**
  * Deletes outputs.

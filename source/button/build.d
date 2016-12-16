@@ -20,6 +20,8 @@ import button.textcolor;
 import button.rule;
 import button.log;
 import button.context;
+import button.exceptions;
+import button.handler;
 
 alias BuildStateGraph = Graph!(
         Index!Resource,
@@ -27,17 +29,6 @@ alias BuildStateGraph = Graph!(
         EdgeType,
         EdgeType,
         );
-
-/**
- * An exception relating to the build.
- */
-class BuildException : Exception
-{
-    this(string msg)
-    {
-        super(msg);
-    }
-}
 
 /**
  * Constructs the name of the build state file based on the build description

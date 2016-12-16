@@ -65,7 +65,7 @@ void execute(
     import std.array : array;
 
     import button.deps : deps;
-    import button.command : CommandError;
+    import button.exceptions : CommandError;
 
     int[2] stdfds, inputfds, outputfds;
 

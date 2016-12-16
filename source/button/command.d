@@ -6,25 +6,9 @@
 module button.command;
 
 import button.log;
+import button.exceptions;
 import button.resource;
 import button.context;
-
-/**
- * Thrown if a command fails.
- */
-class CommandError : Exception
-{
-    int exitCode;
-
-    this(int exitCode)
-    {
-        import std.format : format;
-
-        super("Command failed with exit code %d".format(exitCode));
-
-        this.exitCode = exitCode;
-    }
-}
 
 /**
  * Escapes the argument according to the rules of bash, the most commonly used
@@ -177,30 +161,5 @@ struct Command
     @property string toPrettyShortString() const pure nothrow
     {
         return args[0];
-    }
-
-    /**
-     * Executes the command.
-     */
-    Result execute(ref BuildContext ctx, string workDir, TaskLogger logger) const
-    {
-        import std.path : buildPath;
-        import std.datetime : StopWatch, AutoStart;
-        import button.handler : executeHandler = execute;
-
-        auto inputs  = Resources(ctx.root, workDir);
-        auto outputs = Resources(ctx.root, workDir);
-
-        auto sw = StopWatch(AutoStart.yes);
-
-        executeHandler(
-                ctx,
-                args,
-                buildPath(ctx.root, workDir),
-                inputs, outputs,
-                logger
-                );
-
-        return Result(inputs.data, outputs.data, sw.peek());
     }
 }
