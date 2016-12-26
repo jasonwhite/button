@@ -159,11 +159,19 @@ Rules rules(string path)
     import button.rule;
 
     import std.exception : ErrnoException;
+    import std.json : JSONException;
+    import std.string : format;
 
     try
     {
         auto r = File(path).byBlock!char;
         return parseRules(&r);
+    }
+    catch (JSONException e)
+    {
+        throw new BuildException(
+            format("Malformed build description ('%s'): '%s'", path, e.msg)
+        );
     }
     catch (ErrnoException e)
     {
