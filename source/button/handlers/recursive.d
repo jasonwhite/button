@@ -67,10 +67,11 @@ void execute(
         path = buildDescriptionPath(workDir);
 
     auto state = new BuildState(path.stateName);
+    auto dir = path.dirName;
 
     // Reuse as much of the parent build context as possible.
     auto newContext = BuildContext(
-            path.dirName.absolutePath,
+            dir.absolutePath,
             ctx.pool, ctx.logger, state,
             ctx.dryRun, ctx.verbose, ctx.color
             );
@@ -103,10 +104,16 @@ void execute(
         if (degreeIn == 0 && degreeOut == 0)
             continue; // Dangling resource
 
+        auto r = state[v];
+
+        // Make sure we are reporting inputs/outputs relative to the correct
+        // directory.
+        r.path = buildPath(dir, r.path);
+
         if (degreeIn == 0)
-            inputs.put(state[v]);
+            inputs.put(r);
         else
-            outputs.put(state[v]);
+            outputs.put(r);
     }
 }
 
