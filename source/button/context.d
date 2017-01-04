@@ -7,7 +7,7 @@ module button.context;
 
 import std.parallelism : TaskPool;
 
-import button.log : Logger;
+import button.events : Events;
 import button.state : BuildState;
 import button.textcolor : TextColor;
 
@@ -25,7 +25,7 @@ struct BuildContext
     string root;
 
     TaskPool pool;
-    Logger logger;
+    Events events;
     BuildState state;
 
     bool dryRun;

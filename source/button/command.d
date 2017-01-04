@@ -5,7 +5,6 @@
  */
 module button.command;
 
-import button.log;
 import button.exceptions;
 import button.resource;
 import button.context;

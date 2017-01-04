@@ -9,7 +9,7 @@
  */
 module button.handler;
 
-import button.log;
+import button.events;
 import button.resource;
 import button.context;
 
@@ -23,7 +23,7 @@ alias Handler = void function(
         string workDir,
         ref Resources inputs,
         ref Resources outputs,
-        TaskLogger logger
+        Events events
         );
 
 immutable Handler[string] handlers;
@@ -71,18 +71,18 @@ void execute(
         string workDir,
         ref Resources inputs,
         ref Resources outputs,
-        TaskLogger logger
+        Events events
         )
 {
     auto handler = selectHandler(args);
 
-    handler(ctx, args, workDir, inputs, outputs, logger);
+    handler(ctx, args, workDir, inputs, outputs, events);
 }
 
 /**
  * Executes the task.
  */
-Task.Result execute(const Task task, ref BuildContext ctx, TaskLogger logger)
+Task.Result execute(const Task task, ref BuildContext ctx)
 {
     import std.array : appender;
 
@@ -92,7 +92,7 @@ Task.Result execute(const Task task, ref BuildContext ctx, TaskLogger logger)
 
     foreach (command; task.commands)
     {
-        auto result = command.execute(ctx, task.workingDirectory, logger);
+        auto result = command.execute(ctx, task.workingDirectory);
 
         // FIXME: Commands may have temporary inputs and outputs. For
         // example, if one command creates a file and a later command
@@ -109,7 +109,7 @@ Task.Result execute(const Task task, ref BuildContext ctx, TaskLogger logger)
  * Executes the command.
  */
 Command.Result execute(const Command command, ref BuildContext ctx,
-    string workDir, TaskLogger logger)
+    string workDir)
 {
     import std.path : buildPath;
     import std.datetime : StopWatch, AutoStart;
@@ -125,7 +125,7 @@ Command.Result execute(const Command command, ref BuildContext ctx,
             command.args,
             buildPath(ctx.root, workDir),
             inputs, outputs,
-            logger
+            ctx.events
             );
 
     return Command.Result(inputs.data, outputs.data, sw.peek());

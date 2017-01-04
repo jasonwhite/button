@@ -13,7 +13,7 @@
  */
 module button.handlers.dmd;
 
-import button.log;
+import button.events;
 import button.resource;
 import button.context;
 
@@ -251,7 +251,7 @@ void execute(
         string workDir,
         ref Resources inputs,
         ref Resources outputs,
-        TaskLogger logger
+        Events events
         )
 {
     import button.handlers.base : base = execute;
@@ -285,7 +285,7 @@ void execute(
     // Delete the temporary -deps file when done.
     scope (exit) if (opts.depsFile is null) remove(depsPath);
 
-    base(ctx, args, workDir, inputs, outputs, logger);
+    base(ctx, args, workDir, inputs, outputs, events);
 
     // Add the inputs from the dependency file.
     static r = regex(`\((.*?)\)`);

@@ -18,7 +18,7 @@
  */
 module button.handlers.base;
 
-import button.log;
+import button.events;
 import button.resource;
 import button.context;
 
@@ -49,12 +49,12 @@ void execute(
         string workDir,
         ref Resources inputs,
         ref Resources outputs,
-        TaskLogger logger
+        Events events
         )
 {
     // FIXME: Commands should use a separate logger. It only uses the
-    // TaskLogger because there used to never be more than one command in a
-    // task.
+    // Events interface because there used to never be more than one command in
+    // a task.
 
     import core.sys.posix.unistd;
     import core.stdc.stdio : sprintf;
@@ -109,9 +109,12 @@ void execute(
     close(inputfds[1]);
     close(outputfds[1]);
 
+    immutable worker = ctx.pool.workerIndex;
+
     // TODO: Parse the resources as they come in instead of all at once at
     // the end.
-    auto implicit = readOutput(stdfds[0], inputfds[0], outputfds[0], logger);
+    auto implicit = readOutput(stdfds[0], inputfds[0], outputfds[0], worker,
+            events);
 
     // Add the inputs and outputs
     inputs.put(implicit.inputs.deps);
@@ -128,7 +131,7 @@ private version (Posix)
 {
     import std.array : Appender;
 
-    auto readOutput(int stdfd, int inputsfd, int outputsfd, TaskLogger logger)
+    auto readOutput(int stdfd, int inputsfd, int outputsfd, size_t worker, Events events)
     {
         import std.array : appender;
         import std.algorithm : max;
@@ -192,7 +195,7 @@ private version (Posix)
                 immutable len = read(stdfd, buf.ptr, buf.length);
                 if (len > 0)
                 {
-                    logger.output(buf[0 .. len]);
+                    events.taskOutput(worker, buf[0 .. len]);
                 }
                 else
                 {

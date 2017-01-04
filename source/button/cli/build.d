@@ -21,19 +21,10 @@ import button.build;
 import button.resource;
 import button.task;
 import button.textcolor;
-import button.log;
+import button.events;
 import button.watcher;
 import button.context;
 import button.exceptions;
-
-/**
- * Returns a build logger based on the command options.
- */
-Logger buildLogger(in BuildOptions opts)
-{
-    import button.log.file;
-    return new FileLogger(stdout, opts.verbose);
-}
 
 /**
  * Updates the build.
@@ -46,8 +37,7 @@ int buildCommand(BuildOptions opts, GlobalOptions globalOpts)
 {
     import std.parallelism : totalCPUs;
     import std.path : dirName, absolutePath;
-
-    auto logger = buildLogger(opts);
+    import button.loggers.console;
 
     if (opts.threads == 0)
         opts.threads = totalCPUs;
@@ -56,6 +46,8 @@ int buildCommand(BuildOptions opts, GlobalOptions globalOpts)
     scope (exit) pool.finish(true);
 
     immutable color = TextColor(colorOutput(opts.color));
+
+    auto events = new ConsoleLogger(stdout, stderr, opts.verbose, pool.size);
 
     string path;
     BuildState state;
@@ -72,7 +64,7 @@ int buildCommand(BuildOptions opts, GlobalOptions globalOpts)
         return 1;
     }
 
-    auto context = BuildContext(absolutePath(dirName(path)), pool, logger,
+    auto context = BuildContext(absolutePath(dirName(path)), pool, events,
             state, opts.dryRun, opts.verbose, color);
 
     if (!opts.autopilot)
