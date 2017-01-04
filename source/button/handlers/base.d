@@ -48,8 +48,7 @@ void execute(
         const(string)[] args,
         string workDir,
         ref Resources inputs,
-        ref Resources outputs,
-        Events events
+        ref Resources outputs
         )
 {
     // FIXME: Commands should use a separate logger. It only uses the
@@ -114,7 +113,7 @@ void execute(
     // TODO: Parse the resources as they come in instead of all at once at
     // the end.
     auto implicit = readOutput(stdfds[0], inputfds[0], outputfds[0], worker,
-            events);
+            ctx.events);
 
     // Add the inputs and outputs
     inputs.put(implicit.inputs.deps);

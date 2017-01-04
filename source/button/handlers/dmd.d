@@ -13,7 +13,6 @@
  */
 module button.handlers.dmd;
 
-import button.events;
 import button.resource;
 import button.context;
 
@@ -250,8 +249,7 @@ void execute(
         const(string)[] args,
         string workDir,
         ref Resources inputs,
-        ref Resources outputs,
-        Events events
+        ref Resources outputs
         )
 {
     import button.handlers.base : base = execute;
@@ -285,7 +283,7 @@ void execute(
     // Delete the temporary -deps file when done.
     scope (exit) if (opts.depsFile is null) remove(depsPath);
 
-    base(ctx, args, workDir, inputs, outputs, events);
+    base(ctx, args, workDir, inputs, outputs);
 
     // Add the inputs from the dependency file.
     static r = regex(`\((.*?)\)`);

@@ -9,7 +9,6 @@
  */
 module button.handler;
 
-import button.events;
 import button.resource;
 import button.context;
 
@@ -22,8 +21,7 @@ alias Handler = void function(
         const(string)[] args,
         string workDir,
         ref Resources inputs,
-        ref Resources outputs,
-        Events events
+        ref Resources outputs
         );
 
 immutable Handler[string] handlers;
@@ -70,13 +68,12 @@ void execute(
         const(string)[] args,
         string workDir,
         ref Resources inputs,
-        ref Resources outputs,
-        Events events
+        ref Resources outputs
         )
 {
     auto handler = selectHandler(args);
 
-    handler(ctx, args, workDir, inputs, outputs, events);
+    handler(ctx, args, workDir, inputs, outputs);
 }
 
 /**
@@ -124,8 +121,7 @@ Command.Result execute(const Command command, ref BuildContext ctx,
             ctx,
             command.args,
             buildPath(ctx.root, workDir),
-            inputs, outputs,
-            ctx.events
+            inputs, outputs
             );
 
     return Command.Result(inputs.data, outputs.data, sw.peek());

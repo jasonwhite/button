@@ -11,7 +11,6 @@
  */
 module button.handlers.gcc;
 
-import button.events;
 import button.exceptions;
 import button.resource;
 import button.context;
@@ -288,8 +287,7 @@ void execute(
         const(string)[] args,
         string workDir,
         ref Resources inputs,
-        ref Resources outputs,
-        Events events
+        ref Resources outputs
         )
 {
     import std.file : remove;
@@ -306,7 +304,7 @@ void execute(
     // Tell gcc to write dependencies to our temporary file.
     args ~= ["-MMD", "-MF", depsPath];
 
-    base(ctx, args, workDir, inputs, outputs, events);
+    base(ctx, args, workDir, inputs, outputs);
 
     // TODO: Parse the command line arguments for -I and -o options.
 
