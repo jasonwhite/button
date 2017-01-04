@@ -9,7 +9,6 @@
  */
 module button.handler;
 
-import button.log;
 import button.resource;
 import button.context;
 
@@ -22,8 +21,7 @@ alias Handler = void function(
         const(string)[] args,
         string workDir,
         ref Resources inputs,
-        ref Resources outputs,
-        TaskLogger logger
+        ref Resources outputs
         );
 
 immutable Handler[string] handlers;
@@ -70,19 +68,18 @@ void execute(
         const(string)[] args,
         string workDir,
         ref Resources inputs,
-        ref Resources outputs,
-        TaskLogger logger
+        ref Resources outputs
         )
 {
     auto handler = selectHandler(args);
 
-    handler(ctx, args, workDir, inputs, outputs, logger);
+    handler(ctx, args, workDir, inputs, outputs);
 }
 
 /**
  * Executes the task.
  */
-Task.Result execute(const Task task, ref BuildContext ctx, TaskLogger logger)
+Task.Result execute(const Task task, ref BuildContext ctx)
 {
     import std.array : appender;
 
@@ -92,7 +89,7 @@ Task.Result execute(const Task task, ref BuildContext ctx, TaskLogger logger)
 
     foreach (command; task.commands)
     {
-        auto result = command.execute(ctx, task.workingDirectory, logger);
+        auto result = command.execute(ctx, task.workingDirectory);
 
         // FIXME: Commands may have temporary inputs and outputs. For
         // example, if one command creates a file and a later command
@@ -109,7 +106,7 @@ Task.Result execute(const Task task, ref BuildContext ctx, TaskLogger logger)
  * Executes the command.
  */
 Command.Result execute(const Command command, ref BuildContext ctx,
-    string workDir, TaskLogger logger)
+    string workDir)
 {
     import std.path : buildPath;
     import std.datetime : StopWatch, AutoStart;
@@ -124,8 +121,7 @@ Command.Result execute(const Command command, ref BuildContext ctx,
             ctx,
             command.args,
             buildPath(ctx.root, workDir),
-            inputs, outputs,
-            logger
+            inputs, outputs
             );
 
     return Command.Result(inputs.data, outputs.data, sw.peek());

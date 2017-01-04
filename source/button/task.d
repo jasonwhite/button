@@ -6,7 +6,6 @@
 module button.task;
 
 import button.command;
-import button.log;
 import button.resource;
 import button.context;
 import button.exceptions;

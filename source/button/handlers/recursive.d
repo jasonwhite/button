@@ -26,7 +26,6 @@ module button.handlers.recursive;
 
 import std.parallelism : TaskPool;
 
-import button.log;
 import button.resource;
 import button.context;
 import button.build;
@@ -40,8 +39,7 @@ void execute(
         const(string)[] args,
         string workDir,
         ref Resources inputs,
-        ref Resources outputs,
-        TaskLogger logger
+        ref Resources outputs
         )
 {
     import button.handlers.base : base = execute;
@@ -53,7 +51,7 @@ void execute(
     // Not the build command, forward to the base handler.
     if (globalOpts.command != "build")
     {
-        base(ctx, args, workDir, inputs, outputs, logger);
+        base(ctx, args, workDir, inputs, outputs);
         return;
     }
 
@@ -72,7 +70,7 @@ void execute(
     // Reuse as much of the parent build context as possible.
     auto newContext = BuildContext(
             dir.absolutePath,
-            ctx.pool, ctx.logger, state,
+            ctx.pool, ctx.events, state,
             ctx.dryRun, ctx.verbose, ctx.color
             );
 

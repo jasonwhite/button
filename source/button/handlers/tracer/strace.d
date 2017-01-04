@@ -16,7 +16,6 @@ module button.handlers.tracer.strace;
 
 version (linux):
 
-import button.log;
 import button.resource;
 import button.context;
 
@@ -220,8 +219,7 @@ void execute(
         const(string)[] args,
         string workDir,
         ref Resources inputs,
-        ref Resources outputs,
-        TaskLogger logger
+        ref Resources outputs
         )
 {
     import button.handlers.base : base = execute;
@@ -244,7 +242,7 @@ void execute(
         "-e", "trace=open,creat,rename,mkdir,chdir",
         ] ~ args;
 
-    base(ctx, traceArgs, workDir, inputs, outputs, logger);
+    base(ctx, traceArgs, workDir, inputs, outputs);
 
     // Parse the trace log to determine dependencies
     auto strace = Trace();

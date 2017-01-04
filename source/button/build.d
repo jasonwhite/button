@@ -18,7 +18,7 @@ import button.edge, button.edgedata;
 import button.state;
 import button.textcolor;
 import button.rule;
-import button.log;
+import button.events;
 import button.context;
 import button.exceptions;
 import button.handler;
@@ -696,20 +696,21 @@ bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
     if (!pending) ctx.state.addPending(v);
 
     auto task = ctx.state[v];
+    immutable worker = ctx.pool.workerIndex;
 
-    auto taskLogger = ctx.logger.taskStarted(v, task, ctx.dryRun);
+    ctx.events.taskStarted(worker, task);
 
     // Assume the command would succeed in a dryrun
     if (ctx.dryRun)
     {
-        taskLogger.succeeded(TickDuration.zero);
+        ctx.events.taskSucceeded(worker, task, TickDuration.zero);
         return true;
     }
 
     auto sw = StopWatch(AutoStart.yes);
 
     Task.Result result;
-    Exception e = task.execute(*ctx, taskLogger).collectException(result);
+    Exception e = task.execute(*ctx).collectException(result);
 
     sw.stop();
 
@@ -717,7 +718,7 @@ bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
 
     if (e)
     {
-        taskLogger.failed(duration, e);
+        ctx.events.taskFailed(worker, task, duration, e);
         throw e;
     }
 
@@ -729,11 +730,11 @@ bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
 
     if (e)
     {
-        taskLogger.failed(duration, e);
+        ctx.events.taskFailed(worker, task, duration, e);
         throw e;
     }
 
-    taskLogger.succeeded(duration);
+    ctx.events.taskSucceeded(worker, task, duration);
 
     // Only remove this from the set of pending tasks if it succeeds completely.
     // If it fails, it should get executed again on the next run such that other
