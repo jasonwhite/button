@@ -384,49 +384,95 @@ BuildStateGraph buildGraph(Resources, Tasks)
 }
 
 /**
+ * Thrown when a cycle is detected in the build graph.
+ */
+class CycleException : BuildException
+{
+    alias SCC = Graph!(Resource, Task).SCC;
+
+    /// Resources in the cycle.
+    const(SCC)[] cycles;
+
+    this(const(SCC)[] cycles, string file = __FILE__, size_t line = __LINE__)
+    {
+        this.cycles = cycles;
+
+        super(formatCycles(), file, line);
+    }
+
+    /**
+     * Formats the exception into a text string of the form:
+     *
+     *     2 cycles detected.
+     *
+     *     Cycle 1:
+     *         foo.c
+     *      -> gcc -c foo.c -o foo.o
+     *      -> foo.o
+     *      -> gcc foo.o -o foo
+     *      -> foo
+     *      -> ./foo > foo.c
+     *      -> foo.c
+     *
+     *     Cycle 2:
+     *      ...
+     *
+     *     Use `button graph` to visualize cycles.
+     *
+     * The first and last resources are duplicated to highlight the cycle.
+     */
+    private string formatCycles() const
+    {
+        import std.format : format;
+        import std.algorithm.comparison : min;
+        import std.array : Appender;
+
+        Appender!string err;
+
+        immutable plural = cycles.length > 1 ? "s" : "";
+
+        err.put(
+            "%d cycle%s detected.\n\n"
+            .format(cycles.length, plural)
+            );
+
+        foreach (i, scc; cycles)
+        {
+            err.put("Cycle %d:\n".format(i+1));
+
+            auto resources = scc.vertices!(Resource);
+            auto tasks = scc.vertices!(Task);
+
+            err.put("    %s\n".format(resources[0]));
+            err.put(" -> %s\n".format(tasks[0].toPrettyString));
+
+            foreach_reverse(j; 1 .. min(resources.length, tasks.length))
+            {
+                err.put(" -> %s\n".format(resources[j]));
+                err.put(" -> %s\n".format(tasks[j].toPrettyString));
+            }
+
+            // Make the cycle obvious
+            err.put(" -> %s\n\n".format(resources[0]));
+        }
+
+        err.put("Use `button graph` to visualize cycles.");
+
+        return err.data;
+    }
+}
+
+/**
  * Checks for cycles.
  *
- * Throws: BuildException exception if one or more cycles are found.
+ * Throws: CycleException exception if one or more cycles are found.
  */
 void checkCycles(Graph!(Resource, Task) graph)
 {
-    import std.format : format;
-    import std.algorithm.iteration : map;
-    import std.algorithm.comparison : min;
-
-    // TODO: Construct the string instead of printing them.
-    import io;
-
     immutable cycles = graph.cycles;
 
-    if (!cycles.length) return;
-
-    foreach (i, scc; cycles)
-    {
-        printfln("Cycle %d:", i+1);
-
-        auto resources = scc.vertices!(Resource);
-        auto tasks = scc.vertices!(Task);
-
-        println("    ", resources[0]);
-        println(" -> ", tasks[0].toPrettyString);
-
-        foreach_reverse(j; 1 .. min(resources.length, tasks.length))
-        {
-            println(" -> ", resources[j]);
-            println(" -> ", tasks[j].toPrettyString);
-        }
-
-        // Make the cycle obvious
-        println(" -> ", resources[0]);
-    }
-
-    immutable plural = cycles.length > 1 ? "s" : "";
-
-    throw new BuildException(
-        "Found %d cycle%s. Use also `button graph` to visualize the cycle%s."
-        .format(cycles.length, plural, plural)
-        );
+    if (cycles.length)
+        throw new CycleException(cycles);
 }
 
 /**

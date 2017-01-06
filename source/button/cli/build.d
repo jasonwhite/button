@@ -63,6 +63,13 @@ int buildCommand(BuildOptions opts, GlobalOptions globalOpts)
                 "Error", color.reset, ": ", e.msg);
         return 1;
     }
+    catch (Exception e)
+    {
+        stderr.println(color.status, ":: ", color.error,
+                "Build failed!", color.reset,
+                " See the output above for details.");
+        return 1;
+    }
 
     auto context = BuildContext(absolutePath(dirName(path)), pool, events,
             state, opts.dryRun, opts.verbose, color);
