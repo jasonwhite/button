@@ -130,6 +130,9 @@ int doBuild(ref BuildContext ctx, string path)
         stderr.println(ctx.color.status, ":: ", ctx.color.error,
                 "Build failed!", ctx.color.reset,
                 " See the output above for details.");
+        if (ctx.verbose)
+            println(ctx.color.status, ":: ", e.toString());
+
         return 1;
     }
 
