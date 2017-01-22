@@ -228,6 +228,7 @@ if __name__ == '__main__':
     random_content = Random(args.content_seed)
 
     # Create top-level files
-    for filename in itertools.chain(*(r['inputs'] for r in top_level)):
+    input_files = itertools.chain(*(r['inputs'] for r in top_level))
+    for filename in input_files:
         with open(os.path.join(args.dir, filename), 'w') as f:
             f.write(random_string(random_content, 64))

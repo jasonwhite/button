@@ -10,3 +10,5 @@ for ((i=0; i<$iterations; i++)); do
     ./genbuild.py .fuzztest --max-width=32
     button build -f .fuzztest/button.json
 done
+
+button clean -f .fuzztest/button.json
