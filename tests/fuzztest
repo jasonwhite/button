@@ -1,0 +1,12 @@
+#!/usr/bin/bash -e
+
+# Runs a generated build over and over to try and catch errors. It's best to run
+# this inside an overlay file system mounted on a ramdisk to avoid wear and tear
+# on your hard drive.
+
+iterations=$1
+
+for ((i=0; i<$iterations; i++)); do
+    ./genbuild.py .fuzztest --max-width=32
+    button build -f .fuzztest/button.json
+done

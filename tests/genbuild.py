@@ -10,9 +10,9 @@ The primary purpose of this script is to fuzz test the build system. We aren't
 expecting everything to succeed. We just want to know if it crashes.
 """
 
+import os
 import json
 import string
-import os.path
 import argparse
 import itertools
 
@@ -219,6 +219,8 @@ if __name__ == '__main__':
         queue=list(top_level),
         names=names
         ))
+
+    os.makedirs(args.dir, exist_ok=True)
 
     with open(os.path.join(args.dir, 'button.json'), 'w') as f:
         json.dump(top_level + build, f, indent=4)
