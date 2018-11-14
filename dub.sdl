@@ -4,7 +4,7 @@ copyright "Copyright © 2016, Jason White"
 authors "Jason White"
 license "MIT"
 
-dependency "io" version=">=0.0.7"
+dependency "fio" version=">=0.0.9"
 dependency "darg" version=">=0.0.4"
 
 sourcePaths "source/button" "source/util"
