@@ -2,7 +2,8 @@
 docs.json
 *.o
 *.swp
-/bb
+/button
+/button-test-library
 dub.selections.json
 __test__library__
 __pycache__/
