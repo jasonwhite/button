@@ -4,7 +4,7 @@
  * Authors:   Jason White
  */
 module button.resource;
-import std.digest.digest : DigestType, isDigest;
+import std.digest : DigestType, isDigest;
 
 import std.array : Appender;
 
@@ -46,7 +46,7 @@ unittest
 private DigestType!Hash digestFile(Hash)(string path)
     if (isDigest!Hash)
 {
-    import std.digest.digest : digest;
+    import std.digest : digest;
     import io.file : SysException, File, FileFlags;
     import io.range : byChunk;
 

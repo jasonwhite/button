@@ -82,7 +82,7 @@ int buildCommand(BuildOptions opts, GlobalOptions globalOpts)
 
 int doBuild(ref BuildContext ctx, string path)
 {
-    import std.datetime : StopWatch, AutoStart;
+    import std.datetime.stopwatch : StopWatch, AutoStart;
 
     auto sw = StopWatch(AutoStart.yes);
 

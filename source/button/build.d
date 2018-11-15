@@ -681,8 +681,8 @@ bool visitResource(BuildContext* ctx, Index!Resource v, size_t degreeIn,
 bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
         size_t degreeChanged)
 {
-    import std.datetime : StopWatch, AutoStart;
-    import core.time : TickDuration;
+    import std.datetime.stopwatch : StopWatch, AutoStart;
+    import core.time : Duration;
     import std.format : format;
     import std.exception : collectException;
 
@@ -703,7 +703,7 @@ bool visitTask(BuildContext* ctx, Index!Task v, size_t degreeIn,
     // Assume the command would succeed in a dryrun
     if (ctx.dryRun)
     {
-        ctx.events.taskSucceeded(worker, task, TickDuration.zero);
+        ctx.events.taskSucceeded(worker, task, Duration.zero);
         return true;
     }
 

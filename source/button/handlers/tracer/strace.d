@@ -91,7 +91,7 @@ private struct Trace
     {
         import io.text;
         import std.conv : parse, ConvException;
-        import std.string : munch;
+        import std.string : stripLeft;
         import std.algorithm.searching : startsWith;
         import std.regex : matchFirst;
 
@@ -107,7 +107,7 @@ private struct Trace
             catch (ConvException e)
                 continue;
 
-            line.munch(" \t");
+            line = line.stripLeft(" \t");
 
             if (line.startsWith("open"))
             {

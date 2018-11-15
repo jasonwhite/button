@@ -8,7 +8,7 @@
  */
 module button.loggers.console;
 
-import core.time : TickDuration;
+import core.time : Duration;
 
 import io.file.stream;
 import io.text;
@@ -54,11 +54,11 @@ final class ConsoleLogger : Events
     {
     }
 
-    void buildSucceeded(TickDuration duration)
+    void buildSucceeded(Duration duration)
     {
     }
 
-    void buildFailed(TickDuration duration, Exception e)
+    void buildFailed(Duration duration, Exception e)
     {
     }
 
@@ -77,7 +77,7 @@ final class ConsoleLogger : Events
             stdout.print("⏎\n");
     }
 
-    private void printTaskTail(size_t worker, TickDuration duration)
+    private void printTaskTail(size_t worker, Duration duration)
     {
         import core.time : Duration;
 
@@ -89,7 +89,7 @@ final class ConsoleLogger : Events
     }
 
     void taskSucceeded(size_t worker, const ref Task task,
-            TickDuration duration)
+            Duration duration)
     {
         synchronized (this)
         {
@@ -101,7 +101,7 @@ final class ConsoleLogger : Events
         }
     }
 
-    void taskFailed(size_t worker, const ref Task task, TickDuration duration,
+    void taskFailed(size_t worker, const ref Task task, Duration duration,
             const Exception e)
     {
         import std.string : wrap;

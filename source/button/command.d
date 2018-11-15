@@ -91,7 +91,7 @@ struct Command
      */
     struct Result
     {
-        import core.time : TickDuration;
+        import core.time : Duration;
 
         /**
          * Implicit input and output resources this command used.
@@ -101,7 +101,7 @@ struct Command
         /**
          * How long it took the command to run from start to finish.
          */
-        TickDuration duration;
+        Duration duration;
     }
 
     this(immutable(string)[] args)

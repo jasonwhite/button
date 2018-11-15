@@ -109,7 +109,7 @@ Command.Result execute(const Command command, ref BuildContext ctx,
     string workDir)
 {
     import std.path : buildPath;
-    import std.datetime : StopWatch, AutoStart;
+    import std.datetime.stopwatch : StopWatch, AutoStart;
     import button.handler : executeHandler = execute;
 
     auto inputs  = Resources(ctx.root, workDir);

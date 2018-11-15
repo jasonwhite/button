@@ -11,7 +11,7 @@ module button.events;
 
 import button.task;
 import button.state;
-import core.time : TickDuration;
+import core.time : Duration;
 
 /**
  * Interface for handling build system events. This can be used for logging or
@@ -33,12 +33,12 @@ interface Events
     /**
      * Called when a build has completed successfully.
      */
-    void buildSucceeded(TickDuration duration);
+    void buildSucceeded(Duration duration);
 
     /**
      * Called when a build has failed with the exception that was thrown.
      */
-    void buildFailed(TickDuration duration, Exception e);
+    void buildFailed(Duration duration, Exception e);
 
     /**
      * Called when a task has started. Returns a new event handler for tasks.
@@ -54,12 +54,12 @@ interface Events
      * Called when a task has completed successfully.
      */
     void taskSucceeded(size_t worker, const ref Task task,
-            TickDuration duration);
+            Duration duration);
 
     /**
      * Called when a task has failed.
      */
-    void taskFailed(size_t worker, const ref Task task, TickDuration duration,
+    void taskFailed(size_t worker, const ref Task task, Duration duration,
             const Exception e);
 
     /**
